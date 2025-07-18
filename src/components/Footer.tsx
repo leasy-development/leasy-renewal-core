@@ -1,8 +1,6 @@
 import { Facebook, Twitter, Linkedin, Github, Mail } from "lucide-react";
-
 export const Footer = () => {
-  return (
-    <footer className="bg-foreground text-background py-16">
+  return <footer className="bg-foreground text-background py-16">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Company Info */}
@@ -13,10 +11,7 @@ export const Footer = () => {
               </div>
               <span className="text-xl font-bold">Leasy</span>
             </div>
-            <p className="text-background/70 mb-6 max-w-md leading-relaxed">
-              The leading cloud platform for property professionals to manage, 
-              optimize, and distribute listings across multiple channels effortlessly.
-            </p>
+            <p className="text-background/70 mb-6 max-w-md leading-relaxed">The cloud platform for property professionals to manage, optimize, and distribute listings across multiple channels effortlessly.</p>
             <div className="flex space-x-4">
               <a href="#" className="w-10 h-10 bg-background/10 hover:bg-background/20 rounded-lg flex items-center justify-center transition-colors">
                 <Twitter className="h-5 w-5" />
@@ -68,11 +63,7 @@ export const Footer = () => {
               Get the latest news, updates, and tips for property management.
             </p>
             <div className="flex gap-2">
-              <input 
-                type="email" 
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 bg-background/10 border border-background/20 rounded-lg text-background placeholder-background/50 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
+              <input type="email" placeholder="Enter your email" className="flex-1 px-4 py-2 bg-background/10 border border-background/20 rounded-lg text-background placeholder-background/50 focus:outline-none focus:ring-2 focus:ring-primary" />
               <button className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 Subscribe
@@ -84,7 +75,7 @@ export const Footer = () => {
         {/* Legal Info */}
         <div className="border-t border-background/20 pt-8 mb-8">
           <div className="text-background/70 text-sm space-y-2">
-            <div className="font-medium text-background">Leasy powered by FARAWAYHOME</div>
+            <div className="font-medium text-background">Leasy is powered by FARAWAYHOME</div>
             <div>FARAWAYHOME OÜ</div>
             <div>Tornimäe 5, 10145 Tallinn, Estonia</div>
             <div>Tax num.: EE102783607 | Company num.: 17081333</div>
@@ -104,6 +95,5 @@ export const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };

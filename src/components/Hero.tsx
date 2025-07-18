@@ -1,10 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
-
 export const Hero = () => {
-  return (
-    <section className="pt-20 lg:pt-32 pb-16 lg:pb-20 bg-gradient-to-br from-background via-accent/30 to-primary/5">
+  return <section className="pt-20 lg:pt-32 pb-16 lg:pb-20 bg-gradient-to-br from-background via-accent/30 to-primary/5">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Content */}
@@ -32,10 +30,7 @@ export const Hero = () => {
                 Join Beta Waitlist
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button variant="outline" size="xl" className="group">
-                <Play className="mr-2 h-5 w-5" />
-                Watch Demo
-              </Button>
+              
             </div>
             
             <div className="flex items-center gap-8 mt-8 justify-center lg:justify-start text-sm text-muted-foreground">
@@ -57,11 +52,7 @@ export const Hero = () => {
           {/* Hero Image */}
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-large">
-              <img 
-                src={heroImage} 
-                alt="Leasy Dashboard" 
-                className="w-full h-auto object-cover"
-              />
+              <img src={heroImage} alt="Leasy Dashboard" className="w-full h-auto object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent"></div>
             </div>
             
@@ -82,6 +73,5 @@ export const Hero = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
