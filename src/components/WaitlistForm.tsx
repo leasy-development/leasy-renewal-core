@@ -4,29 +4,27 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowRight, Mail, Users, Star } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-
 export const WaitlistForm = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       toast({
         title: "Welcome to the waitlist!",
-        description: "We'll notify you as soon as beta access is available.",
+        description: "We'll notify you as soon as beta access is available."
       });
       setEmail("");
       setIsSubmitting(false);
     }, 1000);
   };
-
-  return (
-    <section className="py-20 lg:py-28 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+  return <section className="py-20 lg:py-28 bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <Card className="bg-gradient-card border-border/50 shadow-large overflow-hidden">
@@ -50,28 +48,12 @@ export const WaitlistForm = () => {
             <CardContent className="px-8 pb-8">
               <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-8">
                 <div className="flex gap-2">
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    className="flex-1"
-                    required
-                  />
-                  <Button 
-                    type="submit" 
-                    variant="hero" 
-                    disabled={isSubmitting}
-                    className="group"
-                  >
-                    {isSubmitting ? (
-                      "Joining..."
-                    ) : (
-                      <>
+                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email address" className="flex-1" required />
+                  <Button type="submit" variant="hero" disabled={isSubmitting} className="group">
+                    {isSubmitting ? "Joining..." : <>
                         Join Waitlist
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
+                      </>}
                   </Button>
                 </div>
               </form>
@@ -109,14 +91,11 @@ export const WaitlistForm = () => {
               </div>
 
               <div className="text-center mt-8 text-sm text-muted-foreground">
-                <p>
-                  Join <span className="font-semibold text-primary">2,847+</span> property professionals already on the waitlist
-                </p>
+                
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
