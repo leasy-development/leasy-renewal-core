@@ -9,9 +9,9 @@ export const Footer = () => {
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">HS</span>
+                <span className="text-primary-foreground font-bold text-sm">L</span>
               </div>
-              <span className="text-xl font-bold">Home Scraper</span>
+              <span className="text-xl font-bold">Leasy</span>
             </div>
             <p className="text-background/70 mb-6 max-w-md leading-relaxed">
               The leading cloud platform for property professionals to manage, 
@@ -81,10 +81,20 @@ export const Footer = () => {
           </div>
         </div>
 
+        {/* Legal Info */}
+        <div className="border-t border-background/20 pt-8 mb-8">
+          <div className="text-background/70 text-sm space-y-2">
+            <div className="font-medium text-background">Leasy powered by FARAWAYHOME</div>
+            <div>FARAWAYHOME OÜ</div>
+            <div>Tornimäe 5, 10145 Tallinn, Estonia</div>
+            <div>Tax num.: EE102783607 | Company num.: 17081333</div>
+          </div>
+        </div>
+
         {/* Bottom */}
         <div className="border-t border-background/20 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-background/70 text-sm">
-            © 2024 Home Scraper. All rights reserved.
+            © 2024 Leasy. All rights reserved.
           </div>
           <div className="flex gap-6 text-sm text-background/70">
             <a href="#" className="hover:text-background transition-colors">Privacy Policy</a>

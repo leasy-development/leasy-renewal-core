@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     question: "Do you offer API access?",
-    answer: "Yes, we provide comprehensive REST APIs for all Pro plans and above. This allows you to integrate Home Scraper with your existing property management software, CRM systems, or custom applications. Full API documentation and support are included."
+    answer: "Yes, we provide comprehensive REST APIs for all Pro plans and above. This allows you to integrate Leasy with your existing property management software, CRM systems, or custom applications. Full API documentation and support are included."
   },
   {
     question: "How quickly are listings synchronized?",
@@ -51,7 +51,7 @@ export const FAQ = () => {
               Frequently asked questions
             </h2>
             <p className="text-xl text-muted-foreground">
-              Get answers to common questions about Home Scraper
+              Get answers to common questions about Leasy
             </p>
           </div>
 
@@ -79,11 +79,11 @@ export const FAQ = () => {
               Still have questions?
             </h3>
             <p className="text-muted-foreground mb-6">
-              Our team is here to help you get started with Home Scraper
+              Our team is here to help you get started with Leasy
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a 
-                href="mailto:support@homescraper.com"
+                href="mailto:support@leasy.io"
                 className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
               >
                 Contact Support

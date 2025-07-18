@@ -12,9 +12,9 @@ export const Header = () => {
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">HS</span>
+              <span className="text-primary-foreground font-bold text-sm">L</span>
             </div>
-            <span className="text-xl font-bold text-foreground">Home Scraper</span>
+            <span className="text-xl font-bold text-foreground">Leasy</span>
           </div>
 
           {/* Desktop Navigation */}

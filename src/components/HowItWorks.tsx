@@ -103,7 +103,7 @@ export const HowItWorks = () => {
             </h3>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
               Join thousands of property professionals who have already transformed 
-              their workflow with Home Scraper.
+              their workflow with Leasy.
             </p>
             <Button variant="hero" size="xl" className="group">
               Start Your Free Trial

@@ -59,7 +59,7 @@ export const Hero = () => {
             <div className="relative rounded-2xl overflow-hidden shadow-large">
               <img 
                 src={heroImage} 
-                alt="Home Scraper Dashboard" 
+                alt="Leasy Dashboard" 
                 className="w-full h-auto object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent"></div>
