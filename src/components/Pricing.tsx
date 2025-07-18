@@ -137,7 +137,7 @@ export const Pricing = () => {
                   className="w-full mb-6"
                   size="lg"
                 >
-                  {plan.price === "Custom" ? "Contact Sales" : "Start Free Trial"}
+                  {plan.price === "Custom" ? "Contact Sales" : "Join Beta Waitlist"}
                 </Button>
                 
                 <ul className="space-y-3">
@@ -158,26 +158,26 @@ export const Pricing = () => {
         {/* Additional Info */}
         <div className="text-center mt-12">
           <p className="text-muted-foreground mb-4">
-            All plans include core features, SSL encryption, and regular backups
+            All plans will be available during beta launch with special early-bird pricing
           </p>
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-success" />
-              14-day free trial
+            <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-success" />
+                Beta access included
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-success" />
+                Early-bird pricing
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-success" />
+                Priority support
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-success" />
+                Shape the roadmap
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-success" />
-              Cancel anytime
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-success" />
-              No setup fees
-            </div>
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-success" />
-              24/7 support
-            </div>
-          </div>
         </div>
       </div>
     </section>

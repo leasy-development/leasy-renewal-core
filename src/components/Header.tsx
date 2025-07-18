@@ -10,11 +10,16 @@ export const Header = () => {
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">L</span>
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">L</span>
+              </div>
+              <span className="text-xl font-bold text-foreground">Leasy</span>
             </div>
-            <span className="text-xl font-bold text-foreground">Leasy</span>
+            <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+              BETA
+            </div>
           </div>
 
           {/* Desktop Navigation */}
@@ -37,7 +42,7 @@ export const Header = () => {
           <div className="hidden md:flex items-center space-x-4">
             <Button variant="ghost">Sign In</Button>
             <Button variant="hero" size="lg">
-              Start Free Trial
+              Join Waitlist
             </Button>
           </div>
 
@@ -68,7 +73,7 @@ export const Header = () => {
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border">
                 <Button variant="ghost">Sign In</Button>
-                <Button variant="hero">Start Free Trial</Button>
+                <Button variant="hero">Join Waitlist</Button>
               </div>
             </nav>
           </div>

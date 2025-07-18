@@ -7,6 +7,10 @@ import {
 
 const faqs = [
   {
+    question: "What does beta access include?",
+    answer: "Beta users get full access to all current features, priority support, special early-bird pricing, and direct influence on our product roadmap. You'll be among the first to test new features and provide feedback that shapes the platform's development."
+  },
+  {
     question: "How does the smart scraper work?",
     answer: "Our intelligent scraper analyzes your website structure and automatically extracts property listings, images, and details. It handles various website formats and can be configured to match your specific site structure. The process is completely automated and runs in the background."
   },
@@ -35,8 +39,8 @@ const faqs = [
     answer: "Real-time synchronization happens within minutes of making changes. You can also schedule bulk updates during off-peak hours. Our system processes thousands of listing updates per minute with 99.9% uptime reliability."
   },
   {
-    question: "Can I try before I buy?",
-    answer: "Definitely! We offer a full-featured 14-day free trial with no credit card required. You can import your listings, test all features, and see the results before making any commitment. Our team is also available to provide personalized demos."
+    question: "Can I try the beta version?",
+    answer: "Definitely! We're currently in beta phase with limited access. Join our waitlist to get early access and help shape the product. Beta users get special early-bird pricing and direct input into our development roadmap."
   }
 ];
 

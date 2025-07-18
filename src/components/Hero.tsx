@@ -9,9 +9,9 @@ export const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Content */}
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 bg-accent/50 text-accent-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <span className="w-2 h-2 bg-success rounded-full animate-pulse"></span>
-              New: AI-powered content optimization
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+              Currently in Beta - Join the waitlist for early access
             </div>
             
             <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
@@ -29,7 +29,7 @@ export const Hero = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Button variant="hero" size="xl" className="group">
-                Start Free Trial
+                Join Beta Waitlist
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button variant="outline" size="xl" className="group">
@@ -40,16 +40,16 @@ export const Hero = () => {
             
             <div className="flex items-center gap-8 mt-8 justify-center lg:justify-start text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-success rounded-full"></span>
-                Free 14-day trial
+                <span className="w-2 h-2 bg-primary rounded-full"></span>
+                Currently in Beta
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-success rounded-full"></span>
-                No credit card required
+                Early access available
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-success rounded-full"></span>
-                Cancel anytime
+                No commitment required
               </div>
             </div>
           </div>

@@ -99,14 +99,13 @@ export const HowItWorks = () => {
         <div className="text-center mt-16">
           <div className="bg-gradient-card border border-border rounded-2xl p-8 lg:p-12 shadow-medium">
             <h3 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
-              Ready to streamline your listings?
+              Ready to be part of the beta?
             </h3>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join thousands of property professionals who have already transformed 
-              their workflow with Leasy.
+              Join our exclusive beta program and help shape the future of property listing management.
             </p>
             <Button variant="hero" size="xl" className="group">
-              Start Your Free Trial
+              Join Beta Waitlist
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
