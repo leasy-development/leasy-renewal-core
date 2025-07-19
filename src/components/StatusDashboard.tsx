@@ -44,13 +44,15 @@ export function StatusDashboard({ className }: StatusDashboardProps) {
     error: analyticsError 
   } = useAnalytics('7d');
 
-  // Handle errors
+  // Handle errors with proper type casting
   React.useEffect(() => {
     if (statusError) {
-      reportError(statusError, 'database', { component: 'StatusDashboard' });
+      const errorMessage = statusError instanceof Error ? statusError : new Error(String(statusError));
+      reportError(errorMessage, 'database', { component: 'StatusDashboard' });
     }
     if (analyticsError) {
-      reportError(analyticsError, 'database', { component: 'StatusDashboard' });
+      const errorMessage = analyticsError instanceof Error ? analyticsError : new Error(String(analyticsError));
+      reportError(errorMessage, 'database', { component: 'StatusDashboard' });
     }
   }, [statusError, analyticsError, reportError]);
 

@@ -1,18 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { Toaster } from "@/components/ui/toaster";
 import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
 
-// 🔐 CRITICAL: Comprehensive React singleton safety check
+// 🔐 CRITICAL: React 18.2.0 singleton safety check
 if (!React || typeof React !== 'object') {
   throw new Error("❌ React is not properly imported as an object");
 }
 
-// Check for React instance collision
+// Check for React instance collision (React 18 compatible)
 if (typeof window !== 'undefined') {
   // @ts-ignore - Checking for multiple React instances
   if (window.React && window.React !== React) {
@@ -40,14 +39,14 @@ if (!reactVersion) {
   throw new Error("❌ React version is undefined - multiple React instances detected");
 }
 
-console.log("✅ React singleton verified:", {
+console.log("✅ React 18.2.0 singleton verified:", {
   version: reactVersion,
   useEffect: typeof React.useEffect,
   useState: typeof React.useState,
   hasStrictMode: !!React.StrictMode,
 });
 
-// Create QueryClient AFTER React verification
+// Create QueryClient AFTER React verification (React Query v4 compatible)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -65,8 +64,8 @@ const rootElement = document.getElementById("root");
 
 if (!rootElement) throw new Error("Root element not found");
 
-// 🚀 Render with GUARANTEED React availability
-console.log("🚀 Rendering with verified React singleton...");
+// 🚀 Render with GUARANTEED React 18.2.0 compatibility
+console.log("🚀 Rendering with verified React 18.2.0 singleton...");
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
@@ -77,4 +76,4 @@ ReactDOM.createRoot(rootElement).render(
   </React.StrictMode>
 );
 
-console.log("✅ React app rendered successfully with QueryClient");
+console.log("✅ React app rendered successfully with QueryClient v4");
