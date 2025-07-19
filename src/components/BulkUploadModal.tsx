@@ -58,6 +58,13 @@ interface PropertyRow {
   checkout_time: string;
   provides_wgsb: boolean;
   house_rules: string;
+  [key: string]: any; // Allow additional properties for media URLs
+}
+
+interface MediaItem {
+  url: string;
+  type: 'photo' | 'floorplan';
+  title?: string;
 }
 
 interface ValidationError {
@@ -260,9 +267,139 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [manualProperties, setManualProperties] = useState<Partial<PropertyRow>[]>([{}]);
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
+  const [mediaProgress, setMediaProgress] = useState<{ downloaded: number; total: number; current: string }>({ downloaded: 0, total: 0, current: '' });
+  const [downloadingMedia, setDownloadingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Media detection and auto-download functions
+  const detectMediaUrls = (data: PropertyRow[]): { propertyIndex: number; mediaItems: MediaItem[] }[] => {
+    const results: { propertyIndex: number; mediaItems: MediaItem[] }[] = [];
+    
+    data.forEach((row, propertyIndex) => {
+      const mediaItems: MediaItem[] = [];
+      
+      Object.entries(row).forEach(([key, value]) => {
+        if (typeof value === 'string' && isValidUrl(value)) {
+          const mediaType = detectMediaType(key, value);
+          if (mediaType) {
+            mediaItems.push({
+              url: value,
+              type: mediaType,
+              title: generateMediaTitle(key, mediaType, mediaItems.filter(m => m.type === mediaType).length)
+            });
+          }
+        }
+      });
+      
+      if (mediaItems.length > 0) {
+        results.push({ propertyIndex, mediaItems });
+      }
+    });
+    
+    return results;
+  };
+
+  const isValidUrl = (str: string): boolean => {
+    try {
+      const url = new URL(str);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const detectMediaType = (columnName: string, url: string): 'photo' | 'floorplan' | null => {
+    const lowerKey = columnName.toLowerCase();
+    const lowerUrl = url.toLowerCase();
+    
+    // Check for floorplan indicators
+    if (lowerKey.includes('floorplan') || lowerKey.includes('floor_plan') || 
+        lowerKey.includes('layout') || lowerKey.includes('blueprint') ||
+        lowerUrl.includes('floorplan') || lowerUrl.includes('floor_plan') ||
+        lowerUrl.includes('layout') || lowerUrl.includes('blueprint')) {
+      return 'floorplan';
+    }
+    
+    // Check for photo indicators
+    if (lowerKey.includes('photo') || lowerKey.includes('image') || 
+        lowerKey.includes('picture') || lowerKey.includes('img') ||
+        isImageUrl(url)) {
+      return 'photo';
+    }
+    
+    return null;
+  };
+
+  const isImageUrl = (url: string): boolean => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+    const lowerUrl = url.toLowerCase();
+    return imageExtensions.some(ext => lowerUrl.includes(ext));
+  };
+
+  const generateMediaTitle = (columnName: string, type: 'photo' | 'floorplan', index: number): string => {
+    const cleanName = columnName.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+    return `${cleanName} ${index + 1}`.replace(/\s+/g, ' ');
+  };
+
+  const downloadAndSaveMedia = async (propertyId: string, mediaItems: MediaItem[]): Promise<{ success: number; failed: number; errors: string[] }> => {
+    const results = { success: 0, failed: 0, errors: [] as string[] };
+    
+    for (const media of mediaItems) {
+      try {
+        setMediaProgress(prev => ({ ...prev, current: `Downloading ${media.title}...` }));
+        
+        // Download the file
+        const response = await fetch(media.url);
+        if (!response.ok) throw new Error(`Failed to download: ${response.statusText}`);
+        
+        const blob = await response.blob();
+        const fileName = `${Date.now()}-${media.title.replace(/[^a-zA-Z0-9]/g, '_')}.${getFileExtension(media.url)}`;
+        const filePath = `${propertyId}/${media.type === 'floorplan' ? 'floorplans' : 'photos'}/${fileName}`;
+        
+        // Upload to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('property-photos')
+          .upload(filePath, blob);
+        
+        if (uploadError) throw uploadError;
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-photos')
+          .getPublicUrl(filePath);
+        
+        // Save to property_media table
+        const { error: dbError } = await supabase
+          .from('property_media')
+          .insert({
+            property_id: propertyId,
+            url: publicUrl,
+            media_type: media.type,
+            title: media.title,
+            sort_order: results.success,
+          });
+        
+        if (dbError) throw dbError;
+        
+        results.success++;
+        setMediaProgress(prev => ({ ...prev, downloaded: prev.downloaded + 1 }));
+        
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push(`${media.title}: ${error.message}`);
+      }
+    }
+    
+    return results;
+  };
+
+  const getFileExtension = (url: string): string => {
+    const path = new URL(url).pathname;
+    const extension = path.split('.').pop()?.toLowerCase();
+    return extension || 'jpg';
+  };
 
   // Enhanced postal code to city mapping (German cities)
   const POSTAL_CODE_CITIES: { [key: string]: string } = {
@@ -757,6 +894,20 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         setOriginalHeaders(rawHeaders);
         setColumnMappings(autoMappedHeaders);
         validateData(autoFilledData);
+        
+        // Detect media URLs and show summary
+        const mediaDetection = detectMediaUrls(autoFilledData);
+        const totalPhotos = mediaDetection.reduce((sum, item) => sum + item.mediaItems.filter(m => m.type === 'photo').length, 0);
+        const totalFloorplans = mediaDetection.reduce((sum, item) => sum + item.mediaItems.filter(m => m.type === 'floorplan').length, 0);
+        
+        if (totalPhotos > 0 || totalFloorplans > 0) {
+          toast({
+            title: "📸 Media URLs Detected",
+            description: `Found ${totalPhotos} photo URLs and ${totalFloorplans} floorplan URLs. These will be automatically downloaded during upload!`,
+            variant: "default",
+          });
+        }
+        
         setActiveTab("review");
         
       } catch (error) {
@@ -886,27 +1037,56 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     setIsUploading(true);
     setUploadProgress(0);
 
+    // Detect media URLs in the uploaded data
+    const mediaDetection = detectMediaUrls(uploadedData);
+    const totalMediaItems = mediaDetection.reduce((sum, item) => sum + item.mediaItems.length, 0);
+    
+    setMediaProgress({ downloaded: 0, total: totalMediaItems, current: '' });
+    setDownloadingMedia(totalMediaItems > 0);
+
     const results: UploadResult = {
       success: 0,
       failed: 0,
       errors: []
     };
 
+    let mediaResults = { photos: 0, floorplans: 0, failed: 0, errors: [] as string[] };
+
     try {
       for (let i = 0; i < uploadedData.length; i++) {
         const property = uploadedData[i];
         
         try {
-          const { error } = await supabase
+          // Insert property first
+          const { data: insertedProperty, error } = await supabase
             .from('properties')
             .insert({
               ...property,
               user_id: user.id,
               status: 'draft'
-            });
+            })
+            .select('id')
+            .single();
 
           if (error) throw error;
+          
+          const propertyId = insertedProperty.id;
           results.success++;
+          
+          // Download and save media for this property
+          const propertyMedia = mediaDetection.find(m => m.propertyIndex === i);
+          if (propertyMedia && propertyMedia.mediaItems.length > 0) {
+            const downloadResults = await downloadAndSaveMedia(propertyId, propertyMedia.mediaItems);
+            
+            propertyMedia.mediaItems.forEach(item => {
+              if (item.type === 'photo') mediaResults.photos++;
+              if (item.type === 'floorplan') mediaResults.floorplans++;
+            });
+            
+            mediaResults.failed += downloadResults.failed;
+            mediaResults.errors.push(...downloadResults.errors);
+          }
+          
         } catch (error: any) {
           results.failed++;
           results.errors.push({
@@ -923,9 +1103,13 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       setUploadResult(results);
       
       if (results.success > 0) {
+        const mediaMessage = totalMediaItems > 0 
+          ? ` • Downloaded ${mediaResults.photos} photos and ${mediaResults.floorplans} floorplans${mediaResults.failed > 0 ? ` (${mediaResults.failed} media failed)` : ''}`
+          : '';
+        
         toast({
-          title: "Upload Complete",
-          description: `Successfully uploaded ${results.success} properties${results.failed > 0 ? ` (${results.failed} failed)` : ''}.`,
+          title: "🎉 Upload Complete",
+          description: `Successfully uploaded ${results.success} properties${results.failed > 0 ? ` (${results.failed} failed)` : ''}${mediaMessage}`,
         });
         
         if (onSuccess) {
@@ -942,6 +1126,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       });
     } finally {
       setIsUploading(false);
+      setDownloadingMedia(false);
     }
   };
 
@@ -1312,11 +1497,22 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                   </div>
 
                   {isUploading && (
-                    <div>
-                      <Progress value={uploadProgress} className="mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Uploading properties... {Math.round(uploadProgress)}%
-                      </p>
+                    <div className="space-y-3">
+                      <div>
+                        <Progress value={uploadProgress} className="mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Uploading properties... {Math.round(uploadProgress)}%
+                        </p>
+                      </div>
+                      
+                      {downloadingMedia && mediaProgress.total > 0 && (
+                        <div>
+                          <Progress value={(mediaProgress.downloaded / mediaProgress.total) * 100} className="mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            {mediaProgress.current || `Downloading media files... ${mediaProgress.downloaded}/${mediaProgress.total}`}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
