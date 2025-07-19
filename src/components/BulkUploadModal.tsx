@@ -90,6 +90,12 @@ interface UploadResult {
   errors: ValidationError[];
 }
 
+interface HeaderFix {
+  original: string;
+  fixed: string;
+  method: 'exact' | 'alias' | 'normalized' | 'fuzzy';
+}
+
 const requiredFields = [
   'title', 'apartment_type', 'category', 'street_name', 'city'
 ];
@@ -166,6 +172,82 @@ const fieldMappings = {
   'Property Rules': 'house_rules'
 };
 
+// Enhanced header aliases with typo corrections  
+const HEADER_ALIASES: Record<string, string> = {
+  // Common typos
+  'adress_street': 'street_name',
+  'adress_postcode': 'zip_code', 
+  'adress_street_no': 'street_number',
+  'adress_city_part': 'region',
+  'living_rooms': 'bedrooms',
+  'city_name': 'city',
+  'room_count': 'bedrooms',
+  'bedroom_count': 'bedrooms',
+  'bathroom_count': 'bathrooms',
+  'street_no': 'street_number',
+  'address_number': 'street_number',
+  'appartment_type': 'apartment_type',
+  'appartement_type': 'apartment_type',
+  'property_titel': 'title',
+  'property_tittle': 'title',
+  'propery_type': 'apartment_type',
+  'descripton': 'description',
+  'descriptin': 'description',
+  
+  // Use existing fieldMappings for common variations
+  ...fieldMappings
+};
+
+// Normalize and smart-fix headers
+const normalizeHeader = (header: string): string => {
+  return header
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^\w_]/g, '')
+    .replace(/_{2,}/g, '_')
+    .replace(/^_+|_+$/g, '');
+};
+
+// Simple string similarity calculation
+const calculateSimilarity = (str1: string, str2: string): number => {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  
+  if (longer.length === 0) return 1.0;
+  
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+};
+
+const levenshteinDistance = (str1: string, str2: string): number => {
+  const matrix = [];
+  
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  
+  return matrix[str2.length][str1.length];
+};
+
 export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalProps) => {
   const [activeTab, setActiveTab] = useState("upload");
   const [uploadedData, setUploadedData] = useState<PropertyRow[]>([]);
@@ -213,18 +295,111 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     XLSX.writeFile(wb, "leasy_properties_template.xlsx");
     
     toast({
-      title: "Template Downloaded",
+      title: "✨ Template Downloaded",
       description: "Use this template to ensure your data is formatted correctly.",
     });
   };
 
+  // Enhanced auto-fix headers with typo correction and fuzzy matching
+  const autoFixHeaders = (headers: string[]): { fixes: HeaderFix[], unfixable: string[] } => {
+    const fixes: HeaderFix[] = [];
+    const unfixable: string[] = [];
+    
+    headers.forEach(header => {
+      const trimmedHeader = header.trim();
+      
+      // 1. Check exact alias match
+      if (HEADER_ALIASES[trimmedHeader]) {
+        fixes.push({
+          original: trimmedHeader,
+          fixed: HEADER_ALIASES[trimmedHeader],
+          method: 'exact'
+        });
+        return;
+      }
+      
+      // 2. Check normalized version
+      const normalized = normalizeHeader(trimmedHeader);
+      if (HEADER_ALIASES[normalized]) {
+        fixes.push({
+          original: trimmedHeader,
+          fixed: HEADER_ALIASES[normalized],
+          method: 'normalized'
+        });
+        return;
+      }
+      
+      // 3. Check case-insensitive match
+      const aliasKey = Object.keys(HEADER_ALIASES).find(key => 
+        key.toLowerCase() === trimmedHeader.toLowerCase()
+      );
+      if (aliasKey) {
+        fixes.push({
+          original: trimmedHeader,
+          fixed: HEADER_ALIASES[aliasKey],
+          method: 'alias'
+        });
+        return;
+      }
+      
+      // 4. Fuzzy matching for typos
+      const fuzzyMatch = Object.keys(HEADER_ALIASES).find(key => {
+        const similarity = calculateSimilarity(normalized, normalizeHeader(key));
+        return similarity > 0.8; // 80% similarity threshold
+      });
+      
+      if (fuzzyMatch) {
+        fixes.push({
+          original: trimmedHeader,
+          fixed: HEADER_ALIASES[fuzzyMatch],
+          method: 'fuzzy'
+        });
+        return;
+      }
+      
+      // Unfixable
+      unfixable.push(trimmedHeader);
+    });
+    
+    return { fixes, unfixable };
+  };
+
   const autoMapHeaders = (headers: string[]): ColumnMapping[] => {
+    const { fixes, unfixable } = autoFixHeaders(headers);
+    
+    // Show user what was fixed
+    if (fixes.length > 0) {
+      const fixedByMethod = fixes.reduce((acc, fix) => {
+        acc[fix.method] = (acc[fix.method] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const methodDescriptions = {
+        exact: "exact matches",
+        alias: "case variations", 
+        normalized: "format corrections",
+        fuzzy: "typo corrections"
+      };
+      
+      const fixedDescription = Object.entries(fixedByMethod)
+        .map(([method, count]) => `${count} ${methodDescriptions[method as keyof typeof methodDescriptions]}`)
+        .join(', ');
+      
+      toast({
+        title: "✨ Auto-fix Applied",
+        description: `Fixed ${fixes.length} headers: ${fixedDescription}. ${unfixable.length > 0 ? `${unfixable.length} headers couldn't be mapped.` : ''}`,
+        variant: "default",
+      });
+    }
+    
     return headers.map(header => {
-      const dbField = fieldMappings[header as keyof typeof fieldMappings];
+      const fix = fixes.find(f => f.original === header);
+      const dbField = fix ? fix.fixed : '';
+      
       return {
         csvHeader: header,
-        dbField: dbField || '',
-        isRequired: requiredFields.includes(dbField || ''),
+        dbField,
+        isRequired: requiredFields.includes(dbField),
         mapped: !!dbField
       };
     });
@@ -246,7 +421,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         // Extract headers from first row
         const rawHeaders = Object.keys(jsonData[0] || {});
 
-        // Auto-map headers using fuzzy matching
+        // Auto-map headers using enhanced fuzzy matching
         const autoMappedHeaders = autoMapHeaders(rawHeaders);
         
         // Map the data to our property structure with auto-mapping
@@ -286,23 +461,6 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         validateData(mappedData);
         setActiveTab("review");
         
-        // Show success message if auto-mapping worked
-        const mappedCount = autoMappedHeaders.filter(mapping => mapping.mapped).length;
-        const totalHeaders = rawHeaders.length;
-        
-        if (mappedCount > 0) {
-          toast({
-            title: "Auto-fix Applied",
-            description: `Automatically mapped ${mappedCount}/${totalHeaders} columns. Check the preview to verify.`,
-            variant: "default",
-          });
-        } else {
-          toast({
-            title: "Headers not recognized",
-            description: `Could not auto-map your headers: ${rawHeaders.join(', ')}. Download template for correct format.`,
-            variant: "destructive",
-          });
-        }
       } catch (error) {
         toast({
           title: "File Error",
@@ -781,7 +939,6 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Enhanced Validation Summary */}
                 {validationSummary && (
                   <div className="space-y-4 mb-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -848,7 +1005,6 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                     </div>
                   )}
 
-                  {/* Enhanced Error Display with Inline Editing */}
                   {validationErrors.length > 0 && (
                     <div className="border rounded-lg overflow-hidden">
                       <div className="bg-muted/50 p-3 border-b">
@@ -933,7 +1089,6 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                     </div>
                   )}
 
-                  {/* Property Preview Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
                     {uploadedData.slice(0, 10).map((property, index) => {
                       const hasErrors = validationErrors.some(e => e.row === index + 1 && e.severity === 'error');
