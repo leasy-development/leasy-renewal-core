@@ -148,8 +148,6 @@ export function usePerformanceMonitor(name: string) {
 }
 
 // Optimized image loading with preloading
-import { useState } from 'react';
-
 export function useImagePreloader(urls: string[]) {
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());

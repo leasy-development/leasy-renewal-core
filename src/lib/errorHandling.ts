@@ -363,7 +363,7 @@ export function withErrorHandling<P extends Record<string, any>>(
       };
     }, [reportError]);
 
-    return <Component {...props} />;
+    return React.createElement(Component, props);
   };
 }
 
