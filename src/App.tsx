@@ -15,6 +15,7 @@ import Media from "./pages/Media";
 import NotFound from "./pages/NotFound";
 import AccountSettings from "./pages/AccountSettings";
 import Analytics from "./pages/Analytics";
+import UpdatePassword from "./pages/UpdatePassword";
 
 const App = () => (
   <AuthProvider>
@@ -110,6 +111,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route path="/update-password" element={<UpdatePassword />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
