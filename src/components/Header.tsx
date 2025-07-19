@@ -4,7 +4,7 @@ import { useState } from "react";
 import { EarlyAccessModal } from "@/components/EarlyAccessModal";
 import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/components/AuthProvider";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -37,13 +37,17 @@ export const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
+            {user && (
+              <Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
+                Dashboard
+              </Link>
+            )}
             <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">
               Features
             </a>
             <a href="#how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
               How it Works
             </a>
-            
             <a href="#faq" className="text-muted-foreground hover:text-primary transition-colors">
               FAQ
             </a>
@@ -83,6 +87,11 @@ export const Header = () => {
         {/* Mobile Menu */}
         {isMenuOpen && <div className="md:hidden absolute top-16 left-0 w-full bg-background border-b border-border shadow-medium">
             <nav className="flex flex-col space-y-4 p-4">
+              {user && (
+                <Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
+                  Dashboard
+                </Link>
+              )}
               <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">
                 Features
               </a>
