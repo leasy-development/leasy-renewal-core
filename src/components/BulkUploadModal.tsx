@@ -499,6 +499,86 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     return { fixes, unfixable };
   };
 
+  const downloadValidationErrors = () => {
+    if (validationErrors.length === 0) return;
+
+    const errorReport = {
+      summary: {
+        total_rows: validationSummary?.totalRows || uploadedData.length,
+        valid_rows: validationSummary?.validRows || 0,
+        error_rows: validationSummary?.errorRows || 0,
+        warning_rows: validationSummary?.warningRows || 0,
+        total_issues: validationErrors.length,
+        missing_fields: validationSummary?.missingFields || [],
+        errors_by_field: validationSummary?.groupedErrors || {}
+      },
+      detailed_errors: validationErrors.map(error => ({
+        row_number: error.row,
+        field_name: error.field,
+        issue_description: error.message,
+        current_value: (() => {
+          const val = uploadedData[error.row - 1]?.[error.field as keyof PropertyRow];
+          return val === null || val === undefined ? '' : String(val);
+        })(),
+        severity: error.severity,
+        suggestions: (() => {
+          // Provide specific suggestions based on field type
+          switch (error.field) {
+            case 'title':
+              return 'Provide a descriptive property title (e.g., "Modern Studio in Mitte")';
+            case 'apartment_type':
+              return 'Use: studio, apartment, house, or room';
+            case 'category':
+              return 'Use: short_term, long_term, or corporate';
+            case 'city':
+              return 'Provide the city name (e.g., Berlin, Munich, Hamburg)';
+            case 'street_name':
+              return 'Provide the street name without the number';
+            default:
+              return `Provide a valid value for ${error.field.replace('_', ' ')}`;
+          }
+        })()
+      })),
+      original_headers: originalHeaders,
+      header_mappings: columnMappings.map(mapping => ({
+        csv_header: mapping.csvHeader,
+        mapped_to: mapping.dbField,
+        is_required: mapping.isRequired,
+        is_mapped: mapping.mapped
+      })),
+      sample_data: uploadedData.slice(0, 3).map((row, index) => ({
+        row_number: index + 1,
+        data: row
+      })),
+      instructions: {
+        how_to_fix: [
+          "1. Review the detailed_errors section for specific issues",
+          "2. Check that all required fields have values: " + requiredFields.join(', '),
+          "3. Ensure data types are correct (numbers for prices, text for descriptions)",
+          "4. Use the provided suggestions for each field",
+          "5. Re-upload your corrected CSV file"
+        ],
+        need_help: "Copy this entire file content and share it with your AI assistant for automated fixes"
+      }
+    };
+
+    const jsonString = JSON.stringify(errorReport, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `validation_errors_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "📥 Error Report Downloaded",
+      description: "Share this file with your AI assistant to get help fixing the issues automatically.",
+    });
+  };
+
   const autoMapHeaders = (headers: string[]): ColumnMapping[] => {
     const { fixes, unfixable } = autoFixHeaders(headers);
     
@@ -1161,12 +1241,21 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
 
                   {validationErrors.length > 0 && (
                     <div className="border rounded-lg overflow-hidden">
-                      <div className="bg-muted/50 p-3 border-b">
-                        <h4 className="font-medium flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4" />
-                          Validation Issues ({validationErrors.length})
-                        </h4>
-                      </div>
+                       <div className="bg-muted/50 p-3 border-b flex items-center justify-between">
+                         <h4 className="font-medium flex items-center gap-2">
+                           <AlertCircle className="h-4 w-4" />
+                           Validation Issues ({validationErrors.length})
+                         </h4>
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           onClick={downloadValidationErrors}
+                           className="flex items-center gap-2"
+                         >
+                           <Download className="h-4 w-4" />
+                           Download Error Report
+                         </Button>
+                       </div>
                       <ScrollArea className="h-60">
                         <Table>
                           <TableHeader>
