@@ -466,27 +466,62 @@ const AddProperty = () => {
     setLoading(true);
     try {
       let error;
+      let propertyId = id;
+      
+      // Extract fees and other arrays that don't belong in properties table
+      const { additional_fees, discounts, taxes, required_documents, beds, ...propertyData } = formData;
       
       if (isEditing && id) {
         // Update existing property
         const { error: updateError } = await supabase
           .from('properties')
           .update({
-            ...formData,
+            ...propertyData,
             status,
           })
           .eq('id', id);
         error = updateError;
       } else {
         // Create new property
-        const { error: insertError } = await supabase
+        const { data, error: insertError } = await supabase
           .from('properties')
           .insert({
-            ...formData,
+            ...propertyData,
             user_id: user.id,
             status,
-          });
+          })
+          .select()
+          .single();
+        
+        if (data) {
+          propertyId = data.id;
+        }
         error = insertError;
+      }
+
+      if (error) throw error;
+
+      // Handle additional fees
+      if (propertyId && additional_fees.length > 0) {
+        // Delete existing fees for this property
+        await supabase
+          .from('property_fees')
+          .delete()
+          .eq('property_id', propertyId);
+
+        // Insert new fees
+        const feesToInsert = additional_fees.map(fee => ({
+          property_id: propertyId,
+          name: fee.description,
+          amount: fee.amount,
+          frequency: fee.frequency
+        }));
+
+        const { error: feesError } = await supabase
+          .from('property_fees')
+          .insert(feesToInsert);
+
+        if (feesError) throw feesError;
       }
 
       if (error) throw error;
