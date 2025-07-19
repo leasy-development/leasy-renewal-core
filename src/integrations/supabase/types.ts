@@ -14,7 +14,201 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      properties: {
+        Row: {
+          apartment_type: string | null
+          category: string | null
+          checkin_time: string | null
+          checkout_time: string | null
+          city: string | null
+          contractual_partner: Json | null
+          country: string | null
+          created_at: string
+          daily_rate: number | null
+          description: string | null
+          id: string
+          landlord_info: Json | null
+          monthly_rent: number | null
+          provides_wgsb: boolean | null
+          region: string | null
+          status: string | null
+          street_name: string | null
+          street_number: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          weekly_rate: number | null
+          zip_code: string | null
+        }
+        Insert: {
+          apartment_type?: string | null
+          category?: string | null
+          checkin_time?: string | null
+          checkout_time?: string | null
+          city?: string | null
+          contractual_partner?: Json | null
+          country?: string | null
+          created_at?: string
+          daily_rate?: number | null
+          description?: string | null
+          id?: string
+          landlord_info?: Json | null
+          monthly_rent?: number | null
+          provides_wgsb?: boolean | null
+          region?: string | null
+          status?: string | null
+          street_name?: string | null
+          street_number?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          weekly_rate?: number | null
+          zip_code?: string | null
+        }
+        Update: {
+          apartment_type?: string | null
+          category?: string | null
+          checkin_time?: string | null
+          checkout_time?: string | null
+          city?: string | null
+          contractual_partner?: Json | null
+          country?: string | null
+          created_at?: string
+          daily_rate?: number | null
+          description?: string | null
+          id?: string
+          landlord_info?: Json | null
+          monthly_rent?: number | null
+          provides_wgsb?: boolean | null
+          region?: string | null
+          status?: string | null
+          street_name?: string | null
+          street_number?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          weekly_rate?: number | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      property_fees: {
+        Row: {
+          amount: number
+          created_at: string
+          frequency: string
+          id: string
+          name: string
+          property_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          frequency: string
+          id?: string
+          name: string
+          property_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          frequency?: string
+          id?: string
+          name?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_fees_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_media: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          media_type: string
+          property_id: string
+          sort_order: number | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          media_type: string
+          property_id: string
+          sort_order?: number | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          property_id?: string
+          sort_order?: number | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_media_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_sync_status: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          last_synced: string | null
+          platform: string
+          property_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_synced?: string | null
+          platform: string
+          property_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_synced?: string | null
+          platform?: string
+          property_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_sync_status_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
