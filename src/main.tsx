@@ -22,7 +22,6 @@ if (!React.useEffect || typeof React.useEffect !== 'function') {
 import App from "./App";
 import { ErrorBoundary } from "@/lib/errorBoundary";
 import { Toaster } from "sonner";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/components/AuthProvider";
 
 // Final verification before component initialization
@@ -33,35 +32,19 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
-// Create a simple QueryClient to avoid complex initialization issues
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-    mutations: {
-      retry: 0,
-    }
-  },
-});
+console.log("🚀 Initializing React app without QueryClient...");
 
-console.log("🚀 Initializing React app...");
-
-// Create the root with error handling
+// Create the root with error handling - NO QUERY CLIENT
 try {
   const root = ReactDOM.createRoot(rootElement);
   
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <Toaster richColors position="bottom-right" />
-            <App />
-          </AuthProvider>
-        </QueryClientProvider>
+        <AuthProvider>
+          <Toaster richColors position="bottom-right" />
+          <App />
+        </AuthProvider>
       </ErrorBoundary>
     </React.StrictMode>
   );
@@ -70,21 +53,19 @@ try {
 } catch (error) {
   console.error("❌ Failed to render React app:", error);
   
-  // Fallback: try rendering without QueryClient
+  // Fallback: try rendering with minimal setup
   try {
-    console.log("🔄 Attempting fallback render without QueryClient...");
+    console.log("🔄 Attempting minimal fallback render...");
     const root = ReactDOM.createRoot(rootElement);
     
     root.render(
       <React.StrictMode>
         <ErrorBoundary>
-          <AuthProvider>
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <h1>Application Error</h1>
-              <p>There was an issue starting the application. Please refresh the page.</p>
-              <button onClick={() => window.location.reload()}>Refresh</button>
-            </div>
-          </AuthProvider>
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <h1>Leasy</h1>
+            <p>Loading application...</p>
+            <button onClick={() => window.location.reload()}>Refresh</button>
+          </div>
         </ErrorBoundary>
       </React.StrictMode>
     );
