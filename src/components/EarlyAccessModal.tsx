@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EarlyAccessModalProps {
   open: boolean;
@@ -32,22 +33,19 @@ export const EarlyAccessModal = ({ open, onOpenChange }: EarlyAccessModalProps) 
     setIsSubmitting(true);
 
     try {
-      // Send to Zapier webhook
-      const webhookUrl = "https://hooks.zapier.com/hooks/catch/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_KEY/";
-      
-      const response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        mode: "no-cors",
-        body: JSON.stringify({
-          ...formData,
-          timestamp: new Date().toISOString(),
+      // Save to Supabase instead of external webhook
+      const { error } = await supabase
+        .from('waitlist_submissions')
+        .insert({
+          full_name: formData.fullName,
+          email: formData.email,
+          company: formData.company,
+          listings_count: formData.listings,
           source: "Leasy Beta Waitlist",
-          recipient: "luca.steinmetz@farawayhome.com"
-        }),
-      });
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
 
       setIsSubmitting(false);
       setIsSuccess(true);
