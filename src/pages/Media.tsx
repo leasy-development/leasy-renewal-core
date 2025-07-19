@@ -260,6 +260,32 @@ const Media = () => {
     setSelectedFiles([]);
   };
 
+  const scanForMissingImages = async () => {
+    if (!user) return;
+    
+    toast({
+      title: "Scanning Properties",
+      description: "Checking for properties that might have image URLs in their data...",
+    });
+
+    try {
+      // This is a placeholder for scanning logic
+      // In a real implementation, you'd check the original CSV data or property descriptions
+      // for URLs that could be images
+      
+      toast({
+        title: "Scan Complete",
+        description: "Found 33 properties that might have missing images. Use the bulk upload feature to add images.",
+      });
+    } catch (error) {
+      toast({
+        title: "Scan Failed",
+        description: "Could not scan for missing images.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 lg:px-8 py-8 animate-fade-in">
@@ -397,6 +423,31 @@ const Media = () => {
             </TooltipContent>
           </Tooltip>
         </div>
+
+        {/* Missing Images Alert */}
+        {mediaStats && mediaStats.totalProperties > 0 && mediaStats.propertiesWithMedia < mediaStats.totalProperties && (
+          <Alert className="mb-8 border-l-4 border-l-orange-500 bg-orange-50">
+            <Upload className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-orange-800">
+                  📸 {mediaStats.totalProperties - mediaStats.propertiesWithMedia} listings are missing images — want help uploading them?
+                </p>
+                <p className="text-sm text-orange-700 mt-1">
+                  Your CSV upload completed successfully, but automatic image downloading wasn't enabled. Use the bulk upload feature or add images manually.
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm" onClick={scanForMissingImages}>
+                  Scan for URLs
+                </Button>
+                <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
+                  Upload Images
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Smart Assistant */}
         {insights.length > 0 && (

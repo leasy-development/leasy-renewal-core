@@ -277,13 +277,18 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const detectMediaUrls = (data: PropertyRow[]): { propertyIndex: number; mediaItems: MediaItem[] }[] => {
     const results: { propertyIndex: number; mediaItems: MediaItem[] }[] = [];
     
+    console.log('🔍 Detecting media URLs in CSV data:', data.length, 'rows');
+    
     data.forEach((row, propertyIndex) => {
       const mediaItems: MediaItem[] = [];
       
       Object.entries(row).forEach(([key, value]) => {
+        console.log(`Checking field "${key}":`, value);
         if (typeof value === 'string' && isValidUrl(value)) {
+          console.log(`Found URL in "${key}":`, value);
           const mediaType = detectMediaType(key, value);
           if (mediaType) {
+            console.log(`Detected media type: ${mediaType}`);
             mediaItems.push({
               url: value,
               type: mediaType,
@@ -294,10 +299,12 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       });
       
       if (mediaItems.length > 0) {
+        console.log(`Property ${propertyIndex} has ${mediaItems.length} media items:`, mediaItems);
         results.push({ propertyIndex, mediaItems });
       }
     });
     
+    console.log('📊 Media detection results:', results.length, 'properties with media');
     return results;
   };
 
@@ -314,28 +321,54 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     const lowerKey = columnName.toLowerCase();
     const lowerUrl = url.toLowerCase();
     
-    // Check for floorplan indicators
+    console.log(`🔍 Analyzing column "${columnName}" with URL: ${url}`);
+    
+    // More comprehensive floorplan detection
     if (lowerKey.includes('floorplan') || lowerKey.includes('floor_plan') || 
         lowerKey.includes('layout') || lowerKey.includes('blueprint') ||
+        lowerKey.includes('plan') || lowerKey.includes('floor') ||
         lowerUrl.includes('floorplan') || lowerUrl.includes('floor_plan') ||
-        lowerUrl.includes('layout') || lowerUrl.includes('blueprint')) {
+        lowerUrl.includes('layout') || lowerUrl.includes('blueprint') ||
+        lowerUrl.includes('plan')) {
+      console.log('✅ Detected as floorplan');
       return 'floorplan';
     }
     
-    // Check for photo indicators
+    // More comprehensive photo detection
     if (lowerKey.includes('photo') || lowerKey.includes('image') || 
         lowerKey.includes('picture') || lowerKey.includes('img') ||
+        lowerKey.includes('pic') || lowerKey.includes('jpeg') ||
+        lowerKey.includes('jpg') || lowerKey.includes('png') ||
+        lowerKey.includes('url') || lowerKey.includes('link') ||
         isImageUrl(url)) {
+      console.log('✅ Detected as photo');
       return 'photo';
     }
     
+    console.log('❌ No media type detected');
     return null;
   };
 
   const isImageUrl = (url: string): boolean => {
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.tiff', '.tif'];
     const lowerUrl = url.toLowerCase();
-    return imageExtensions.some(ext => lowerUrl.includes(ext));
+    
+    // Check file extensions
+    const hasImageExtension = imageExtensions.some(ext => lowerUrl.includes(ext));
+    
+    // Check for common image hosting patterns
+    const imageHostPatterns = [
+      'imgur.com', 'flickr.com', 'photobucket.com', 'tinypic.com',
+      'imageshack.us', 'postimage.org', 'imagehosting', 'cloudinary.com',
+      'unsplash.com', 'pexels.com', 'pixabay.com', 'shutterstock.com',
+      'amazonaws.com', 'cloudfront.net', 'googleusercontent.com'
+    ];
+    
+    const hasImageHost = imageHostPatterns.some(pattern => lowerUrl.includes(pattern));
+    
+    console.log(`Image URL check for ${url}: extension=${hasImageExtension}, host=${hasImageHost}`);
+    
+    return hasImageExtension || hasImageHost;
   };
 
   const generateMediaTitle = (columnName: string, type: 'photo' | 'floorplan', index: number): string => {
