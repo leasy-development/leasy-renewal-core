@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   children: ReactNode;
@@ -24,7 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  async componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({
       error,
       errorInfo
@@ -38,10 +39,22 @@ export class ErrorBoundary extends Component<Props, State> {
       this.props.onError(error, errorInfo);
     }
 
-    // In production, you might want to log this to an external service
-    if (process.env.NODE_ENV === 'production') {
-      // Log to external error tracking service
-      // Example: Sentry, LogRocket, etc.
+    // Log to Supabase with enhanced error details
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      await supabase.from("error_logs").insert([
+        {
+          message: error.message,
+          stack: error.stack || "",
+          component_stack: errorInfo.componentStack,
+          user_agent: navigator.userAgent,
+          url: window.location.href,
+          user_id: userData.user?.id || null,
+        },
+      ]);
+    } catch (logError) {
+      console.error("Failed to log error to Supabase:", logError);
     }
   }
 

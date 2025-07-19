@@ -289,6 +289,33 @@ export type Database = {
           },
         ]
       }
+      duplicate_detection_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       duplicate_false_positives: {
         Row: {
           admin_user_id: string
@@ -330,6 +357,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      error_logs: {
+        Row: {
+          component_stack: string | null
+          created_at: string
+          id: string
+          message: string
+          stack: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_stack?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_stack?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       global_duplicate_groups: {
         Row: {
@@ -828,6 +888,24 @@ export type Database = {
         }
         Returns: string
       }
+      check_potential_duplicate: {
+        Args: {
+          p_title: string
+          p_street_name: string
+          p_street_number: string
+          p_city: string
+          p_zip_code: string
+          p_monthly_rent: number
+          p_bedrooms: number
+          p_square_meters: number
+          similarity_threshold?: number
+        }
+        Returns: {
+          property_id: string
+          similarity_score: number
+          match_reasons: string[]
+        }[]
+      }
       generate_property_fingerprint: {
         Args: {
           p_title: string
@@ -844,6 +922,18 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_duplicate_detection_stats: {
+        Args: { admin_user_id: string }
+        Returns: {
+          total_groups: number
+          pending_groups: number
+          resolved_groups: number
+          dismissed_groups: number
+          high_confidence_groups: number
+          recent_scans: number
+          last_scan_date: string
+        }[]
       }
       halfvec_avg: {
         Args: { "": number[] }
