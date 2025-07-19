@@ -82,7 +82,7 @@ const usePropertyPhotos = () => {
       const { data, error } = await supabase
         .from('property_media')
         .select('property_id, url, sort_order')
-        .eq('media_type', 'photo')
+        .eq('media_type', 'image')
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
