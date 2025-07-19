@@ -428,8 +428,8 @@ const propertyValidationSchema = Joi.object({
     'number.min': 'Square meters must be at least 1',
     'number.max': 'Square meters seems unreasonably large'
   }),
-  landlord_email: Joi.string().email().allow('').messages({
-    'string.email': 'Invalid email format'
+  landlord_email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/).allow('').messages({
+    'string.pattern.base': 'Invalid email format'
   }),
   description: Joi.string().allow('').max(5000),
   house_rules: Joi.string().allow('').max(2000),
