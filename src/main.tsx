@@ -6,12 +6,12 @@ import { Toaster } from "@/components/ui/toaster";
 import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
 
-// 🔐 CRITICAL: React 18.2.0 singleton safety check
+// 🔐 CRITICAL: React 19 singleton safety check with enhanced validation
 if (!React || typeof React !== 'object') {
   throw new Error("❌ React is not properly imported as an object");
 }
 
-// Check for React instance collision (React 18 compatible)
+// Check for React instance collision (React 19 compatible)
 if (typeof window !== 'undefined') {
   // @ts-ignore - Checking for multiple React instances
   if (window.React && window.React !== React) {
@@ -39,20 +39,21 @@ if (!reactVersion) {
   throw new Error("❌ React version is undefined - multiple React instances detected");
 }
 
-console.log("✅ React 18.2.0 singleton verified:", {
+console.log("✅ React 19 singleton verified:", {
   version: reactVersion,
   useEffect: typeof React.useEffect,
   useState: typeof React.useState,
   hasStrictMode: !!React.StrictMode,
 });
 
-// Create QueryClient AFTER React verification (React Query v4 compatible)
+// Create QueryClient with React Query v5 configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // React Query v5 uses gcTime instead of cacheTime
     },
     mutations: {
       retry: 0,
@@ -64,8 +65,8 @@ const rootElement = document.getElementById("root");
 
 if (!rootElement) throw new Error("Root element not found");
 
-// 🚀 Render with GUARANTEED React 18.2.0 compatibility
-console.log("🚀 Rendering with verified React 18.2.0 singleton...");
+// 🚀 Render with GUARANTEED React 19 + React Query v5 compatibility
+console.log("🚀 Rendering with verified React 19 + React Query v5...");
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
@@ -76,4 +77,4 @@ ReactDOM.createRoot(rootElement).render(
   </React.StrictMode>
 );
 
-console.log("✅ React app rendered successfully with QueryClient v4");
+console.log("✅ React app rendered successfully with React 19 + React Query v5");

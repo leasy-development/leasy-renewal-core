@@ -18,10 +18,11 @@ export function useMyData() {
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // React Query v5 garbage collection time
     refetchOnWindowFocus: false,
   });
 
-  // Modern error handling approach
+  // Modern error handling approach for React Query v5
   useEffect(() => {
     if (query.error) {
       console.error("Query failed:", query.error);
