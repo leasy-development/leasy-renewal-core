@@ -2,10 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { EarlyAccessModal } from "@/components/EarlyAccessModal";
+import { AuthModal } from "@/components/AuthModal";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   return <header className="fixed top-0 w-full bg-background/80 backdrop-blur-md border-b border-border z-50">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -38,7 +40,7 @@ export const Header = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost">Sign In</Button>
+            <Button variant="ghost" onClick={() => setIsAuthModalOpen(true)}>Sign In</Button>
             <Button 
               variant="hero" 
               size="lg"
@@ -70,7 +72,7 @@ export const Header = () => {
                 FAQ
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border">
-                <Button variant="ghost">Sign In</Button>
+                <Button variant="ghost" onClick={() => setIsAuthModalOpen(true)}>Sign In</Button>
                 <Button 
                   variant="hero"
                   onClick={() => setIsModalOpen(true)}
@@ -83,5 +85,6 @@ export const Header = () => {
       </div>
 
       <EarlyAccessModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      <AuthModal open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen} />
     </header>;
 };
