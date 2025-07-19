@@ -9,7 +9,9 @@ import {
   Bot,
   Images,
   LogOut,
-  Shield
+  Shield,
+  Download,
+  Image
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
@@ -42,6 +44,7 @@ const toolsItems = [
   { title: "Sync", url: "/sync", icon: RefreshCw },
   { title: "AI Tools", url: "/ai-tools", icon: Bot },
   { title: "Media", url: "/media", icon: Images },
+  { title: "Media Extractor", url: "/media-extractor", icon: Download },
 ];
 
 const settingsItems = [

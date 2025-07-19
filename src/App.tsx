@@ -18,6 +18,7 @@ import AccountSettings from "./pages/AccountSettings";
 import Analytics from "./pages/Analytics";
 import UpdatePassword from "./pages/UpdatePassword";
 import AdminDuplicates from "./pages/AdminDuplicates";
+import MediaExtractor from "./pages/MediaExtractor";
 
 const App = () => (
   <ErrorBoundary>
@@ -91,9 +92,19 @@ const App = () => (
                   <DashboardLayout>
                     <Media />
                   </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
+                 </ProtectedRoute>
+               } 
+             />
+             <Route 
+               path="/media-extractor" 
+               element={
+                 <ProtectedRoute>
+                   <DashboardLayout>
+                     <MediaExtractor />
+                   </DashboardLayout>
+                 </ProtectedRoute>
+               } 
+             />
             <Route 
               path="/account" 
               element={
