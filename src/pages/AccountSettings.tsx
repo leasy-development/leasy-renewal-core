@@ -1,4 +1,4 @@
-import AccountSettings from "@/components/AccountSettings";
+import AccountSettingsComponent from "@/components/AccountSettings";
 
 const AccountSettingsPage = () => {
   return (
@@ -25,7 +25,7 @@ const AccountSettingsPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 lg:px-8 py-8">
-        <AccountSettings />
+        <AccountSettingsComponent />
       </main>
     </div>
   );

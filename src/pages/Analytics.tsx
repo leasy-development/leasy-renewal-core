@@ -1,4 +1,4 @@
-import AnalyticsDashboard from "@/components/AnalyticsDashboard";
+import AnalyticsDashboardComponent from "@/components/AnalyticsDashboard";
 
 const AnalyticsPage = () => {
   return (
@@ -25,7 +25,7 @@ const AnalyticsPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 lg:px-8 py-8">
-        <AnalyticsDashboard />
+        <AnalyticsDashboardComponent />
       </main>
     </div>
   );
