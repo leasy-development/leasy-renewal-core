@@ -31,23 +31,48 @@ export const EarlyAccessModal = ({ open, onOpenChange }: EarlyAccessModalProps) 
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Send to Zapier webhook
+      const webhookUrl = "https://hooks.zapier.com/hooks/catch/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_KEY/";
+      
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        mode: "no-cors",
+        body: JSON.stringify({
+          ...formData,
+          timestamp: new Date().toISOString(),
+          source: "Leasy Beta Waitlist",
+          recipient: "luca.steinmetz@farawayhome.com"
+        }),
+      });
 
-    setIsSubmitting(false);
-    setIsSuccess(true);
-    
-    toast({
-      title: "Welcome to the waitlist!",
-      description: "We'll notify you as soon as your beta invite is ready.",
-    });
+      setIsSubmitting(false);
+      setIsSuccess(true);
+      
+      toast({
+        title: "Welcome to the waitlist!",
+        description: "We'll notify you as soon as your beta invite is ready.",
+      });
 
-    // Reset form after 2 seconds and close modal
-    setTimeout(() => {
-      setIsSuccess(false);
-      setFormData({ fullName: "", email: "", company: "", listings: "" });
-      onOpenChange(false);
-    }, 2000);
+      // Reset form after 2 seconds and close modal
+      setTimeout(() => {
+        setIsSuccess(false);
+        setFormData({ fullName: "", email: "", company: "", listings: "" });
+        onOpenChange(false);
+      }, 2000);
+
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setIsSubmitting(false);
+      toast({
+        title: "Error",
+        description: "Failed to submit form. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const isFormValid = formData.fullName && formData.email && formData.company && formData.listings;
