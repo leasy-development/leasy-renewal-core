@@ -41,6 +41,12 @@ interface BulkUploadModalProps {
   onSuccess?: () => void;
 }
 
+interface PreviewData {
+  rows: PropertyRow[];
+  headers: string[];
+  missingHeaders: string[];
+}
+
 interface PropertyRow {
   title: string;
   description?: string;
@@ -115,7 +121,7 @@ interface UploadResult {
   duplicatesDetected: number;
 }
 
-const requiredFields = ['title', 'apartment_type', 'category', 'street_name', 'city'];
+const REQUIRED_HEADERS = ['title', 'apartment_type', 'category', 'street_name', 'city'];
 
 // Enhanced field mappings with more variations
 const fieldMappings: { [key: string]: string } = {
@@ -174,30 +180,44 @@ function parseCsvSmart(file: File): Promise<any[]> {
 
     reader.onload = () => {
       const text = reader.result as string;
-      const delimitersToTry = [",", ";", "\t"];
+      const delimiters = [",", ";", "\t"];
 
-      for (const delimiter of delimitersToTry) {
+      for (const delimiter of delimiters) {
         const result = Papa.parse(text, {
           delimiter,
           header: true,
           skipEmptyLines: true,
         });
 
-        // Require at least 2 valid header fields to consider it a match
-        if (result?.meta?.fields && result.meta.fields.length > 1) {
+        if (result?.meta?.fields?.length > 1) {
           return resolve(result.data);
         }
       }
 
-      reject(new Error("Unable to detect valid delimiter or headers."));
+      reject(new Error("Unable to detect valid headers or delimiter."));
     };
 
     reader.onerror = () => reject(reader.error);
-
-    // Try with ISO-8859-1 fallback encoding
-    reader.readAsText(file, "ISO-8859-1");
+    reader.readAsText(file, "ISO-8859-1"); // fallback for European Excel exports
   });
 }
+
+// Excel parser
+async function parseExcel(file: File): Promise<any[]> {
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data, { type: "array" });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet);
+}
+
+// Header validation
+const validateHeaders = (row: any): string[] => {
+  const actualHeaders = Object.keys(row || {}).map(h => h.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, ''));
+  const normalizedRequired = REQUIRED_HEADERS.map(h => h.toLowerCase());
+  return normalizedRequired.filter(h => !actualHeaders.some(ah => {
+    return ah === h || fieldMappings[ah] === h;
+  }));
+};
 
 export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalProps) => {
   const [activeTab, setActiveTab] = useState("upload");
@@ -208,6 +228,8 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [manualProperties, setManualProperties] = useState<Partial<PropertyRow>[]>([{}]);
   const [currentFileName, setCurrentFileName] = useState<string>('');
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -342,10 +364,8 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  // Unified upload handler
+  const handleFileUpload = async (file: File) => {
     setCurrentFileName(file.name);
     setIsProcessing(true);
     setUploadStep({
@@ -357,8 +377,35 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     });
 
     try {
-      const data = await readFileAsync(file);
-      const processedData = await processFileData(data);
+      const isExcel = file.name.endsWith(".xls") || file.name.endsWith(".xlsx");
+      const rows = isExcel ? await parseExcel(file) : await parseCsvSmart(file);
+
+      if (!rows?.length || typeof rows[0] !== "object") {
+        throw new Error("No valid rows found.");
+      }
+
+      const missingHeaders = validateHeaders(rows[0]);
+      const actualHeaders = Object.keys(rows[0] || {});
+
+      // Set preview data
+      setPreviewData({
+        rows: rows.slice(0, 5),
+        headers: actualHeaders,
+        missingHeaders
+      });
+
+      if (missingHeaders.length > 0) {
+        toast({
+          title: "⚠️ Missing Required Columns",
+          description: `Missing: ${missingHeaders.join(", ")}. Please check the preview below.`,
+          variant: "destructive"
+        });
+        setActiveTab("preview");
+        return;
+      }
+
+      // Process the data if headers are valid
+      const processedData = await processFileDataFromParsedRows(rows);
       
       if (processedData.length === 0) {
         throw new Error('No valid data found in file');
@@ -387,13 +434,40 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     } catch (error) {
       logAsyncError('File upload processing', error);
       toast({
-        title: "File Processing Error",
-        description: error instanceof Error ? error.message : "Failed to process file",
+        title: "❌ File Processing Error",
+        description: error instanceof Error ? error.message : "Invalid format or unreadable headers.",
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
       setUploadStep(null);
+    }
+  };
+
+  const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await handleFileUpload(file);
+  };
+
+  // Drag and drop handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await handleFileUpload(e.dataTransfer.files[0]);
     }
   };
 
@@ -547,8 +621,8 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     for (let i = 0; i < propertiesWithMedia.length; i++) {
       const { property } = propertiesWithMedia[i];
       
-      // Validate required fields
-      requiredFields.forEach(field => {
+        // Validate required fields
+        REQUIRED_HEADERS.forEach(field => {
         if (!property[field as keyof PropertyRow] || property[field as keyof PropertyRow] === '') {
           errors.push({
             row: i + 1,
@@ -1039,8 +1113,11 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="upload">Upload File</TabsTrigger>
+            <TabsTrigger value="preview" disabled={!previewData}>
+              Preview {previewData?.missingHeaders.length ? <Badge variant="destructive" className="ml-1">!</Badge> : ''}
+            </TabsTrigger>
             <TabsTrigger value="manual">Manual Entry</TabsTrigger>
             <TabsTrigger value="review" disabled={uploadedData.length === 0}>
               Review ({uploadedData.length})
@@ -1049,6 +1126,86 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
               Results
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="preview" className="space-y-6">
+            {previewData && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    File Preview - {currentFileName}
+                  </CardTitle>
+                  <CardDescription>
+                    Preview of your uploaded file with header validation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {previewData.missingHeaders.length > 0 && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Missing Required Headers:</strong> {previewData.missingHeaders.join(", ")}
+                        <br />Please ensure your file contains these columns or use field mappings.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <div className="flex items-center gap-4 text-sm">
+                    <Badge variant="outline">
+                      {previewData.headers.length} columns detected
+                    </Badge>
+                    <Badge variant="outline">
+                      {previewData.rows.length} rows (showing first 5)
+                    </Badge>
+                    {previewData.missingHeaders.length === 0 && (
+                      <Badge variant="outline" className="text-green-600">
+                        ✅ All required headers found
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <ScrollArea className="h-[300px] border rounded">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {previewData.headers.map((header, idx) => (
+                            <TableHead key={idx} className="min-w-[120px]">
+                              {header}
+                              {REQUIRED_HEADERS.includes(header.toLowerCase()) && (
+                                <Badge variant="outline" className="ml-1 text-xs">Required</Badge>
+                              )}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {previewData.rows.map((row, rowIdx) => (
+                          <TableRow key={rowIdx}>
+                            {previewData.headers.map((header, colIdx) => (
+                              <TableCell key={colIdx} className="max-w-[200px] truncate">
+                                {String(row[header as keyof typeof row] || '').slice(0, 50)}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                  
+                  {previewData.missingHeaders.length === 0 && (
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => handleFileUpload(fileInputRef.current?.files?.[0]!)}
+                        disabled={isProcessing}
+                      >
+                        Continue with Upload
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
           <TabsContent value="upload" className="space-y-6">
             <Card>
@@ -1073,12 +1230,22 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                   </Button>
                 </div>
                 
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                    dragActive 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-muted-foreground/25'
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                >
                   <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   <Label htmlFor="file-upload" className="cursor-pointer">
                     <span className="text-lg font-medium">Drop your file here or click to browse</span>
                     <p className="text-muted-foreground mt-2">
-                      Supports CSV, XLS, and XLSX files. Include photo and floorplan URLs for automatic download.
+                      Supports CSV, XLS, and XLSX files. Smart delimiter detection and encoding fallback included.
                     </p>
                   </Label>
                   <Input
@@ -1086,7 +1253,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                     id="file-upload"
                     type="file"
                     accept=".csv,.xls,.xlsx"
-                    onChange={handleFileUpload}
+                    onChange={handleFileInputChange}
                     className="hidden"
                     disabled={isProcessing}
                   />
