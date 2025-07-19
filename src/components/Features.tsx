@@ -34,17 +34,17 @@ const features = [{
   description: "Expand your market reach with support for international property platforms and languages."
 }];
 export const Features = () => {
-  return <section id="features" className="py-20 lg:py-28 bg-secondary/30">
+  return <section id="features" className="section-spacing bg-secondary/30">
       <div className="container mx-auto px-4 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-4">
+        <div className="text-center component-spacing max-w-4xl mx-auto">
+          <h2 className="text-display text-foreground element-spacing">
             Everything you need to{" "}
             <span className="bg-gradient-primary bg-clip-text text-transparent">
               scale and supercharge your listings
             </span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-subtitle text-muted-foreground content-width-wide mx-auto">
             From smart import to AI optimization, we provide all the tools 
             to streamline your property management workflow.
           </p>

@@ -59,15 +59,15 @@ export const Comparison = () => {
   ];
 
   return (
-    <section className="py-20 lg:py-28 bg-gradient-to-br from-accent/5 via-background to-primary/5">
+    <section className="section-spacing bg-gradient-to-br from-accent/5 via-background to-primary/5">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+          <div className="text-center component-spacing">
+            <h2 className="text-display text-foreground element-spacing">
               Why Leasy {'>'}  Manual Listing
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-subtitle text-muted-foreground content-width-wide mx-auto">
               See how Leasy transforms your property listing workflow from hours of manual work to effortless automation.
             </p>
           </div>
