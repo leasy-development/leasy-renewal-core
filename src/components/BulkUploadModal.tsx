@@ -31,6 +31,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { logger, logAsyncError } from "@/lib/logger";
 import { duplicateDetectionService } from "@/lib/duplicateDetection";
+import stringSimilarity from "string-similarity";
 import * as XLSX from 'xlsx';
 
 interface BulkUploadModalProps {
@@ -445,6 +446,12 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     const errors: ValidationError[] = [];
     let duplicatesFound = 0;
 
+    // Get existing properties for fuzzy duplicate detection
+    const { data: existingProperties } = await supabase
+      .from("properties")
+      .select("id, title, street_name, city, monthly_rent")
+      .eq("user_id", user.id);
+
     for (let i = 0; i < propertiesWithMedia.length; i++) {
       const { property } = propertiesWithMedia[i];
       
@@ -461,34 +468,37 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         }
       });
 
-      // Check for duplicates
+      // Enhanced duplicate detection with fuzzy matching
       try {
-        const duplicateMatches = await duplicateDetectionService.detectDuplicates(
-          {
-            title: property.title,
-            street_name: property.street_name,
-            street_number: property.street_number,
-            zip_code: property.zip_code,
-            city: property.city,
-            monthly_rent: property.monthly_rent,
-            bedrooms: property.bedrooms,
-            bathrooms: property.bathrooms,
-            square_meters: property.square_meters
-          },
-          user.id
+        const key = `${property.title} ${property.street_name} ${property.city}`.toLowerCase();
+
+        // Check for exact duplicates
+        const isExactDuplicate = existingProperties?.some(p =>
+          p.title === property.title &&
+          p.street_name === property.street_name &&
+          p.city === property.city
         );
 
-        if (duplicateMatches.length > 0 && duplicateMatches[0].status === 'duplicate') {
+        // Check for fuzzy duplicates
+        const isFuzzyDuplicate = existingProperties?.some(p => {
+          const compare = `${p.title} ${p.street_name} ${p.city}`.toLowerCase();
+          const similarity = stringSimilarity.compareTwoStrings(key, compare);
+          return similarity >= 0.87;
+        });
+
+        if (isExactDuplicate || isFuzzyDuplicate) {
           propertiesWithMedia[i].isDuplicate = true;
-          propertiesWithMedia[i].duplicateScore = duplicateMatches[0].matchScore;
+          propertiesWithMedia[i].duplicateScore = isExactDuplicate ? 100 : 87;
           duplicatesFound++;
           
           errors.push({
             row: i + 1,
             field: 'duplicate',
-            message: `Potential duplicate detected (${duplicateMatches[0].matchScore}% match)`,
+            message: `${isExactDuplicate ? 'Exact' : 'Fuzzy'} duplicate detected`,
             severity: 'warning'
           });
+          
+          console.info(`⚠️ Skipping duplicate (${isExactDuplicate ? 'exact' : 'fuzzy'}) at row ${i + 1}`);
         }
       } catch (error) {
         logger.warn('Duplicate detection failed for property', { propertyIndex: i, error });
@@ -1148,24 +1158,21 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                               <TableCell>
                                 {[item.property.street_name, item.property.city].filter(Boolean).join(', ')}
                               </TableCell>
-                              <TableCell>
-                                <div className="flex gap-1">
-                                  {item.isDuplicate && (
-                                    <Badge variant="secondary">
-                                      Duplicate ({item.duplicateScore}%)
-                                    </Badge>
-                                  )}
-                                  {validationErrors.filter(e => e.row === index + 1 && e.severity === 'error').length > 0 && (
-                                    <Badge variant="destructive">Error</Badge>
-                                  )}
-                                  {validationErrors.filter(e => e.row === index + 1 && e.severity === 'warning').length > 0 && (
-                                    <Badge variant="outline">Warning</Badge>
-                                  )}
-                                  {!item.isDuplicate && validationErrors.filter(e => e.row === index + 1).length === 0 && (
-                                    <Badge variant="default">✅ Valid</Badge>
-                                  )}
-                                </div>
-                              </TableCell>
+                               <TableCell>
+                                 <div className="flex gap-1">
+                                   {item.isDuplicate ? (
+                                     <Badge variant="destructive">Duplicate</Badge>
+                                   ) : (
+                                     <Badge variant="outline">New</Badge>
+                                   )}
+                                   {validationErrors.filter(e => e.row === index + 1 && e.severity === 'error').length > 0 && (
+                                     <Badge variant="destructive">Error</Badge>
+                                   )}
+                                   {validationErrors.filter(e => e.row === index + 1 && e.severity === 'warning').length > 0 && (
+                                     <Badge variant="outline">Warning</Badge>
+                                   )}
+                                 </div>
+                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   {item.mediaItems.filter(m => m.type === 'photo').length > 0 && (
