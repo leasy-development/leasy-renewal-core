@@ -242,6 +242,9 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Extract headers from first row
+        const rawHeaders = Object.keys(jsonData[0] || {});
 
         // Map the data to our property structure
         const mappedData = jsonData.map((row: any) => {
@@ -272,8 +275,20 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         });
 
         setUploadedData(mappedData);
+        setOriginalHeaders(rawHeaders);
+        setColumnMappings(autoMapHeaders(rawHeaders));
         validateData(mappedData);
         setActiveTab("review");
+        
+        // Show unmapped headers warning
+        const unmappedHeaders = rawHeaders.filter(h => !fieldMappings[h as keyof typeof fieldMappings]);
+        if (unmappedHeaders.length > 0) {
+          toast({
+            title: "Headers not recognized",
+            description: `Your CSV headers: ${rawHeaders.join(', ')}. Download template for correct format.`,
+            variant: "destructive",
+          });
+        }
       } catch (error) {
         toast({
           title: "File Error",
