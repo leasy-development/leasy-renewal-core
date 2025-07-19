@@ -1,10 +1,19 @@
+import { useState } from "react";
 import { EnhancedPropertyList } from "@/components/EnhancedPropertyList";
+import { BulkUploadModal } from "@/components/BulkUploadModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Home, BarChart3, Calendar, Settings } from "lucide-react";
+import { Plus, Home, BarChart3, Calendar, Settings, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Properties = () => {
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleBulkUploadSuccess = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <div className="container mx-auto px-4 lg:px-8 py-8">
       <div className="mb-8 flex items-center justify-between">
@@ -14,12 +23,23 @@ const Properties = () => {
             Manage all your properties and track their performance.
           </p>
         </div>
-        <Link to="/add-property">
-          <Button className="flex items-center space-x-2" size="lg">
-            <Plus className="h-5 w-5" />
-            <span>Add Property</span>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsBulkUploadOpen(true)}
+            className="flex items-center space-x-2"
+            size="lg"
+          >
+            <Upload className="h-5 w-5" />
+            <span>Bulk Upload</span>
           </Button>
-        </Link>
+          <Link to="/add-property">
+            <Button className="flex items-center space-x-2" size="lg">
+              <Plus className="h-5 w-5" />
+              <span>Add Property</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -70,7 +90,14 @@ const Properties = () => {
       </div>
 
       {/* Enhanced Property List */}
-      <EnhancedPropertyList />
+      <EnhancedPropertyList key={refreshTrigger} />
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal 
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        onSuccess={handleBulkUploadSuccess}
+      />
     </div>
   );
 };
