@@ -1,27 +1,34 @@
-import React, { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import { AuthProvider } from "@/components/AuthProvider";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from "@/components/ui/toaster";
-import { ErrorBoundary } from "@/lib/errorBoundary";
-import "@/lib/pwa"; // Initialize PWA features
+/// <reference types="vite/client" />
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from "./lib/errorBoundary";
+import { AuthProvider } from "./components/AuthProvider";
+import { Toaster } from "sonner";
+import App from "./App";
+import "./index.css";
+import "./lib/pwa"; // Initialize PWA features
 
-// Ensure React is available globally
+// Enhanced error safety checks
 if (!React) {
   throw new Error("React is not available");
 }
 
-// Create query client with error handling
+if (!ReactDOM) {
+  throw new Error("ReactDOM is not available");
+}
+
+// Create query client with improved error handling
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: false,
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
     },
     mutations: {
-      retry: false,
+      retry: 1,
     }
   },
 });
@@ -31,15 +38,24 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
-createRoot(rootElement).render(
-  <ErrorBoundary>
-    <StrictMode>
+const root = ReactDOM.createRoot(rootElement);
+
+root.render(
+  <React.StrictMode>
+    <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <Toaster 
+            richColors 
+            position="bottom-right" 
+            closeButton
+            toastOptions={{
+              duration: 4000,
+            }}
+          />
           <App />
-          <Toaster />
         </AuthProvider>
       </QueryClientProvider>
-    </StrictMode>
-  </ErrorBoundary>
+    </ErrorBoundary>
+  </React.StrictMode>
 );
