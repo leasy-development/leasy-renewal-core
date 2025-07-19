@@ -15,6 +15,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
+import PhotoUploader from "@/components/PhotoUploader";
 
 interface AdditionalFee {
   id: string;
@@ -223,11 +225,20 @@ const AddProperty = () => {
   const [loading, setLoading] = useState(false);
   const [loadingProperty, setLoadingProperty] = useState(false);
   const [openSections, setOpenSections] = useState<{ [key: number]: boolean }>({});
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = !!id;
+
+  // Temporary API key input for Google Maps (until Supabase secrets are implemented)
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('google-maps-api-key');
+    if (savedApiKey) {
+      setGoogleMapsApiKey(savedApiKey);
+    }
+  }, []);
 
   // Load existing property data when editing
   useEffect(() => {
@@ -309,6 +320,18 @@ const AddProperty = () => {
 
   const handleInputChange = (field: keyof PropertyFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddressSelect = (addressData: any) => {
+    setFormData(prev => ({
+      ...prev,
+      street_number: addressData.street_number,
+      street_name: addressData.street_name,
+      city: addressData.city,
+      zip_code: addressData.zip_code,
+      region: addressData.region,
+      country: addressData.country,
+    }));
   };
 
   const addItem = (field: 'additional_fees' | 'discounts' | 'taxes' | 'required_documents' | 'beds') => {
@@ -537,18 +560,10 @@ const AddProperty = () => {
                     </Select>
                   </div>
 
-                  <div>
-                    <Label htmlFor="photos">Photos</Label>
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-muted-foreground">Click to upload photos or drag and drop</p>
-                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB each</p>
-                      <Button variant="outline" className="mt-2">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Photos
-                      </Button>
-                    </div>
-                  </div>
+                  <PhotoUploader
+                    photos={formData.photos}
+                    onPhotosChange={(photos) => handleInputChange('photos', photos)}
+                  />
 
                   <div>
                     <Label htmlFor="video_tour_link">Video Tour Link (YouTube, Vimeo)</Label>
@@ -582,79 +597,330 @@ const AddProperty = () => {
 
       case 2: // Address
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <h3 className="font-medium">🏢 Address Information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="street_number">Street #</Label>
-                <Input
-                  id="street_number"
-                  value={formData.street_number}
-                  onChange={(e) => handleInputChange('street_number', e.target.value)}
-                  placeholder="123"
-                />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="street_name">Street Name</Label>
-                  <span className="text-red-500">*</span>
-                </div>
-                <Input
-                  id="street_name"
-                  value={formData.street_name}
-                  onChange={(e) => handleInputChange('street_name', e.target.value)}
-                  placeholder="Main Street"
-                />
-              </div>
-            </div>
+            
+            {!googleMapsApiKey && (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-amber-800">
+                      Google Maps API Key Required
+                    </p>
+                    <p className="text-sm text-amber-700">
+                      To enable address autocomplete and map functionality, please enter your Google Maps API key below:
+                    </p>
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Enter Google Maps API key"
+                        value={googleMapsApiKey}
+                        onChange={(e) => {
+                          setGoogleMapsApiKey(e.target.value);
+                          localStorage.setItem('google-maps-api-key', e.target.value);
+                        }}
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open('https://console.cloud.google.com/google/maps-apis/credentials', '_blank')}
+                      >
+                        Get API Key
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="zip_code">ZIP Code</Label>
-                <Input
-                  id="zip_code"
-                  value={formData.zip_code}
-                  onChange={(e) => handleInputChange('zip_code', e.target.value)}
-                  placeholder="12345"
-                />
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="city">City</Label>
-                  <span className="text-red-500">*</span>
-                </div>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  placeholder="Berlin"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="region">Region</Label>
-              <Input
-                id="region"
-                value={formData.region}
-                onChange={(e) => handleInputChange('region', e.target.value)}
-                placeholder="Berlin"
+            {googleMapsApiKey ? (
+              <AddressAutocomplete
+                onAddressSelect={handleAddressSelect}
+                initialAddress={{
+                  street_number: formData.street_number,
+                  street_name: formData.street_name,
+                  city: formData.city,
+                  zip_code: formData.zip_code,
+                  region: formData.region,
+                  country: formData.country,
+                }}
+                apiKey={googleMapsApiKey}
               />
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Manual address entry (without autocomplete):
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="street_number">Street #</Label>
+                    <Input
+                      id="street_number"
+                      value={formData.street_number}
+                      onChange={(e) => handleInputChange('street_number', e.target.value)}
+                      placeholder="123"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="street_name">Street Name</Label>
+                      <span className="text-red-500">*</span>
+                    </div>
+                    <Input
+                      id="street_name"
+                      value={formData.street_name}
+                      onChange={(e) => handleInputChange('street_name', e.target.value)}
+                      placeholder="Main Street"
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <Label htmlFor="country">Country</Label>
-              <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Germany">Germany</SelectItem>
-                  <SelectItem value="Austria">Austria</SelectItem>
-                  <SelectItem value="Switzerland">Switzerland</SelectItem>
-                  <SelectItem value="Netherlands">Netherlands</SelectItem>
-                </SelectContent>
-              </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="zip_code">ZIP Code</Label>
+                    <Input
+                      id="zip_code"
+                      value={formData.zip_code}
+                      onChange={(e) => handleInputChange('zip_code', e.target.value)}
+                      placeholder="12345"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="city">City</Label>
+                      <span className="text-red-500">*</span>
+                    </div>
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      placeholder="Berlin"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="region">Region</Label>
+                  <Input
+                    id="region"
+                    value={formData.region}
+                    onChange={(e) => handleInputChange('region', e.target.value)}
+                    placeholder="Berlin"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="country">Country</Label>
+                  <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Germany">Germany</SelectItem>
+                      <SelectItem value="Austria">Austria</SelectItem>
+                      <SelectItem value="Switzerland">Switzerland</SelectItem>
+                      <SelectItem value="Netherlands">Netherlands</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 3: // Rental Fees
+        return (
+          <div className="space-y-6">
+            <h3 className="font-medium">💰 Rental Fees & Pricing</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="monthly_rent">Monthly Rent (€)</Label>
+                <Input
+                  id="monthly_rent"
+                  type="number"
+                  value={formData.monthly_rent || ''}
+                  onChange={(e) => handleInputChange('monthly_rent', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="2500"
+                />
+              </div>
+              <div>
+                <Label htmlFor="weekly_rate">Weekly Rate (€)</Label>
+                <Input
+                  id="weekly_rate"
+                  type="number"
+                  value={formData.weekly_rate || ''}
+                  onChange={(e) => handleInputChange('weekly_rate', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="600"
+                />
+              </div>
+              <div>
+                <Label htmlFor="daily_rate">Daily Rate (€)</Label>
+                <Input
+                  id="daily_rate"
+                  type="number"
+                  value={formData.daily_rate || ''}
+                  onChange={(e) => handleInputChange('daily_rate', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="100"
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 4: // Amenities
+        return (
+          <div className="space-y-6">
+            <h3 className="font-medium">🛏️ Amenities & Features</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="has_wifi"
+                  checked={formData.has_wifi}
+                  onCheckedChange={(checked) => handleInputChange('has_wifi', checked)}
+                />
+                <Label htmlFor="has_wifi">WiFi</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="has_air_conditioning"
+                  checked={formData.has_air_conditioning}
+                  onCheckedChange={(checked) => handleInputChange('has_air_conditioning', checked)}
+                />
+                <Label htmlFor="has_air_conditioning">Air Conditioning</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="has_balcony"
+                  checked={formData.has_balcony}
+                  onCheckedChange={(checked) => handleInputChange('has_balcony', checked)}
+                />
+                <Label htmlFor="has_balcony">Balcony</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="has_kitchenette"
+                  checked={formData.has_kitchenette}
+                  onCheckedChange={(checked) => handleInputChange('has_kitchenette', checked)}
+                />
+                <Label htmlFor="has_kitchenette">Kitchenette</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="has_heating"
+                  checked={formData.has_heating}
+                  onCheckedChange={(checked) => handleInputChange('has_heating', checked)}
+                />
+                <Label htmlFor="has_heating">Heating</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="has_lift"
+                  checked={formData.has_lift}
+                  onCheckedChange={(checked) => handleInputChange('has_lift', checked)}
+                />
+                <Label htmlFor="has_lift">Elevator</Label>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 6: // Check-in/out
+        return (
+          <div className="space-y-6">
+            <h3 className="font-medium">🕐 Check-in & Check-out Times</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="checkin_time">Check-in Time</Label>
+                <Input
+                  id="checkin_time"
+                  type="time"
+                  value={formData.checkin_time}
+                  onChange={(e) => handleInputChange('checkin_time', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="checkout_time">Check-out Time</Label>
+                <Input
+                  id="checkout_time"
+                  type="time"
+                  value={formData.checkout_time}
+                  onChange={(e) => handleInputChange('checkout_time', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 10: // WGSB
+        return (
+          <div className="space-y-6">
+            <h3 className="font-medium">📄 WGSB Legal Requirements</h3>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="provides_wgsb"
+                checked={formData.provides_wgsb}
+                onCheckedChange={(checked) => handleInputChange('provides_wgsb', checked)}
+              />
+              <Label htmlFor="provides_wgsb">
+                Property provides WGSB certificate
+              </Label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              WGSB (Wohngebäude-Sicherheits-Bestätigung) is required for certain properties in Germany.
+            </p>
+          </div>
+        );
+
+      case 11: // Review
+        return (
+          <div className="space-y-6">
+            <h3 className="font-medium">📋 Review Your Property</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Basic Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div><strong>Title:</strong> {formData.title}</div>
+                  <div><strong>Type:</strong> {formData.apartment_type}</div>
+                  <div><strong>Category:</strong> {formData.category}</div>
+                  <div><strong>Photos:</strong> {formData.photos.length} uploaded</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Address</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div><strong>Address:</strong> {formData.street_number} {formData.street_name}</div>
+                  <div><strong>City:</strong> {formData.city}</div>
+                  <div><strong>ZIP:</strong> {formData.zip_code}</div>
+                  <div><strong>Country:</strong> {formData.country}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Pricing</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {formData.monthly_rent && <div><strong>Monthly:</strong> €{formData.monthly_rent}</div>}
+                  {formData.weekly_rate && <div><strong>Weekly:</strong> €{formData.weekly_rate}</div>}
+                  {formData.daily_rate && <div><strong>Daily:</strong> €{formData.daily_rate}</div>}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Check Times</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div><strong>Check-in:</strong> {formData.checkin_time || 'Not set'}</div>
+                  <div><strong>Check-out:</strong> {formData.checkout_time || 'Not set'}</div>
+                  <div><strong>WGSB:</strong> {formData.provides_wgsb ? 'Yes' : 'No'}</div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         );
