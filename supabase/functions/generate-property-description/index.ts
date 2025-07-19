@@ -34,10 +34,12 @@ interface GenerationRequest {
   format?: 'markdown' | 'html';
   language?: string;
   targetLanguage?: string;
+  sourceLanguage?: string;
   maxLength?: number;
   length?: 'short' | 'medium' | 'long';
   includeFeatures?: boolean;
   customPrompt?: string;
+  requests?: Array<{ type: string; content: string }>;
 }
 
 serve(async (req) => {
@@ -114,6 +116,55 @@ Create descriptive alt text (max 120 characters) that describes what's visible i
         break;
 
       case 'translation':
+        // Handle batch translation requests
+        if (request.requests && Array.isArray(request.requests)) {
+          const translations = [];
+          
+          for (const translationRequest of request.requests) {
+            systemPrompt = `You are a professional translator specializing in real estate content. Maintain the tone, style, and marketing appeal while translating accurately to ${request.targetLanguage}.`;
+            userPrompt = `Translate this ${translationRequest.type} from ${request.sourceLanguage} to ${request.targetLanguage}:
+
+${translationRequest.content}
+
+Maintain marketing appeal and professional tone.`;
+            
+            const translationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${openAIApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.7,
+                max_tokens: Math.ceil((translationRequest.content?.length || 0) * 1.5),
+              }),
+            });
+
+            const translationData = await translationResponse.json();
+            
+            if (!translationResponse.ok) {
+              throw new Error(`Translation API error: ${translationData.error?.message || 'Unknown error'}`);
+            }
+
+            const translatedContent = translationData.choices[0].message.content.trim();
+            
+            translations.push({
+              type: translationRequest.type,
+              content: translatedContent
+            });
+          }
+          
+          return new Response(JSON.stringify({ translations }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        // Fallback for single translation
         systemPrompt = `You are a professional translator specializing in real estate content. Maintain the tone, style, and marketing appeal while translating accurately to ${request.targetLanguage}.`;
         userPrompt = `Translate the following real estate content to ${request.targetLanguage}:
 
@@ -186,7 +237,7 @@ Score 0-100 based on completeness, appeal, and marketing effectiveness.`;
         maxTokens = 300;
         break;
 
-      default:
+    default:
         throw new Error(`Unsupported generation type: ${type}`);
     }
 

@@ -19,6 +19,7 @@ import Analytics from "./pages/Analytics";
 import UpdatePassword from "./pages/UpdatePassword";
 import AdminDuplicates from "./pages/AdminDuplicates";
 import AdminAISettings from "./pages/AdminAISettings";
+import TranslationDashboard from "./pages/TranslationDashboard";
 import MediaExtractor from "./pages/MediaExtractor";
 
 const App = () => (
@@ -127,7 +128,15 @@ const App = () => (
               } 
             />
             <Route 
-              path="/admin/ai-settings" 
+              path="/translations" 
+              element={
+                <ProtectedRoute>
+                  <TranslationDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/ai-settings"
               element={
                 <ProtectedRoute>
                   <AdminAISettings />

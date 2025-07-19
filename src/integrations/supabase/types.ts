@@ -369,11 +369,16 @@ export type Database = {
           created_at: string
           daily_rate: number | null
           description: string | null
+          description_de: string | null
+          description_en: string | null
           embedding_vector: string | null
           house_rules: string | null
           id: string
           landlord_info: Json | null
+          language_detected: string | null
           max_guests: number | null
+          meta_description_de: string | null
+          meta_description_en: string | null
           monthly_rent: number | null
           provides_wgsb: boolean | null
           region: string | null
@@ -382,6 +387,8 @@ export type Database = {
           street_name: string | null
           street_number: string | null
           title: string
+          title_de: string | null
+          title_en: string | null
           updated_at: string
           user_id: string
           weekly_rate: number | null
@@ -400,11 +407,16 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           description?: string | null
+          description_de?: string | null
+          description_en?: string | null
           embedding_vector?: string | null
           house_rules?: string | null
           id?: string
           landlord_info?: Json | null
+          language_detected?: string | null
           max_guests?: number | null
+          meta_description_de?: string | null
+          meta_description_en?: string | null
           monthly_rent?: number | null
           provides_wgsb?: boolean | null
           region?: string | null
@@ -413,6 +425,8 @@ export type Database = {
           street_name?: string | null
           street_number?: string | null
           title: string
+          title_de?: string | null
+          title_en?: string | null
           updated_at?: string
           user_id: string
           weekly_rate?: number | null
@@ -431,11 +445,16 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           description?: string | null
+          description_de?: string | null
+          description_en?: string | null
           embedding_vector?: string | null
           house_rules?: string | null
           id?: string
           landlord_info?: Json | null
+          language_detected?: string | null
           max_guests?: number | null
+          meta_description_de?: string | null
+          meta_description_en?: string | null
           monthly_rent?: number | null
           provides_wgsb?: boolean | null
           region?: string | null
@@ -444,6 +463,8 @@ export type Database = {
           street_name?: string | null
           street_number?: string | null
           title?: string
+          title_de?: string | null
+          title_en?: string | null
           updated_at?: string
           user_id?: string
           weekly_rate?: number | null

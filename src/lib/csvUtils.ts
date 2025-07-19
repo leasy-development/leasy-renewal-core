@@ -5,6 +5,7 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import DOMPurify from 'dompurify';
 import Joi from 'joi';
+import { detectLanguage } from './languageDetection';
 
 interface PropertyRow {
   title: string;
@@ -70,6 +71,16 @@ export function processRowsWithFallback(
       const criticalErrors = rowErrors.filter(e => e.severity === 'error');
       
       if (criticalErrors.length === 0) {
+        // Add language detection for valid rows
+        const languageDetection = detectLanguage([
+          processedRow.title,
+          processedRow.description
+        ]);
+        
+        if (languageDetection.language !== 'unknown' && languageDetection.confidence > 0.3) {
+          (processedRow as any).language_detected = languageDetection.language;
+        }
+        
         validRows.push(processedRow);
         warnings.push(...rowWarnings);
       } else {

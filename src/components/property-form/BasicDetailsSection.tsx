@@ -3,13 +3,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MissingTranslationStatus } from "@/components/MissingTranslationStatus";
+import { IntelligentTranslationService } from "@/services/intelligentTranslation";
+import { useAuth } from "@/components/AuthProvider";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface BasicDetailsSectionProps {
   formData: any;
   updateFormData: (field: string, value: any) => void;
+  propertyId?: string;
 }
 
-export function BasicDetailsSection({ formData, updateFormData }: BasicDetailsSectionProps) {
+export function BasicDetailsSection({ formData, updateFormData, propertyId }: BasicDetailsSectionProps) {
+  const { user } = useAuth();
+  const [isGeneratingTranslation, setIsGeneratingTranslation] = useState(false);
+
+  const handleGenerateMissingTranslation = async (targetLanguage: 'de' | 'en') => {
+    if (!propertyId || !user) {
+      toast.error('Property must be saved before generating translations');
+      return;
+    }
+
+    setIsGeneratingTranslation(true);
+    try {
+      await IntelligentTranslationService.updatePropertyTranslations(propertyId, user.id);
+      toast.success(`Generated ${targetLanguage === 'de' ? 'German' : 'English'} translation successfully`);
+      // Optionally refresh the form data here
+    } catch (error) {
+      console.error('Translation generation failed:', error);
+      toast.error('Failed to generate translation');
+    } finally {
+      setIsGeneratingTranslation(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -86,6 +114,15 @@ export function BasicDetailsSection({ formData, updateFormData }: BasicDetailsSe
           </div>
         </CardContent>
       </Card>
+
+      {/* Translation Status */}
+      {(formData.title || formData.description) && (
+        <MissingTranslationStatus
+          property={formData}
+          onGenerateMissing={handleGenerateMissingTranslation}
+          isGenerating={isGeneratingTranslation}
+        />
+      )}
     </div>
   );
 }
