@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { logger, logAsyncError } from "@/lib/logger";
 import { duplicateDetectionService } from "@/lib/duplicateDetection";
 import stringSimilarity from "string-similarity";
+import Papa from "papaparse";
 import * as XLSX from 'xlsx';
 
 interface BulkUploadModalProps {
@@ -165,6 +166,38 @@ const fieldMappings: { [key: string]: string } = {
   'house_rules': 'house_rules',
   'rules': 'house_rules'
 };
+
+// Smart parser that supports semicolon, tab, UTF-8, ISO-8859-1
+function parseCsvSmart(file: File): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const text = reader.result as string;
+      const delimitersToTry = [",", ";", "\t"];
+
+      for (const delimiter of delimitersToTry) {
+        const result = Papa.parse(text, {
+          delimiter,
+          header: true,
+          skipEmptyLines: true,
+        });
+
+        // Require at least 2 valid header fields to consider it a match
+        if (result?.meta?.fields && result.meta.fields.length > 1) {
+          return resolve(result.data);
+        }
+      }
+
+      reject(new Error("Unable to detect valid delimiter or headers."));
+    };
+
+    reader.onerror = () => reject(reader.error);
+
+    // Try with ISO-8859-1 fallback encoding
+    reader.readAsText(file, "ISO-8859-1");
+  });
+}
 
 export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalProps) => {
   const [activeTab, setActiveTab] = useState("upload");
@@ -365,31 +398,88 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   };
 
   const readFileAsync = (file: File): Promise<PropertyRow[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = async (e) => {
-        try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-          if (jsonData.length < 2) {
-            reject(new Error('File appears to be empty or has no data rows'));
+    return new Promise(async (resolve, reject) => {
+      try {
+        const fileExtension = file.name.toLowerCase().split('.').pop();
+        
+        // Handle CSV files with smart parsing
+        if (fileExtension === 'csv') {
+          try {
+            const parsedRows = await parseCsvSmart(file);
+            const processedData = await processFileDataFromParsedRows(parsedRows);
+            resolve(processedData);
+            return;
+          } catch (csvError) {
+            reject(new Error(`CSV parsing failed: ${csvError instanceof Error ? csvError.message : 'Unknown error'}`));
             return;
           }
-
-          const processedData = await processFileData(jsonData);
-          resolve(processedData);
-        } catch (error) {
-          reject(new Error('Failed to read file. Please check the format.'));
         }
-      };
+        
+        // Handle Excel files with existing XLSX logic
+        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+          const reader = new FileReader();
+          
+          reader.onload = async (e) => {
+            try {
+              const data = new Uint8Array(e.target?.result as ArrayBuffer);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const sheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[sheetName];
+              const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+              if (jsonData.length < 2) {
+                reject(new Error('File appears to be empty or has no data rows'));
+                return;
+              }
+
+              const processedData = await processFileData(jsonData);
+              resolve(processedData);
+            } catch (error) {
+              reject(new Error('Failed to read Excel file. Please check the format.'));
+            }
+          };
+          
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsArrayBuffer(file);
+          return;
+        }
+        
+        reject(new Error('Unsupported file format. Please use CSV or Excel files.'));
+      } catch (error) {
+        reject(new Error('Failed to process file. Please check the format.'));
+      }
+    });
+  };
+
+  const processFileDataFromParsedRows = async (parsedRows: any[]): Promise<PropertyRow[]> => {
+    return parsedRows.map(row => {
+      const mappedRow: Partial<PropertyRow> = {};
       
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsArrayBuffer(file);
+      Object.entries(row).forEach(([header, value]) => {
+        const normalizedHeader = header.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '');
+        const dbField = fieldMappings[normalizedHeader] || normalizedHeader;
+        
+        // Skip empty values
+        if (value === undefined || value === null || value === '') return;
+        
+        // Handle boolean fields
+        if (dbField === 'provides_wgsb') {
+          value = value === 'true' || value === true || value === 1;
+        }
+        
+        // Handle numeric fields
+        if (['monthly_rent', 'weekly_rate', 'daily_rate', 'bedrooms', 'bathrooms', 'max_guests', 'square_meters'].includes(dbField)) {
+          value = Number(value) || 0;
+        }
+        
+        (mappedRow as any)[dbField] = value;
+      });
+      
+      // Set defaults
+      mappedRow.country = mappedRow.country || 'Germany';
+      mappedRow.provides_wgsb = mappedRow.provides_wgsb || false;
+      
+      return mappedRow as PropertyRow;
     });
   };
 
