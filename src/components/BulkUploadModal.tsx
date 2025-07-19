@@ -264,6 +264,141 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Postal code to city mapping (German cities)
+  const POSTAL_CODE_CITIES: { [key: string]: string } = {
+    // Berlin
+    '10115': 'Berlin', '10117': 'Berlin', '10119': 'Berlin', '10178': 'Berlin', '10179': 'Berlin',
+    '10243': 'Berlin', '10245': 'Berlin', '10247': 'Berlin', '10249': 'Berlin', '10318': 'Berlin',
+    '10435': 'Berlin', '10437': 'Berlin', '10439': 'Berlin', '10551': 'Berlin', '10553': 'Berlin',
+    '10555': 'Berlin', '10557': 'Berlin', '10559': 'Berlin', '10585': 'Berlin', '10587': 'Berlin',
+    '10589': 'Berlin', '10623': 'Berlin', '10625': 'Berlin', '10627': 'Berlin', '10629': 'Berlin',
+    '10707': 'Berlin', '10709': 'Berlin', '10711': 'Berlin', '10713': 'Berlin', '10715': 'Berlin',
+    '10717': 'Berlin', '10719': 'Berlin', '10777': 'Berlin', '10779': 'Berlin', '10781': 'Berlin',
+    '10783': 'Berlin', '10785': 'Berlin', '10787': 'Berlin', '10789': 'Berlin', '10823': 'Berlin',
+    '10825': 'Berlin', '10827': 'Berlin', '10829': 'Berlin', '10961': 'Berlin', '10963': 'Berlin',
+    '10965': 'Berlin', '10967': 'Berlin', '10969': 'Berlin', '12043': 'Berlin', '12045': 'Berlin',
+    '12047': 'Berlin', '12049': 'Berlin', '12051': 'Berlin', '12053': 'Berlin', '12055': 'Berlin',
+    '12057': 'Berlin', '12059': 'Berlin', '12099': 'Berlin', '12101': 'Berlin', '12103': 'Berlin',
+    '12105': 'Berlin', '12107': 'Berlin', '12109': 'Berlin', '12157': 'Berlin', '12159': 'Berlin',
+    '12161': 'Berlin', '12163': 'Berlin', '12165': 'Berlin', '12167': 'Berlin', '12169': 'Berlin',
+    '12203': 'Berlin', '12205': 'Berlin', '12207': 'Berlin', '12209': 'Berlin', '12247': 'Berlin',
+    '12249': 'Berlin', '12277': 'Berlin', '12279': 'Berlin', '12305': 'Berlin', '12307': 'Berlin',
+    '12309': 'Berlin', '12347': 'Berlin', '12349': 'Berlin', '12351': 'Berlin', '12353': 'Berlin',
+    '12355': 'Berlin', '12357': 'Berlin', '12359': 'Berlin', '12435': 'Berlin', '12437': 'Berlin',
+    '12439': 'Berlin', '12459': 'Berlin', '12487': 'Berlin', '12489': 'Berlin', '12524': 'Berlin',
+    '12526': 'Berlin', '12527': 'Berlin', '12555': 'Berlin', '12557': 'Berlin', '12559': 'Berlin',
+    '12587': 'Berlin', '12589': 'Berlin', '12619': 'Berlin', '12621': 'Berlin', '12623': 'Berlin',
+    '12625': 'Berlin', '12627': 'Berlin', '12629': 'Berlin', '12679': 'Berlin', '12681': 'Berlin',
+    '12683': 'Berlin', '12685': 'Berlin', '12687': 'Berlin', '12689': 'Berlin', '13051': 'Berlin',
+    '13053': 'Berlin', '13055': 'Berlin', '13057': 'Berlin', '13059': 'Berlin', '13086': 'Berlin',
+    '13088': 'Berlin', '13089': 'Berlin', '13125': 'Berlin', '13127': 'Berlin', '13129': 'Berlin',
+    '13156': 'Berlin', '13158': 'Berlin', '13159': 'Berlin', '13187': 'Berlin', '13189': 'Berlin',
+    '13347': 'Berlin', '13349': 'Berlin', '13351': 'Berlin', '13353': 'Berlin', '13355': 'Berlin',
+    '13357': 'Berlin', '13359': 'Berlin', '13403': 'Berlin', '13405': 'Berlin', '13407': 'Berlin',
+    '13409': 'Berlin', '13435': 'Berlin', '13437': 'Berlin', '13439': 'Berlin', '13465': 'Berlin',
+    '13467': 'Berlin', '13469': 'Berlin', '13503': 'Berlin', '13505': 'Berlin', '13507': 'Berlin',
+    '13509': 'Berlin', '13581': 'Berlin', '13583': 'Berlin', '13585': 'Berlin', '13587': 'Berlin',
+    '13589': 'Berlin', '13591': 'Berlin', '13593': 'Berlin', '13595': 'Berlin', '13597': 'Berlin',
+    '13599': 'Berlin', '13627': 'Berlin', '13629': 'Berlin', '13707': 'Berlin', '13709': 'Berlin',
+    '14050': 'Berlin', '14052': 'Berlin', '14053': 'Berlin', '14055': 'Berlin',
+    '14057': 'Berlin', '14059': 'Berlin', '14109': 'Berlin', '14129': 'Berlin', '14163': 'Berlin',
+    '14165': 'Berlin', '14167': 'Berlin', '14169': 'Berlin', '14193': 'Berlin', '14195': 'Berlin',
+    '14197': 'Berlin', '14199': 'Berlin',
+    
+    // Munich
+    '80331': 'Munich', '80333': 'Munich', '80335': 'Munich', '80336': 'Munich', '80337': 'Munich',
+    '80339': 'Munich', '80469': 'Munich', '80538': 'Munich', '80539': 'Munich', '80634': 'Munich',
+    '80636': 'Munich', '80637': 'Munich', '80638': 'Munich', '80639': 'Munich', '80686': 'Munich',
+    '80687': 'Munich', '80689': 'Munich', '80796': 'Munich', '80797': 'Munich', '80798': 'Munich',
+    '80799': 'Munich', '80801': 'Munich', '80802': 'Munich', '80803': 'Munich', '80804': 'Munich',
+    '80805': 'Munich', '80807': 'Munich', '80809': 'Munich', '80992': 'Munich', '80993': 'Munich',
+    '80995': 'Munich', '80997': 'Munich', '80999': 'Munich', '81241': 'Munich', '81243': 'Munich',
+    '81245': 'Munich', '81247': 'Munich', '81249': 'Munich', '81369': 'Munich', '81371': 'Munich',
+    '81373': 'Munich', '81375': 'Munich', '81377': 'Munich', '81379': 'Munich', '81475': 'Munich',
+    '81476': 'Munich', '81477': 'Munich', '81479': 'Munich', '81539': 'Munich', '81541': 'Munich',
+    '81543': 'Munich', '81545': 'Munich', '81547': 'Munich', '81549': 'Munich', '81667': 'Munich',
+    '81669': 'Munich', '81671': 'Munich', '81673': 'Munich', '81675': 'Munich', '81677': 'Munich',
+    '81679': 'Munich', '81735': 'Munich', '81737': 'Munich', '81739': 'Munich', '81825': 'Munich',
+    '81827': 'Munich', '81829': 'Munich', '81925': 'Munich', '81927': 'Munich', '81929': 'Munich',
+    
+    // Hamburg
+    '20095': 'Hamburg', '20097': 'Hamburg', '20099': 'Hamburg', '20144': 'Hamburg', '20146': 'Hamburg',
+    '20148': 'Hamburg', '20149': 'Hamburg', '20251': 'Hamburg', '20253': 'Hamburg', '20255': 'Hamburg',
+    '20257': 'Hamburg', '20259': 'Hamburg', '20354': 'Hamburg', '20355': 'Hamburg', '20357': 'Hamburg',
+    '20359': 'Hamburg', '20457': 'Hamburg', '20459': 'Hamburg', '20535': 'Hamburg', '20537': 'Hamburg',
+    '20539': 'Hamburg', '21029': 'Hamburg', '21031': 'Hamburg', '21033': 'Hamburg', '21035': 'Hamburg',
+    '21037': 'Hamburg', '21039': 'Hamburg', '21073': 'Hamburg', '21075': 'Hamburg', '21077': 'Hamburg',
+    '21079': 'Hamburg', '21107': 'Hamburg', '21109': 'Hamburg', '21111': 'Hamburg', '21113': 'Hamburg',
+    '21115': 'Hamburg', '21117': 'Hamburg', '21119': 'Hamburg', '21129': 'Hamburg', '21131': 'Hamburg',
+    '21133': 'Hamburg', '21135': 'Hamburg', '21137': 'Hamburg', '21139': 'Hamburg', '21141': 'Hamburg',
+    '21143': 'Hamburg', '21145': 'Hamburg', '21147': 'Hamburg', '21149': 'Hamburg',
+    
+    // Cologne
+    '50667': 'Cologne', '50668': 'Cologne', '50670': 'Cologne', '50672': 'Cologne', '50674': 'Cologne',
+    '50676': 'Cologne', '50677': 'Cologne', '50678': 'Cologne', '50679': 'Cologne', '50733': 'Cologne',
+    '50735': 'Cologne', '50737': 'Cologne', '50739': 'Cologne', '50823': 'Cologne', '50825': 'Cologne',
+    '50827': 'Cologne', '50829': 'Cologne', '50859': 'Cologne', '50931': 'Cologne', '50933': 'Cologne',
+    '50935': 'Cologne', '50937': 'Cologne', '50939': 'Cologne', '50968': 'Cologne', '50969': 'Cologne',
+    '50996': 'Cologne', '50997': 'Cologne', '50999': 'Cologne', '51061': 'Cologne', '51063': 'Cologne',
+    '51065': 'Cologne', '51067': 'Cologne', '51069': 'Cologne', '51103': 'Cologne', '51105': 'Cologne',
+    '51107': 'Cologne', '51109': 'Cologne', '51143': 'Cologne', '51145': 'Cologne', '51147': 'Cologne',
+    '51149': 'Cologne'
+  };
+
+  const inferApartmentType = (bedrooms: number, livingRooms: number = 0): string => {
+    if (bedrooms === 0 && livingRooms === 1) return 'studio';
+    if (bedrooms === 1 && livingRooms === 0) return 'studio';
+    if (bedrooms === 1 && livingRooms >= 1) return '1 bedroom apartment';
+    if (bedrooms === 2) return '2 bedroom apartment';
+    if (bedrooms === 3) return '3 bedroom apartment';
+    if (bedrooms > 3) return 'multi-bedroom apartment';
+    return 'unknown';
+  };
+
+  const autoFillMissingValues = (data: PropertyRow[]): { data: PropertyRow[], autoFilled: string[] } => {
+    const autoFilled: string[] = [];
+    let cityFills = 0;
+    let categoryFills = 0;
+    let apartmentTypeFills = 0;
+
+    const processedData = data.map(row => {
+      const updatedRow = { ...row };
+
+      // Auto-fill city based on postal code
+      if (!updatedRow.city && updatedRow.zip_code) {
+        const city = POSTAL_CODE_CITIES[updatedRow.zip_code];
+        if (city) {
+          updatedRow.city = city;
+          cityFills++;
+        }
+      }
+
+      // Default category to apartment
+      if (!updatedRow.category) {
+        updatedRow.category = 'apartment';
+        categoryFills++;
+      }
+
+      // Infer apartment_type from bedrooms
+      if (!updatedRow.apartment_type && updatedRow.bedrooms !== undefined) {
+        const bedroomCount = parseInt(updatedRow.bedrooms?.toString() || '0');
+        updatedRow.apartment_type = inferApartmentType(bedroomCount, 0);
+        if (updatedRow.apartment_type !== 'unknown') {
+          apartmentTypeFills++;
+        }
+      }
+
+      return updatedRow;
+    });
+
+    // Build summary of auto-filled values
+    if (cityFills > 0) autoFilled.push(`Added ${cityFills} cities based on postal codes`);
+    if (categoryFills > 0) autoFilled.push(`Set category to apartment for ${categoryFills} rows`);
+    if (apartmentTypeFills > 0) autoFilled.push(`Inferred apartment type for ${apartmentTypeFills} rows`);
+
+    return { data: processedData, autoFilled };
+  };
+
   const downloadTemplate = () => {
     const templateData = [{
       'Property Title': 'Stylish Studio in Mitte',
@@ -455,10 +590,22 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
           return mappedRow as PropertyRow;
         });
 
-        setUploadedData(mappedData);
+        // Apply smart auto-fill for missing values
+        const { data: autoFilledData, autoFilled } = autoFillMissingValues(mappedData);
+
+        // Show auto-fill summary if any values were filled
+        if (autoFilled.length > 0) {
+          toast({
+            title: "✨ Smart Auto-Fill Applied",
+            description: `We've filled in ${autoFilled.reduce((sum, msg) => sum + parseInt(msg.match(/\d+/)?.[0] || '0'), 0)} missing values: ${autoFilled.join(', ')}`,
+            variant: "default",
+          });
+        }
+
+        setUploadedData(autoFilledData);
         setOriginalHeaders(rawHeaders);
         setColumnMappings(autoMappedHeaders);
-        validateData(mappedData);
+        validateData(autoFilledData);
         setActiveTab("review");
         
       } catch (error) {
