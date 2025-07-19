@@ -58,33 +58,50 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const request: GenerationRequest = await req.json();
-    const { type, property, content, imageUrl, customPrompt } = request;
+    
+    // Handle both direct properties and nested structures
+    const { 
+      type, 
+      property, 
+      content, 
+      imageUrl, 
+      customPrompt,
+      tone = 'professional and premium',
+      language = 'en',
+      length = 'medium'
+    } = request;
 
-    console.log(`🤖 AI ${type} generation requested`);
+    console.log(`🤖 AI ${type || 'unknown'} generation requested`, { type, hasProperty: !!property });
 
-    // Get dynamic prompt from database
+    // Validate required type parameter
+    if (!type) {
+      throw new Error('Generation type is required');
+    }
+
+    // Enhanced system prompt based on Next.js pattern
+    const SYSTEM_PROMPT = `
+You are a real estate content expert specialized in high-quality, multilingual, SEO-optimized listings.
+Analyze the structured property data, uploaded image descriptions, and any user-entered suggestions.
+Generate clear, engaging, persuasive content in both German and English when requested.
+Always mention key amenities, floor plan, style, location highlights, and adjust tone based on the selected persona.
+Return localized fields cleanly for database input.
+`;
+
+    let systemPrompt = SYSTEM_PROMPT;
+    let userPrompt = '';
+    let maxTokens = 1000;
+    let temperature = 0.7;
+
+    // Get dynamic prompt from database if available
     const { data: promptData } = await supabase
       .from('ai_prompts')
       .select('prompt')
       .eq('type', type)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
-    let systemPrompt = promptData?.prompt || '';
-    let userPrompt = '';
-    let maxTokens = 1000;
-    let temperature = 0.7;
-
-    // Use dynamic prompt, or fall back to type-specific handling for backwards compatibility
-    if (systemPrompt && type !== 'description') {
-      // For non-description types, use the dynamic prompt with basic user content
-      if (customPrompt) {
-        userPrompt = customPrompt;
-      } else {
-        userPrompt = buildUserPrompt(type, property, content, imageUrl, request);
-      }
-    } else if (type === 'description') {
-      return await generateDescription(openAIApiKey, request, supabase);
+    if (promptData?.prompt) {
+      systemPrompt = promptData.prompt;
     }
 
     switch (type) {
