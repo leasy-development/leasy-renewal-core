@@ -7,9 +7,23 @@ import { Toaster } from "@/components/ui/toaster";
 import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
 
-// 🔐 CRITICAL: React singleton safety check
+// 🔐 CRITICAL: Comprehensive React singleton safety check
 if (!React || typeof React !== 'object') {
   throw new Error("❌ React is not properly imported as an object");
+}
+
+// Check for React instance collision
+if (typeof window !== 'undefined') {
+  // @ts-ignore - Checking for multiple React instances
+  if (window.React && window.React !== React) {
+    console.error("❌ Multiple React instances detected!", {
+      windowReact: window.React?.version,
+      importedReact: React.version
+    });
+    throw new Error("Multiple React instances detected - this causes hook failures");
+  }
+  // @ts-ignore - Store React reference for debugging
+  window.React = React;
 }
 
 if (!React.useEffect || typeof React.useEffect !== 'function') {
