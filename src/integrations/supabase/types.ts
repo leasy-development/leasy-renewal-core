@@ -64,6 +64,7 @@ export type Database = {
           created_at: string
           daily_rate: number | null
           description: string | null
+          house_rules: string | null
           id: string
           landlord_info: Json | null
           max_guests: number | null
@@ -93,6 +94,7 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           description?: string | null
+          house_rules?: string | null
           id?: string
           landlord_info?: Json | null
           max_guests?: number | null
@@ -122,6 +124,7 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           description?: string | null
+          house_rules?: string | null
           id?: string
           landlord_info?: Json | null
           max_guests?: number | null
