@@ -50,14 +50,34 @@ serve(async (req) => {
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('❌ OpenAI API key not configured');
+      return new Response(JSON.stringify({ 
+        error: 'OpenAI API key not configured',
+        details: 'Please set the OPENAI_API_KEY secret in Supabase' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const request: GenerationRequest = await req.json();
+    let request: GenerationRequest;
+    
+    try {
+      request = await req.json();
+    } catch (parseError) {
+      console.error('❌ Invalid JSON in request body:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        details: 'Request body must be valid JSON' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
     
     // Handle both direct properties and nested structures
     const { 
@@ -71,11 +91,51 @@ serve(async (req) => {
       length = 'medium'
     } = request;
 
-    console.log(`🤖 AI ${type || 'unknown'} generation requested`, { type, hasProperty: !!property });
+    console.log(`🤖 AI ${type || 'unknown'} generation requested`, { 
+      type, 
+      hasProperty: !!property,
+      propertyTitle: property?.title 
+    });
 
     // Validate required type parameter
     if (!type) {
-      throw new Error('Generation type is required');
+      console.error('❌ Generation type is required');
+      return new Response(JSON.stringify({ 
+        error: 'Generation type is required',
+        details: 'The "type" parameter must be specified (e.g., "description", "title", etc.)' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    // Enhanced validation for description type
+    if (type === 'description') {
+      if (!property) {
+        console.error('❌ Property data is required for description generation');
+        return new Response(JSON.stringify({ 
+          error: 'Property data is required',
+          details: 'The "property" object must be provided for description generation' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+      if (!property.title || !property.apartment_type) {
+        const missingFields = [];
+        if (!property.title) missingFields.push('title');
+        if (!property.apartment_type) missingFields.push('apartment_type');
+        
+        console.error('❌ Missing required property fields:', missingFields);
+        return new Response(JSON.stringify({ 
+          error: `Missing required fields: ${missingFields.join(', ')}`,
+          details: 'Property title and apartment_type are required for description generation' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
     }
 
     // Enhanced system prompt based on Next.js pattern
@@ -258,39 +318,68 @@ Score 0-100 based on completeness, appeal, and marketing effectiveness.`;
         throw new Error(`Unsupported generation type: ${type}`);
     }
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature,
-        max_tokens: maxTokens,
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1
-      }),
-    });
+    // Call OpenAI API with enhanced error handling
+    let response;
+    let data;
+    
+    try {
+      console.log(`🔄 Calling OpenAI API for ${type} generation...`);
+      
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature,
+          max_tokens: maxTokens,
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1
+        }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ OpenAI API HTTP error:`, {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        
+        // Parse OpenAI error for better error messages
+        let parsedError;
+        try {
+          parsedError = JSON.parse(errorText);
+        } catch {
+          parsedError = { error: { message: errorText } };
+        }
+        
+        const errorMsg = parsedError?.error?.message || `API returned ${response.status}`;
+        throw new Error(`OpenAI API error (${response.status}): ${errorMsg}`);
+      }
+
+      data = await response.json();
+      
+    } catch (fetchError) {
+      console.error(`❌ Network error calling OpenAI API:`, fetchError);
+      throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Connection failed'}`);
     }
 
-    const data = await response.json();
-    const generatedContent = data.choices[0]?.message?.content;
+    const generatedContent = data.choices?.[0]?.message?.content;
 
     if (!generatedContent) {
-      throw new Error(`No ${type} generated by AI`);
+      console.error(`❌ No content generated by OpenAI for ${type}:`, data);
+      throw new Error(`OpenAI did not generate any ${type} content. Please try again.`);
     }
 
-    console.log(`✅ AI ${type} generated successfully`);
+    console.log(`✅ AI ${type} generated successfully for: ${property?.title || 'unknown property'}`);
+    console.log(`📊 Generated content length: ${generatedContent.length} characters`);
 
     // Log usage for analytics
     try {
@@ -407,36 +496,82 @@ ${property.description.substring(0, 200)}...` : ''}
 
 Please create a ${format === 'markdown' ? 'Markdown-formatted' : 'HTML-formatted'} description that will attract quality tenants/buyers.`;
 
-  // Call OpenAI API
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      temperature: 0.7,
-      max_tokens: Math.min(1000, Math.ceil(maxLength * 2.5)),
-      presence_penalty: 0.1,
-      frequency_penalty: 0.1
-    }),
-  });
+  // Call OpenAI API with enhanced error handling
+  console.log(`🔄 Generating description for property: ${property.title}`);
+  
+  let response;
+  let data;
+  
+  try {
+    response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: Math.min(1000, Math.ceil(maxLength * 2.5)),
+        presence_penalty: 0.1,
+        frequency_penalty: 0.1
+      }),
+    });
 
-  if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ OpenAI API error for ${property.title}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      
+      // Parse OpenAI error for better error messages
+      let parsedError;
+      try {
+        parsedError = JSON.parse(errorText);
+      } catch {
+        parsedError = { error: { message: errorText } };
+      }
+      
+      const errorMsg = parsedError?.error?.message || `API returned ${response.status}`;
+      throw new Error(`OpenAI API error (${response.status}): ${errorMsg}`);
+    }
+
+    data = await response.json();
+    
+  } catch (fetchError) {
+    console.error(`❌ Network error generating description for ${property.title}:`, fetchError);
+    throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Connection failed'}`);
   }
 
-  const data = await response.json();
-  const generatedDescription = data.choices[0]?.message?.content;
+  const generatedDescription = data.choices?.[0]?.message?.content;
 
   if (!generatedDescription) {
-    throw new Error('No description generated by AI');
+    console.error(`❌ No description generated for ${property.title}:`, data);
+    throw new Error('OpenAI did not generate any description content. Please try again.');
+  }
+
+  console.log(`✅ Description generated successfully for: ${property.title} (${generatedDescription.length} chars)`);
+  
+  // Log the generation for analytics
+  try {
+    await supabase
+      .from('ai_generation_logs')
+      .insert({
+        property_title: property.title,
+        tone: tone,
+        format: format,
+        language: language,
+        character_count: generatedDescription.length,
+      });
+    console.log(`📊 Logged description generation for: ${property.title}`);
+  } catch (logError) {
+    console.warn(`⚠️  Failed to log AI usage for ${property.title}:`, logError);
   }
 
   return new Response(
