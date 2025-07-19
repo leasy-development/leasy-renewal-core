@@ -246,6 +246,7 @@ const AddProperty = () => {
 
           if (data) {
             setFormData({
+              ...initialFormData,
               title: data.title || '',
               description: data.description || '',
               apartment_type: data.apartment_type || '',
@@ -257,69 +258,12 @@ const AddProperty = () => {
               region: data.region || '',
               country: data.country || 'Germany',
               monthly_rent: data.monthly_rent || null,
-              monthly_rent_refundability: 'non-refundable',
               weekly_rate: data.weekly_rate || null,
-              weekly_rate_flexibility: 'flexible',
               daily_rate: data.daily_rate || null,
-              daily_rate_type: 'short-term',
               checkin_time: data.checkin_time || '',
               checkout_time: data.checkout_time || '',
               provides_wgsb: data.provides_wgsb || false,
-              video_tour_link: '',
-              virtual_tour_link: '',
-              photos: [],
-              terms_conditions: null,
-              cancellation_policy: null,
-              additional_fees: [],
-              discounts: [],
-              taxes: [],
-              required_documents: [],
-              beds: [],
-              landlord_name: '',
-              contractual_partner: '',
-              // General Amenities - set defaults for existing properties
-              has_lift: false,
-              weekly_cleaning_included: false,
-              has_essentials_closet: false,
-              has_iron_and_board: false,
-              has_drying_rack: false,
-              shared_laundry_room: 'none',
-              parking_available: 'none',
-              has_luggage_storage: false,
-              pets_allowed: 'no',
-              yoga_mats_available: false,
-              breakfast_box_available: 'no',
-              is_accessible: false,
-              has_air_conditioning: false,
-              has_balcony: false,
-              has_terrace: false,
-              fire_extinguisher_available: false,
-              // Numa Standard Amenities
-              has_24_7_support: false,
-              has_wifi: false,
-              contactless_checkin: false,
-              free_tea_coffee: false,
-              has_shampoo_conditioner: false,
-              // Room-Specific Amenities
-              has_smart_tv: false,
-              has_kitchenette: false,
-              has_mini_fridge: false,
-              has_coffee_machine_kettle: false,
-              has_microwave: false,
-              has_cooking_essentials: false,
-              has_tableware: false,
-              has_glasses_and_cups: false,
-              has_hair_dryer: false,
-              has_complimentary_water: false,
-              has_heating: false,
-              has_work_station: false,
-              has_dishwasher: false,
-              has_oven: false,
-              has_stove: false,
-              is_sustainable_amenities: false,
-              // Rent Information
               rent: data.monthly_rent || null,
-              rent_is_from: false,
             });
           }
         } catch (error) {
@@ -510,25 +454,221 @@ const AddProperty = () => {
 
   const renderStep = () => {
     switch (currentStep) {
-      case 1:
+      case 1: // Basic Info
         return (
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input
-              type="text"
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
-            />
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-            />
+          <div className="space-y-6">
+            <TooltipProvider>
+              <Collapsible open={openSections[1] !== false} onOpenChange={() => toggleSection(1)}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-muted rounded-lg">
+                  <h3 className="font-medium">🏡 Basic Apartment Info</h3>
+                  {openSections[1] === false ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="apartment_type">Apartment Type</Label>
+                      <span className="text-red-500">*</span>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Select the type of apartment you're listing</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Select value={formData.apartment_type} onValueChange={(value) => handleInputChange('apartment_type', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select apartment type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="studio">Studio</SelectItem>
+                        <SelectItem value="1-bedroom">1 Bedroom</SelectItem>
+                        <SelectItem value="2-bedroom">2 Bedroom</SelectItem>
+                        <SelectItem value="3-bedroom">3 Bedroom</SelectItem>
+                        <SelectItem value="4-bedroom">4+ Bedroom</SelectItem>
+                        <SelectItem value="penthouse">Penthouse</SelectItem>
+                        <SelectItem value="loft">Loft</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="title">Title</Label>
+                      <span className="text-red-500">*</span>
+                    </div>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => handleInputChange('title', e.target.value)}
+                      placeholder="e.g., Modern 2BR Apartment in City Center"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      placeholder="Describe your property..."
+                      rows={4}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="category">Category</Label>
+                      <span className="text-red-500">*</span>
+                    </div>
+                    <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="luxury">Luxury</SelectItem>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="budget">Budget</SelectItem>
+                        <SelectItem value="student">Student Housing</SelectItem>
+                        <SelectItem value="furnished">Furnished</SelectItem>
+                        <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="photos">Photos</Label>
+                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-muted-foreground">Click to upload photos or drag and drop</p>
+                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB each</p>
+                      <Button variant="outline" className="mt-2">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Photos
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="video_tour_link">Video Tour Link (YouTube, Vimeo)</Label>
+                    <Input
+                      id="video_tour_link"
+                      value={formData.video_tour_link}
+                      onChange={(e) => handleInputChange('video_tour_link', e.target.value)}
+                      placeholder="https://youtube.com/watch?v=..."
+                      className={!validateURL(formData.video_tour_link) ? 'border-red-500' : ''}
+                    />
+                    {formData.video_tour_link && !validateURL(formData.video_tour_link) && (
+                      <p className="text-red-500 text-sm mt-1">Please enter a valid URL</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="virtual_tour_link">360° Virtual Tour Link</Label>
+                    <Input
+                      id="virtual_tour_link"
+                      value={formData.virtual_tour_link}
+                      onChange={(e) => handleInputChange('virtual_tour_link', e.target.value)}
+                      placeholder="https://..."
+                      className={!validateURL(formData.virtual_tour_link) ? 'border-red-500' : ''}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </TooltipProvider>
           </div>
         );
-      case 2:
+
+      case 2: // Address
+        return (
+          <div className="space-y-4">
+            <h3 className="font-medium">🏢 Address Information</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="street_number">Street #</Label>
+                <Input
+                  id="street_number"
+                  value={formData.street_number}
+                  onChange={(e) => handleInputChange('street_number', e.target.value)}
+                  placeholder="123"
+                />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="street_name">Street Name</Label>
+                  <span className="text-red-500">*</span>
+                </div>
+                <Input
+                  id="street_name"
+                  value={formData.street_name}
+                  onChange={(e) => handleInputChange('street_name', e.target.value)}
+                  placeholder="Main Street"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="zip_code">ZIP Code</Label>
+                <Input
+                  id="zip_code"
+                  value={formData.zip_code}
+                  onChange={(e) => handleInputChange('zip_code', e.target.value)}
+                  placeholder="12345"
+                />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="city">City</Label>
+                  <span className="text-red-500">*</span>
+                </div>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  placeholder="Berlin"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="region">Region</Label>
+              <Input
+                id="region"
+                value={formData.region}
+                onChange={(e) => handleInputChange('region', e.target.value)}
+                placeholder="Berlin"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="country">Country</Label>
+              <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Germany">Germany</SelectItem>
+                  <SelectItem value="Austria">Austria</SelectItem>
+                  <SelectItem value="Switzerland">Switzerland</SelectItem>
+                  <SelectItem value="Netherlands">Netherlands</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="p-6 bg-card rounded-lg">
+            <p>Step {currentStep} content</p>
+            <p className="text-muted-foreground">This step is not yet fully implemented</p>
+          </div>
+        );
+    }
+  };
+
   if (loadingProperty) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -539,29 +679,6 @@ const AddProperty = () => {
       </div>
     );
   }
-
-  return (
-          <div>
-            <Label htmlFor="street_name">Street Name</Label>
-            <Input
-              type="text"
-              id="street_name"
-              value={formData.street_name}
-              onChange={(e) => handleInputChange('street_name', e.target.value)}
-            />
-            <Label htmlFor="city">City</Label>
-            <Input
-              type="text"
-              id="city"
-              value={formData.city}
-              onChange={(e) => handleInputChange('city', e.target.value)}
-            />
-          </div>
-        );
-      default:
-        return <p>Step {currentStep} content goes here</p>;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
