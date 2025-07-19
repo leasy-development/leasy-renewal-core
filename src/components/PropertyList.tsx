@@ -58,11 +58,29 @@ export const PropertyList = () => {
 
       if (error) throw error;
       setProperties(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching properties:', error);
+      
+      let errorMessage = "Failed to fetch properties";
+      let errorDetails = '';
+
+      if (error?.message) {
+        if (error.message.includes('permission denied')) {
+          errorMessage = "Access Denied";
+          errorDetails = "You don't have permission to view properties. Please log in again.";
+        } else if (error.message.includes('network')) {
+          errorMessage = "Connection Error";
+          errorDetails = "Please check your internet connection and try again.";
+        } else {
+          errorDetails = `Technical details: ${error.message}`;
+        }
+      } else {
+        errorDetails = "Could not retrieve your properties. Please refresh the page.";
+      }
+
       toast({
-        title: "Error",
-        description: "Failed to fetch properties",
+        title: errorMessage,
+        description: errorDetails,
         variant: "destructive",
       });
     } finally {
@@ -84,11 +102,32 @@ export const PropertyList = () => {
         title: "Success",
         description: "Property deleted successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting property:', error);
+      
+      let errorMessage = "Failed to delete property";
+      let errorDetails = '';
+
+      if (error?.message) {
+        if (error.message.includes('permission denied') || error.message.includes('row-level security')) {
+          errorMessage = "Cannot Delete Property";
+          errorDetails = "You don't have permission to delete this property. You can only delete properties you created.";
+        } else if (error.message.includes('PGRST116')) {
+          errorMessage = "Property Not Found";
+          errorDetails = "This property no longer exists or has already been deleted.";
+        } else if (error.message.includes('foreign key constraint')) {
+          errorMessage = "Cannot Delete Property";
+          errorDetails = "This property has related data (bookings, reviews, etc.) and cannot be deleted. Please archive it instead.";
+        } else {
+          errorDetails = `Technical details: ${error.message}`;
+        }
+      } else {
+        errorDetails = "The property could not be deleted. Please try again.";
+      }
+
       toast({
-        title: "Error",
-        description: "Failed to delete property",
+        title: errorMessage,
+        description: errorDetails,
         variant: "destructive",
       });
     }
@@ -114,11 +153,32 @@ export const PropertyList = () => {
         title: "Success",
         description: "Property duplicated successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error duplicating property:', error);
+      
+      let errorMessage = "Failed to duplicate property";
+      let errorDetails = '';
+
+      if (error?.message) {
+        if (error.message.includes('duplicate key value')) {
+          errorMessage = "Duplicate Property Title";
+          errorDetails = "A property with this title already exists. The copy will need a unique title.";
+        } else if (error.message.includes('permission denied')) {
+          errorMessage = "Permission Denied";
+          errorDetails = "You don't have permission to create new properties.";
+        } else if (error.message.includes('violates not-null constraint')) {
+          errorMessage = "Missing Required Data";
+          errorDetails = "The original property is missing required information and cannot be duplicated.";
+        } else {
+          errorDetails = `Technical details: ${error.message}`;
+        }
+      } else {
+        errorDetails = "The property could not be duplicated. Please try again.";
+      }
+
       toast({
-        title: "Error",
-        description: "Failed to duplicate property",
+        title: errorMessage,
+        description: errorDetails,
         variant: "destructive",
       });
     }

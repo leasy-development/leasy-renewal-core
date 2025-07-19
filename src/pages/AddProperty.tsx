@@ -277,11 +277,32 @@ const AddProperty = () => {
               rent: data.monthly_rent || null,
             });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error loading property:', error);
+          
+          let errorMessage = "Failed to load property data";
+          let errorDetails = '';
+
+          if (error?.message) {
+            if (error.message.includes('permission denied') || error.message.includes('row-level security')) {
+              errorMessage = "Access Denied";
+              errorDetails = "You don't have permission to edit this property. Make sure you're logged in with the correct account.";
+            } else if (error.message.includes('PGRST116')) {
+              errorMessage = "Property Not Found";
+              errorDetails = "This property doesn't exist or has been deleted.";
+            } else if (error.message.includes('network')) {
+              errorMessage = "Connection Error";
+              errorDetails = "Please check your internet connection and try again.";
+            } else {
+              errorDetails = `Technical details: ${error.message}`;
+            }
+          } else {
+            errorDetails = "The property data could not be retrieved. Please try again.";
+          }
+
           toast({
-            title: "Error",
-            description: "Failed to load property data",
+            title: errorMessage,
+            description: errorDetails,
             variant: "destructive",
           });
           navigate('/dashboard');
@@ -480,11 +501,71 @@ const AddProperty = () => {
         localStorage.removeItem('property-form-draft');
       }
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving property:', error);
+      
+      // Parse and display specific error messages
+      let errorMessage = `Failed to ${isEditing ? 'update' : 'save'} property`;
+      let errorDetails = '';
+
+      if (error?.message) {
+        // Common Supabase/PostgreSQL errors with user-friendly messages
+        if (error.message.includes('duplicate key value')) {
+          errorMessage = 'Duplicate Property';
+          errorDetails = 'A property with this information already exists. Please check your title and address.';
+        } else if (error.message.includes('violates not-null constraint')) {
+          errorMessage = 'Required Information Missing';
+          errorDetails = 'Some required fields are missing. Please check that title, apartment type, and address are filled in.';
+        } else if (error.message.includes('violates foreign key constraint')) {
+          errorMessage = 'Invalid Reference';
+          errorDetails = 'There\'s an issue with linked data. Please try refreshing the page and try again.';
+        } else if (error.message.includes('permission denied') || error.message.includes('insufficient_privilege')) {
+          errorMessage = 'Permission Denied';
+          errorDetails = 'You don\'t have permission to perform this action. Please make sure you\'re logged in correctly.';
+        } else if (error.message.includes('row-level security')) {
+          errorMessage = 'Access Restricted';
+          errorDetails = 'You can only edit your own properties. Please make sure you\'re logged in with the correct account.';
+        } else if (error.message.includes('value too long')) {
+          errorMessage = 'Input Too Long';
+          errorDetails = 'One of your inputs is too long. Please shorten your description or other text fields.';
+        } else if (error.message.includes('invalid input syntax')) {
+          errorMessage = 'Invalid Data Format';
+          errorDetails = 'Some of your input data has an invalid format. Please check your pricing, dates, and contact information.';
+        } else if (error.message.includes('network') || error.message.includes('timeout')) {
+          errorMessage = 'Connection Error';
+          errorDetails = 'There was a network issue. Please check your internet connection and try again.';
+        } else if (error.message.includes('PGRST116')) {
+          errorMessage = 'No Rows Updated';
+          errorDetails = 'The property could not be found or you don\'t have permission to edit it.';
+        } else {
+          // Show the actual error message for debugging
+          errorDetails = `Technical details: ${error.message}`;
+        }
+      } else if (error?.code) {
+        // Handle specific error codes
+        switch (error.code) {
+          case '23505':
+            errorMessage = 'Duplicate Entry';
+            errorDetails = 'This property information already exists in the database.';
+            break;
+          case '23502':
+            errorMessage = 'Required Field Missing';
+            errorDetails = 'A required field is missing. Please fill in all mandatory information.';
+            break;
+          case '42501':
+            errorMessage = 'Permission Denied';
+            errorDetails = 'You don\'t have the necessary permissions for this action.';
+            break;
+          default:
+            errorDetails = `Error code: ${error.code} - ${error.message || 'Unknown error occurred'}`;
+        }
+      } else {
+        errorDetails = 'An unexpected error occurred. Please try again or contact support if the problem persists.';
+      }
+
       toast({
-        title: "Error",
-        description: `Failed to ${isEditing ? 'update' : 'save'} property`,
+        title: errorMessage,
+        description: errorDetails,
         variant: "destructive",
       });
     } finally {
