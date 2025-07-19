@@ -670,7 +670,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
             const mediaResult = await downloadAndSaveMedia(insertedProperty.id, mediaItems);
             result.media.success += mediaResult.success;
             result.media.failed += mediaResult.failed;
-            result.media.errors.push(...mediaResult.errors);
+            result.media.errors.push(...(mediaResult.errors || []));
           }
           
           setUploadStep({
