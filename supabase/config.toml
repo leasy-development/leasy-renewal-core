@@ -2,3 +2,6 @@ project_id = "xmaafgjtzupdndcavjiq"
 
 [functions.cleanup-duplicates]
 verify_jwt = false
+
+[functions.process-bulk-media]
+verify_jwt = false

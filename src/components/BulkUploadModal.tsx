@@ -31,6 +31,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { logger, logAsyncError } from "@/lib/logger";
 import { duplicateDetectionService } from "@/lib/duplicateDetection";
+import { mediaUploader, MediaUploadProgress } from "@/lib/mediaUploader";
 import stringSimilarity from "string-similarity";
 import Papa from "papaparse";
 import * as XLSX from 'xlsx';
@@ -45,6 +46,15 @@ interface PreviewData {
   rows: PropertyRow[];
   headers: string[];
   missingHeaders: string[];
+}
+
+interface LocalMediaUploadProgress {
+  propertyIndex: number;
+  propertyTotal: number;
+  mediaIndex: number;
+  mediaTotal: number;
+  currentUrl?: string;
+  propertyId?: string;
 }
 
 interface PropertyRow {
@@ -119,6 +129,11 @@ interface UploadResult {
   media: MediaDownloadResult;
   errors: ValidationError[];
   duplicatesDetected: number;
+  mediaDetails?: {
+    totalUrls: number;
+    processedProperties: number;
+    avgMediaPerProperty: number;
+  };
 }
 
 const REQUIRED_HEADERS = ['title', 'apartment_type', 'category', 'street_name', 'city'];
@@ -230,6 +245,8 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const [currentFileName, setCurrentFileName] = useState<string>('');
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [mediaUploadProgress, setMediaUploadProgress] = useState<LocalMediaUploadProgress | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -942,7 +959,9 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         status: 'in_progress'
       });
 
-      // Create properties
+      // Create properties first, then handle media
+      const createdProperties: Array<{ id: string; data: PropertyRow; mediaUrls: string[] }> = [];
+      
       for (let i = 0; i < validProperties.length; i++) {
         const { property, mediaItems } = validProperties[i];
         
@@ -961,24 +980,13 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
           
           result.properties.success++;
           
-          // Save images using the new helper function
-          await saveImagesForPropertyRow(property, insertedProperty.id, currentFileName);
-          
-          // Download and save media if any (for existing media URL detection)
-          if (mediaItems.length > 0) {
-            setUploadStep({
-              step: 'media_download',
-              current: i + 1,
-              total: validProperties.length,
-              message: `Downloading media for property ${i + 1}...`,
-              status: 'in_progress'
-            });
-            
-            const mediaResult = await downloadAndSaveMedia(insertedProperty.id, mediaItems);
-            result.media.success += mediaResult.success;
-            result.media.failed += mediaResult.failed;
-            result.media.errors.push(...(mediaResult.errors || []));
-          }
+          // Extract media URLs for batch processing
+          const mediaUrls = mediaItems.map(item => item.originalUrl);
+          createdProperties.push({
+            id: insertedProperty.id,
+            data: property,
+            mediaUrls
+          });
           
           setUploadStep({
             step: 'property_creation',
@@ -1000,6 +1008,55 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         }
       }
 
+      // Now process media for all created properties
+      if (createdProperties.length > 0) {
+        setUploadStep({
+          step: 'media_download',
+          current: 0,
+          total: createdProperties.length,
+          message: 'Processing media files...',
+          status: 'in_progress'
+        });
+
+        const controller = new AbortController();
+        setAbortController(controller);
+
+        try {
+          const { summary } = await mediaUploader.uploadBatchMedia(
+            createdProperties.map(p => ({ id: p.id, data: p.data })),
+            {
+              userId: user.id,
+              csvFileName: currentFileName,
+              signal: controller.signal,
+              onPropertyProgress: (propertyIndex, propertyTotal) => {
+                setMediaUploadProgress({
+                  propertyIndex,
+                  propertyTotal,
+                  mediaIndex: 0,
+                  mediaTotal: 0,
+                  propertyId: createdProperties[propertyIndex]?.id
+                });
+              }
+            }
+          );
+
+          result.media.success = summary.totalSuccess;
+          result.media.failed = summary.totalFailed;
+          result.mediaDetails = {
+            totalUrls: Object.values(summary.propertyResults).reduce((sum, p: any) => sum + (p.success + p.failed), 0),
+            processedProperties: createdProperties.length,
+            avgMediaPerProperty: Math.round(summary.totalSuccess / createdProperties.length * 10) / 10
+          };
+
+        } catch (error: any) {
+          logger.error('Media processing failed', error);
+          result.media.errors.push({ url: '', error: error.message });
+        } finally {
+          setAbortController(null);
+          setMediaUploadProgress(null);
+        }
+      }
+
       result.properties.skipped = duplicateProperties.length;
       setUploadResult(result);
       
@@ -1011,10 +1068,14 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       const duplicateMessage = result.duplicatesDetected > 0 
         ? ` Skipped ${result.duplicatesDetected} duplicate(s).`
         : '';
+
+      const mediaDetailsMessage = result.mediaDetails 
+        ? ` Processed ${result.mediaDetails.totalUrls} media URLs across ${result.mediaDetails.processedProperties} properties.`
+        : '';
       
       toast({
         title: "🎉 Upload Complete",
-        description: `Created ${result.properties.success} properties.${mediaMessage}${duplicateMessage}`,
+        description: `Created ${result.properties.success} properties.${mediaMessage}${duplicateMessage}${mediaDetailsMessage}`,
       });
 
       // Schedule automatic cleanup for test uploads
@@ -1267,6 +1328,21 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                         <div className="flex flex-col gap-2">
                           <span>{uploadStep.message}</span>
                           <Progress value={(uploadStep.current / uploadStep.total) * 100} className="w-full" />
+                          
+                          {/* Media upload progress */}
+                          {mediaUploadProgress && (
+                            <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+                              <div className="flex justify-between items-center mb-1">
+                                <span>Processing Property {mediaUploadProgress.propertyIndex + 1}/{mediaUploadProgress.propertyTotal}</span>
+                                <span className="text-muted-foreground">ID: {mediaUploadProgress.propertyId?.slice(0, 8)}...</span>
+                              </div>
+                              {mediaUploadProgress.currentUrl && (
+                                <div className="text-muted-foreground truncate">
+                                  Current: {mediaUploadProgress.currentUrl}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </AlertDescription>
                     </div>
@@ -1568,7 +1644,28 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                       <div className="text-2xl font-bold text-blue-600">{uploadResult.media.success}</div>
                       <div className="text-sm text-muted-foreground">Media Downloaded</div>
                     </div>
-                  </div>
+                   </div>
+
+                   {/* Media Processing Details */}
+                   {uploadResult.mediaDetails && (
+                     <div className="border rounded-lg p-4">
+                       <h4 className="font-medium mb-2">Media Processing Summary</h4>
+                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                         <div>
+                           <span className="text-muted-foreground">Total URLs:</span>
+                           <span className="ml-2 font-medium">{uploadResult.mediaDetails.totalUrls}</span>
+                         </div>
+                         <div>
+                           <span className="text-muted-foreground">Properties with Media:</span>
+                           <span className="ml-2 font-medium">{uploadResult.mediaDetails.processedProperties}</span>
+                         </div>
+                         <div>
+                           <span className="text-muted-foreground">Avg per Property:</span>
+                           <span className="ml-2 font-medium">{uploadResult.mediaDetails.avgMediaPerProperty}</span>
+                         </div>
+                       </div>
+                     </div>
+                   )}
 
                   {uploadResult.media.failed > 0 && (
                     <Alert variant="destructive">
