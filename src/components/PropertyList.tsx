@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit, Trash2, Copy, Search, Grid, List, MoreHorizontal, CheckCircle, XCircle, Clock, Home } from "lucide-react";
+import { AddPropertyModal } from "./AddPropertyModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -19,6 +20,16 @@ interface Property {
   status: string;
   city: string;
   monthly_rent: number;
+  street_number: string;
+  street_name: string;
+  zip_code: string;
+  region: string;
+  country: string;
+  weekly_rate: number;
+  daily_rate: number;
+  checkin_time: string;
+  checkout_time: string;
+  provides_wgsb: boolean;
   created_at: string;
 }
 
@@ -28,6 +39,7 @@ export const PropertyList = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -238,7 +250,7 @@ export const PropertyList = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setEditingProperty(property)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
@@ -279,7 +291,12 @@ export const PropertyList = () => {
                   </div>
 
                   <div className="flex space-x-2 pt-2">
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => setEditingProperty(property)}
+                    >
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
                     </Button>
@@ -292,6 +309,16 @@ export const PropertyList = () => {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Import the AddPropertyModal for editing */}
+      {editingProperty && (
+        <AddPropertyModal
+          isOpen={!!editingProperty}
+          onClose={() => setEditingProperty(null)}
+          property={editingProperty}
+          onPropertyUpdated={fetchProperties}
+        />
       )}
     </div>
   );

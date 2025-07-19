@@ -15,6 +15,30 @@ import { useToast } from "@/hooks/use-toast";
 interface AddPropertyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  property?: Property | null;
+  onPropertyUpdated?: () => void;
+}
+
+interface Property {
+  id: string;
+  title: string;
+  description: string;
+  apartment_type: string;
+  category: string;
+  status: string;
+  city: string;
+  monthly_rent: number;
+  street_number: string;
+  street_name: string;
+  zip_code: string;
+  region: string;
+  country: string;
+  weekly_rate: number;
+  daily_rate: number;
+  checkin_time: string;
+  checkout_time: string;
+  provides_wgsb: boolean;
+  created_at: string;
 }
 
 interface PropertyFormData {
@@ -62,12 +86,38 @@ const steps = [
   { id: 4, title: 'Terms', description: 'Check-in/out and legal info' },
 ];
 
-export const AddPropertyModal = ({ isOpen, onClose }: AddPropertyModalProps) => {
+export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated }: AddPropertyModalProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<PropertyFormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Load property data when editing
+  useState(() => {
+    if (property && isOpen) {
+      setFormData({
+        title: property.title || '',
+        description: property.description || '',
+        apartment_type: property.apartment_type || '',
+        category: property.category || '',
+        street_number: property.street_number || '',
+        street_name: property.street_name || '',
+        zip_code: property.zip_code || '',
+        city: property.city || '',
+        region: property.region || '',
+        country: property.country || 'Germany',
+        monthly_rent: property.monthly_rent || null,
+        weekly_rate: property.weekly_rate || null,
+        daily_rate: property.daily_rate || null,
+        checkin_time: property.checkin_time || '',
+        checkout_time: property.checkout_time || '',
+        provides_wgsb: property.provides_wgsb || false,
+      });
+    } else if (!property && isOpen) {
+      setFormData(initialFormData);
+    }
+  });
 
   const handleInputChange = (field: keyof PropertyFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -90,30 +140,47 @@ export const AddPropertyModal = ({ isOpen, onClose }: AddPropertyModalProps) => 
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('properties')
-        .insert({
-          ...formData,
-          user_id: user.id,
-          status,
-        });
+      let error;
+      
+      if (property) {
+        // Update existing property
+        const { error: updateError } = await supabase
+          .from('properties')
+          .update({
+            ...formData,
+            status,
+          })
+          .eq('id', property.id);
+        error = updateError;
+      } else {
+        // Create new property
+        const { error: insertError } = await supabase
+          .from('properties')
+          .insert({
+            ...formData,
+            user_id: user.id,
+            status,
+          });
+        error = insertError;
+      }
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Property ${status === 'draft' ? 'saved as draft' : 'published'} successfully`,
+        description: `Property ${property ? 'updated' : status === 'draft' ? 'saved as draft' : 'published'} successfully`,
       });
 
       // Reset form and close modal
       setFormData(initialFormData);
       setCurrentStep(1);
+      onPropertyUpdated?.();
       onClose();
     } catch (error) {
       console.error('Error saving property:', error);
       toast({
         title: "Error",
-        description: "Failed to save property",
+        description: `Failed to ${property ? 'update' : 'save'} property`,
         variant: "destructive",
       });
     } finally {
@@ -359,9 +426,9 @@ export const AddPropertyModal = ({ isOpen, onClose }: AddPropertyModalProps) => 
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Property</DialogTitle>
+          <DialogTitle>{property ? 'Edit Property' : 'Add New Property'}</DialogTitle>
           <DialogDescription>
-            Create a new property listing step by step
+            {property ? 'Update your property details' : 'Create a new property listing step by step'}
           </DialogDescription>
         </DialogHeader>
 
