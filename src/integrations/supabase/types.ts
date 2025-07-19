@@ -260,6 +260,36 @@ export type Database = {
           },
         ]
       }
+      waitlist_submissions: {
+        Row: {
+          company: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          listings_count: string
+          source: string | null
+        }
+        Insert: {
+          company: string
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          listings_count: string
+          source?: string | null
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          listings_count?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

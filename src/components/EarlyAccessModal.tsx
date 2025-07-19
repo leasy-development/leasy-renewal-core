@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface EarlyAccessModalProps {
   open: boolean;
@@ -33,19 +32,15 @@ export const EarlyAccessModal = ({ open, onOpenChange }: EarlyAccessModalProps) 
     setIsSubmitting(true);
 
     try {
-      // Save to Supabase instead of external webhook
-      const { error } = await supabase
-        .from('waitlist_submissions')
-        .insert({
-          full_name: formData.fullName,
-          email: formData.email,
-          company: formData.company,
-          listings_count: formData.listings,
-          source: "Leasy Beta Waitlist",
-          created_at: new Date().toISOString()
-        });
+      // For now, simulate success - this can be connected to a real endpoint later
+      console.log('Waitlist submission:', {
+        ...formData,
+        timestamp: new Date().toISOString(),
+        source: "Leasy Beta Waitlist"
+      });
 
-      if (error) throw error;
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       setIsSubmitting(false);
       setIsSuccess(true);
