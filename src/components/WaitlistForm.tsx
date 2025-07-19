@@ -1,29 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowRight, Mail, Users, Star } from "lucide-react";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { EarlyAccessModal } from "@/components/EarlyAccessModal";
 export const WaitlistForm = () => {
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const {
-    toast
-  } = useToast();
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: "Welcome to the waitlist!",
-        description: "We'll notify you as soon as beta access is available."
-      });
-      setEmail("");
-      setIsSubmitting(false);
-    }, 1000);
-  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return <section className="py-20 lg:py-28 bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="max-w-4xl mx-auto">
@@ -46,17 +27,17 @@ export const WaitlistForm = () => {
             </CardHeader>
             
             <CardContent className="px-8 pb-8">
-              <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-8">
-                <div className="flex gap-2">
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email address" className="flex-1" required />
-                  <Button type="submit" variant="hero" disabled={isSubmitting} className="group">
-                    {isSubmitting ? "Joining..." : <>
-                        Join Waitlist
-                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                      </>}
-                  </Button>
-                </div>
-              </form>
+              <div className="text-center mb-8">
+                <Button 
+                  variant="hero" 
+                  size="lg"
+                  onClick={() => setIsModalOpen(true)}
+                  className="group"
+                >
+                  Join Beta Waitlist
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
 
               <div className="grid md:grid-cols-3 gap-6 text-center">
                 <div className="flex flex-col items-center gap-2">
@@ -97,5 +78,7 @@ export const WaitlistForm = () => {
           </Card>
         </div>
       </div>
+
+      <EarlyAccessModal open={isModalOpen} onOpenChange={setIsModalOpen} />
     </section>;
 };
