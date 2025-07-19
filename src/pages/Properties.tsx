@@ -90,7 +90,7 @@ const Properties = () => {
       </div>
 
       {/* Enhanced Property List */}
-      <EnhancedPropertyList key={refreshTrigger} />
+      <EnhancedPropertyList refreshKey={refreshTrigger} />
 
       {/* Bulk Upload Modal */}
       <BulkUploadModal 

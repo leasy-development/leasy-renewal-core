@@ -49,11 +49,11 @@ interface FilterState {
   city: string;
 }
 
-const useProperties = () => {
+const useProperties = (refreshKey?: number) => {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['properties', user?.id],
+    queryKey: ['properties', user?.id, refreshKey],
     queryFn: async () => {
       if (!user) return [];
       
@@ -101,7 +101,11 @@ const usePropertyPhotos = () => {
   });
 };
 
-export const EnhancedPropertyList = () => {
+interface EnhancedPropertyListProps {
+  refreshKey?: number;
+}
+
+export const EnhancedPropertyList = ({ refreshKey }: EnhancedPropertyListProps = {}) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProperties, setSelectedProperties] = useState<Set<string>>(new Set());
@@ -122,7 +126,7 @@ export const EnhancedPropertyList = () => {
 
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: properties = [], isLoading, refetch } = useProperties();
+  const { data: properties = [], isLoading, refetch } = useProperties(refreshKey);
   const { data: propertyPhotos = {} } = usePropertyPhotos();
 
   // Filter and sort properties

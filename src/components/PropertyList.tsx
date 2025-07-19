@@ -33,7 +33,12 @@ interface Property {
   created_at: string;
 }
 
-export const PropertyList = () => {
+interface PropertyListProps {
+  onRefresh?: () => void;
+  refreshTrigger?: number;
+}
+
+export const PropertyList = ({ refreshTrigger }: PropertyListProps) => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
@@ -46,7 +51,7 @@ export const PropertyList = () => {
     if (user) {
       fetchProperties();
     }
-  }, [user]);
+  }, [user, refreshTrigger]);
 
   const fetchProperties = async () => {
     try {
