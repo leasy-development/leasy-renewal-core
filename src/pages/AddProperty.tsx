@@ -392,23 +392,40 @@ const AddProperty = () => {
   };
 
   const handleNext = () => {
-    // Validation for required fields
-    if (currentStep === 1 && (!formData.title || !formData.apartment_type || !formData.category)) {
-      toast({
-        title: "Required Fields Missing",
-        description: "Please fill in all required fields before continuing.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (currentStep === 2 && (!formData.street_name || !formData.city)) {
-      toast({
-        title: "Required Fields Missing", 
-        description: "Street name and city are required.",
-        variant: "destructive",
-      });
-      return;
+    // Validation for required fields by step
+    switch (currentStep) {
+      case 1:
+        if (!formData.title || !formData.apartment_type || !formData.category) {
+          toast({
+            title: "Required Fields Missing",
+            description: "Please fill in title, apartment type, and category before continuing.",
+            variant: "destructive",
+          });
+          return;
+        }
+        break;
+      
+      case 2:
+        if (!formData.street_name || !formData.city) {
+          toast({
+            title: "Required Fields Missing", 
+            description: "Street name and city are required.",
+            variant: "destructive",
+          });
+          return;
+        }
+        break;
+      
+      case 3:
+        if (!formData.monthly_rent && !formData.weekly_rate && !formData.daily_rate) {
+          toast({
+            title: "Pricing Required",
+            description: "Please set at least one rental rate (monthly, weekly, or daily).",
+            variant: "destructive",
+          });
+          return;
+        }
+        break;
     }
 
     if (currentStep < steps.length) {
@@ -770,83 +787,807 @@ const AddProperty = () => {
       case 4: // Amenities
         return (
           <div className="space-y-6">
-            <h3 className="font-medium">🛏️ Amenities & Features</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="has_wifi"
-                  checked={formData.has_wifi}
-                  onCheckedChange={(checked) => handleInputChange('has_wifi', checked)}
-                />
-                <Label htmlFor="has_wifi">WiFi</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="has_air_conditioning"
-                  checked={formData.has_air_conditioning}
-                  onCheckedChange={(checked) => handleInputChange('has_air_conditioning', checked)}
-                />
-                <Label htmlFor="has_air_conditioning">Air Conditioning</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="has_balcony"
-                  checked={formData.has_balcony}
-                  onCheckedChange={(checked) => handleInputChange('has_balcony', checked)}
-                />
-                <Label htmlFor="has_balcony">Balcony</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="has_kitchenette"
-                  checked={formData.has_kitchenette}
-                  onCheckedChange={(checked) => handleInputChange('has_kitchenette', checked)}
-                />
-                <Label htmlFor="has_kitchenette">Kitchenette</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="has_heating"
-                  checked={formData.has_heating}
-                  onCheckedChange={(checked) => handleInputChange('has_heating', checked)}
-                />
-                <Label htmlFor="has_heating">Heating</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="has_lift"
-                  checked={formData.has_lift}
-                  onCheckedChange={(checked) => handleInputChange('has_lift', checked)}
-                />
-                <Label htmlFor="has_lift">Elevator</Label>
-              </div>
-            </div>
+            <TooltipProvider>
+              <Collapsible open={openSections[4] !== false} onOpenChange={() => toggleSection(4)}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-muted rounded-lg">
+                  <h3 className="font-medium">🏠 General Amenities</h3>
+                  {openSections[4] === false ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_lift"
+                        checked={formData.has_lift}
+                        onCheckedChange={(checked) => handleInputChange('has_lift', checked)}
+                      />
+                      <Label htmlFor="has_lift">Elevator/Lift</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="weekly_cleaning_included"
+                        checked={formData.weekly_cleaning_included}
+                        onCheckedChange={(checked) => handleInputChange('weekly_cleaning_included', checked)}
+                      />
+                      <Label htmlFor="weekly_cleaning_included">Weekly Cleaning</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_essentials_closet"
+                        checked={formData.has_essentials_closet}
+                        onCheckedChange={(checked) => handleInputChange('has_essentials_closet', checked)}
+                      />
+                      <Label htmlFor="has_essentials_closet">Essentials Closet</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_iron_and_board"
+                        checked={formData.has_iron_and_board}
+                        onCheckedChange={(checked) => handleInputChange('has_iron_and_board', checked)}
+                      />
+                      <Label htmlFor="has_iron_and_board">Iron & Board</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_drying_rack"
+                        checked={formData.has_drying_rack}
+                        onCheckedChange={(checked) => handleInputChange('has_drying_rack', checked)}
+                      />
+                      <Label htmlFor="has_drying_rack">Drying Rack</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_luggage_storage"
+                        checked={formData.has_luggage_storage}
+                        onCheckedChange={(checked) => handleInputChange('has_luggage_storage', checked)}
+                      />
+                      <Label htmlFor="has_luggage_storage">Luggage Storage</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="yoga_mats_available"
+                        checked={formData.yoga_mats_available}
+                        onCheckedChange={(checked) => handleInputChange('yoga_mats_available', checked)}
+                      />
+                      <Label htmlFor="yoga_mats_available">Yoga Mats</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="is_accessible"
+                        checked={formData.is_accessible}
+                        onCheckedChange={(checked) => handleInputChange('is_accessible', checked)}
+                      />
+                      <Label htmlFor="is_accessible">Accessible</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="fire_extinguisher_available"
+                        checked={formData.fire_extinguisher_available}
+                        onCheckedChange={(checked) => handleInputChange('fire_extinguisher_available', checked)}
+                      />
+                      <Label htmlFor="fire_extinguisher_available">Fire Extinguisher</Label>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="shared_laundry_room">Shared Laundry Room</Label>
+                      <Select value={formData.shared_laundry_room} onValueChange={(value) => handleInputChange('shared_laundry_room', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="building">In Building</SelectItem>
+                          <SelectItem value="floor">On Floor</SelectItem>
+                          <SelectItem value="shared">Shared Access</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="parking_available">Parking Available</Label>
+                      <Select value={formData.parking_available} onValueChange={(value) => handleInputChange('parking_available', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="street">Street Parking</SelectItem>
+                          <SelectItem value="garage">Garage</SelectItem>
+                          <SelectItem value="private">Private Space</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="pets_allowed">Pets Allowed</Label>
+                      <Select value={formData.pets_allowed} onValueChange={(value) => handleInputChange('pets_allowed', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">No Pets</SelectItem>
+                          <SelectItem value="cats">Cats Only</SelectItem>
+                          <SelectItem value="dogs">Dogs Only</SelectItem>
+                          <SelectItem value="both">Cats & Dogs</SelectItem>
+                          <SelectItem value="all">All Pets</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="breakfast_box_available">Breakfast Box</Label>
+                      <Select value={formData.breakfast_box_available} onValueChange={(value) => handleInputChange('breakfast_box_available', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">Not Available</SelectItem>
+                          <SelectItem value="paid">Paid Option</SelectItem>
+                          <SelectItem value="free">Free</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Collapsible open={openSections[41] !== false} onOpenChange={() => toggleSection(41)}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-muted rounded-lg">
+                  <h3 className="font-medium">🏢 Building Amenities</h3>
+                  {openSections[41] === false ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_wifi"
+                        checked={formData.has_wifi}
+                        onCheckedChange={(checked) => handleInputChange('has_wifi', checked)}
+                      />
+                      <Label htmlFor="has_wifi">WiFi</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_air_conditioning"
+                        checked={formData.has_air_conditioning}
+                        onCheckedChange={(checked) => handleInputChange('has_air_conditioning', checked)}
+                      />
+                      <Label htmlFor="has_air_conditioning">Air Conditioning</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_heating"
+                        checked={formData.has_heating}
+                        onCheckedChange={(checked) => handleInputChange('has_heating', checked)}
+                      />
+                      <Label htmlFor="has_heating">Heating</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_balcony"
+                        checked={formData.has_balcony}
+                        onCheckedChange={(checked) => handleInputChange('has_balcony', checked)}
+                      />
+                      <Label htmlFor="has_balcony">Balcony</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_terrace"
+                        checked={formData.has_terrace}
+                        onCheckedChange={(checked) => handleInputChange('has_terrace', checked)}
+                      />
+                      <Label htmlFor="has_terrace">Terrace</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_24_7_support"
+                        checked={formData.has_24_7_support}
+                        onCheckedChange={(checked) => handleInputChange('has_24_7_support', checked)}
+                      />
+                      <Label htmlFor="has_24_7_support">24/7 Support</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="contactless_checkin"
+                        checked={formData.contactless_checkin}
+                        onCheckedChange={(checked) => handleInputChange('contactless_checkin', checked)}
+                      />
+                      <Label htmlFor="contactless_checkin">Contactless Check-in</Label>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Collapsible open={openSections[42] !== false} onOpenChange={() => toggleSection(42)}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-muted rounded-lg">
+                  <h3 className="font-medium">🍽️ Kitchen & Dining</h3>
+                  {openSections[42] === false ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_kitchenette"
+                        checked={formData.has_kitchenette}
+                        onCheckedChange={(checked) => handleInputChange('has_kitchenette', checked)}
+                      />
+                      <Label htmlFor="has_kitchenette">Kitchenette</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_mini_fridge"
+                        checked={formData.has_mini_fridge}
+                        onCheckedChange={(checked) => handleInputChange('has_mini_fridge', checked)}
+                      />
+                      <Label htmlFor="has_mini_fridge">Mini Fridge</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_coffee_machine_kettle"
+                        checked={formData.has_coffee_machine_kettle}
+                        onCheckedChange={(checked) => handleInputChange('has_coffee_machine_kettle', checked)}
+                      />
+                      <Label htmlFor="has_coffee_machine_kettle">Coffee Machine/Kettle</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_microwave"
+                        checked={formData.has_microwave}
+                        onCheckedChange={(checked) => handleInputChange('has_microwave', checked)}
+                      />
+                      <Label htmlFor="has_microwave">Microwave</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_cooking_essentials"
+                        checked={formData.has_cooking_essentials}
+                        onCheckedChange={(checked) => handleInputChange('has_cooking_essentials', checked)}
+                      />
+                      <Label htmlFor="has_cooking_essentials">Cooking Essentials</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_tableware"
+                        checked={formData.has_tableware}
+                        onCheckedChange={(checked) => handleInputChange('has_tableware', checked)}
+                      />
+                      <Label htmlFor="has_tableware">Tableware</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_glasses_and_cups"
+                        checked={formData.has_glasses_and_cups}
+                        onCheckedChange={(checked) => handleInputChange('has_glasses_and_cups', checked)}
+                      />
+                      <Label htmlFor="has_glasses_and_cups">Glasses & Cups</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_dishwasher"
+                        checked={formData.has_dishwasher}
+                        onCheckedChange={(checked) => handleInputChange('has_dishwasher', checked)}
+                      />
+                      <Label htmlFor="has_dishwasher">Dishwasher</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_oven"
+                        checked={formData.has_oven}
+                        onCheckedChange={(checked) => handleInputChange('has_oven', checked)}
+                      />
+                      <Label htmlFor="has_oven">Oven</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_stove"
+                        checked={formData.has_stove}
+                        onCheckedChange={(checked) => handleInputChange('has_stove', checked)}
+                      />
+                      <Label htmlFor="has_stove">Stove</Label>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Collapsible open={openSections[43] !== false} onOpenChange={() => toggleSection(43)}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-muted rounded-lg">
+                  <h3 className="font-medium">🛀 Room Amenities</h3>
+                  {openSections[43] === false ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_smart_tv"
+                        checked={formData.has_smart_tv}
+                        onCheckedChange={(checked) => handleInputChange('has_smart_tv', checked)}
+                      />
+                      <Label htmlFor="has_smart_tv">Smart TV</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_hair_dryer"
+                        checked={formData.has_hair_dryer}
+                        onCheckedChange={(checked) => handleInputChange('has_hair_dryer', checked)}
+                      />
+                      <Label htmlFor="has_hair_dryer">Hair Dryer</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_complimentary_water"
+                        checked={formData.has_complimentary_water}
+                        onCheckedChange={(checked) => handleInputChange('has_complimentary_water', checked)}
+                      />
+                      <Label htmlFor="has_complimentary_water">Complimentary Water</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_work_station"
+                        checked={formData.has_work_station}
+                        onCheckedChange={(checked) => handleInputChange('has_work_station', checked)}
+                      />
+                      <Label htmlFor="has_work_station">Work Station</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="free_tea_coffee"
+                        checked={formData.free_tea_coffee}
+                        onCheckedChange={(checked) => handleInputChange('free_tea_coffee', checked)}
+                      />
+                      <Label htmlFor="free_tea_coffee">Free Tea & Coffee</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_shampoo_conditioner"
+                        checked={formData.has_shampoo_conditioner}
+                        onCheckedChange={(checked) => handleInputChange('has_shampoo_conditioner', checked)}
+                      />
+                      <Label htmlFor="has_shampoo_conditioner">Shampoo & Conditioner</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="is_sustainable_amenities"
+                        checked={formData.is_sustainable_amenities}
+                        onCheckedChange={(checked) => handleInputChange('is_sustainable_amenities', checked)}
+                      />
+                      <Label htmlFor="is_sustainable_amenities">Sustainable Amenities</Label>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </TooltipProvider>
           </div>
         );
 
-      case 6: // Check-in/out
+      case 5: // Additional Costs
         return (
           <div className="space-y-6">
-            <h3 className="font-medium">🕐 Check-in & Check-out Times</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="checkin_time">Check-in Time</Label>
-                <Input
-                  id="checkin_time"
-                  type="time"
-                  value={formData.checkin_time}
-                  onChange={(e) => handleInputChange('checkin_time', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="checkout_time">Check-out Time</Label>
-                <Input
-                  id="checkout_time"
-                  type="time"
-                  value={formData.checkout_time}
-                  onChange={(e) => handleInputChange('checkout_time', e.target.value)}
-                />
-              </div>
+            <h3 className="font-medium">💳 Additional Costs & Fees</h3>
+            
+            {/* Additional Fees */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Additional Fees</CardTitle>
+                <CardDescription>Add any extra fees for your property</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.additional_fees.map((fee, index) => (
+                  <div key={fee.id} className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <Label>Description</Label>
+                      <Input
+                        value={fee.description}
+                        onChange={(e) => updateItem('additional_fees', fee.id, { description: e.target.value })}
+                        placeholder="e.g., Cleaning fee"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Label>Amount (€)</Label>
+                      <Input
+                        type="number"
+                        value={fee.amount}
+                        onChange={(e) => updateItem('additional_fees', fee.id, { amount: Number(e.target.value) })}
+                        placeholder="50"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Label>Frequency</Label>
+                      <Select 
+                        value={fee.frequency} 
+                        onValueChange={(value) => updateItem('additional_fees', fee.id, { frequency: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="once">One-time</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeItem('additional_fees', fee.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addItem('additional_fees')}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Fee
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Discounts */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Discounts</CardTitle>
+                <CardDescription>Add any discounts for longer stays</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.discounts.map((discount, index) => (
+                  <div key={discount.id} className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <Label>Discount Name</Label>
+                      <Input
+                        value={discount.name}
+                        onChange={(e) => updateItem('discounts', discount.id, { name: e.target.value })}
+                        placeholder="e.g., Weekly discount"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Label>Amount</Label>
+                      <Input
+                        type="number"
+                        value={discount.amount}
+                        onChange={(e) => updateItem('discounts', discount.id, { amount: Number(e.target.value) })}
+                        placeholder="10"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Label>Type</Label>
+                      <Select 
+                        value={discount.isPercentage ? 'percentage' : 'fixed'} 
+                        onValueChange={(value) => updateItem('discounts', discount.id, { isPercentage: value === 'percentage' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentage">Percentage</SelectItem>
+                          <SelectItem value="fixed">Fixed Amount</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeItem('discounts', discount.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addItem('discounts')}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Discount
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Taxes */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Taxes</CardTitle>
+                <CardDescription>Add applicable taxes</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.taxes.map((tax, index) => (
+                  <div key={tax.id} className="flex gap-3 items-end">
+                    <div className="w-32">
+                      <Label>Percentage (%)</Label>
+                      <Input
+                        type="number"
+                        value={tax.percentage}
+                        onChange={(e) => updateItem('taxes', tax.id, { percentage: Number(e.target.value) })}
+                        placeholder="19"
+                        step="0.1"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label>Applies To</Label>
+                      <Select 
+                        value={tax.appliesTo} 
+                        onValueChange={(value) => updateItem('taxes', tax.id, { appliesTo: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rent">Rent</SelectItem>
+                          <SelectItem value="fees">Additional Fees</SelectItem>
+                          <SelectItem value="total">Total Amount</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeItem('taxes', tax.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addItem('taxes')}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Tax
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 7: // Documents
+        return (
+          <div className="space-y-6">
+            <h3 className="font-medium">📋 Documents & Requirements</h3>
+            
+            {/* File Uploads */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Terms & Conditions</CardTitle>
+                  <CardDescription>Upload your terms and conditions document</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+                    <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-2">Click to upload or drag and drop</p>
+                    <p className="text-xs text-muted-foreground">PDF, DOC, DOCX up to 5MB</p>
+                    <Button variant="outline" size="sm" className="mt-2">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose File
+                    </Button>
+                  </div>
+                  {formData.terms_conditions && (
+                    <p className="text-sm text-green-600 mt-2">✓ File uploaded: {formData.terms_conditions.name}</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Cancellation Policy</CardTitle>
+                  <CardDescription>Upload your cancellation policy document</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+                    <Upload className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-2">Click to upload or drag and drop</p>
+                    <p className="text-xs text-muted-foreground">PDF, DOC, DOCX up to 5MB</p>
+                    <Button variant="outline" size="sm" className="mt-2">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose File
+                    </Button>
+                  </div>
+                  {formData.cancellation_policy && (
+                    <p className="text-sm text-green-600 mt-2">✓ File uploaded: {formData.cancellation_policy.name}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Required Documents */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Required Documents from Tenants</CardTitle>
+                <CardDescription>Specify what documents tenants need to provide</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.required_documents.map((doc, index) => (
+                  <div key={doc.id} className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <Label>Document Title</Label>
+                      <Input
+                        value={doc.title}
+                        onChange={(e) => updateItem('required_documents', doc.id, { title: e.target.value })}
+                        placeholder="e.g., Passport/ID"
+                      />
+                    </div>
+                    <div className="w-48">
+                      <Label>Required For</Label>
+                      <Select 
+                        value={doc.renterType} 
+                        onValueChange={(value) => updateItem('required_documents', doc.id, { renterType: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Tenants</SelectItem>
+                          <SelectItem value="primary">Primary Tenant Only</SelectItem>
+                          <SelectItem value="international">International Tenants</SelectItem>
+                          <SelectItem value="students">Students Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeItem('required_documents', doc.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addItem('required_documents')}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Required Document
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 8: // Beds
+        return (
+          <div className="space-y-6">
+            <h3 className="font-medium">🛏️ Bedroom Configuration</h3>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Bed Setup</CardTitle>
+                <CardDescription>Configure the beds available in your property</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.beds.map((bed, index) => (
+                  <div key={bed.id} className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <Label>Room</Label>
+                      <Select 
+                        value={bed.room} 
+                        onValueChange={(value) => updateItem('beds', bed.id, { room: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select room" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="room-1">Room 1</SelectItem>
+                          <SelectItem value="room-2">Room 2</SelectItem>
+                          <SelectItem value="room-3">Room 3</SelectItem>
+                          <SelectItem value="living-room">Living Room</SelectItem>
+                          <SelectItem value="studio">Studio</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-32">
+                      <Label>Bed Size</Label>
+                      <Select 
+                        value={bed.size} 
+                        onValueChange={(value) => updateItem('beds', bed.id, { size: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="single">Single</SelectItem>
+                          <SelectItem value="double">Double</SelectItem>
+                          <SelectItem value="queen">Queen</SelectItem>
+                          <SelectItem value="king">King</SelectItem>
+                          <SelectItem value="sofa-bed">Sofa Bed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-32">
+                      <Label>Type</Label>
+                      <Select 
+                        value={bed.type} 
+                        onValueChange={(value) => updateItem('beds', bed.id, { type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard">Standard</SelectItem>
+                          <SelectItem value="bunk">Bunk Bed</SelectItem>
+                          <SelectItem value="murphy">Murphy Bed</SelectItem>
+                          <SelectItem value="sofa">Sofa Bed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeItem('beds', bed.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => addItem('beds')}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Bed
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 9: // Landlord Info
+        return (
+          <div className="space-y-6">
+            <h3 className="font-medium">👤 Landlord & Contact Information</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Landlord Information</CardTitle>
+                  <CardDescription>Primary landlord contact details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="landlord_name">Landlord Name</Label>
+                    <Input
+                      id="landlord_name"
+                      value={formData.landlord_name}
+                      onChange={(e) => handleInputChange('landlord_name', e.target.value)}
+                      placeholder="John Smith"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Contractual Partner</CardTitle>
+                  <CardDescription>Who will sign the rental agreement</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="contractual_partner">Partner Name/Company</Label>
+                    <Input
+                      id="contractual_partner"
+                      value={formData.contractual_partner}
+                      onChange={(e) => handleInputChange('contractual_partner', e.target.value)}
+                      placeholder="Smith Property Management"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         );
@@ -881,10 +1622,11 @@ const AddProperty = () => {
                   <CardTitle className="text-base">Basic Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <div><strong>Title:</strong> {formData.title}</div>
-                  <div><strong>Type:</strong> {formData.apartment_type}</div>
-                  <div><strong>Category:</strong> {formData.category}</div>
+                  <div><strong>Title:</strong> {formData.title || 'Not set'}</div>
+                  <div><strong>Type:</strong> {formData.apartment_type || 'Not set'}</div>
+                  <div><strong>Category:</strong> {formData.category || 'Not set'}</div>
                   <div><strong>Photos:</strong> {formData.photos.length} uploaded</div>
+                  <div><strong>Description:</strong> {formData.description ? `${formData.description.substring(0, 100)}...` : 'Not set'}</div>
                 </CardContent>
               </Card>
 
@@ -893,9 +1635,10 @@ const AddProperty = () => {
                   <CardTitle className="text-base">Address</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <div><strong>Address:</strong> {formData.street_number} {formData.street_name}</div>
-                  <div><strong>City:</strong> {formData.city}</div>
-                  <div><strong>ZIP:</strong> {formData.zip_code}</div>
+                  <div><strong>Address:</strong> {formData.street_number} {formData.street_name || 'Not set'}</div>
+                  <div><strong>City:</strong> {formData.city || 'Not set'}</div>
+                  <div><strong>ZIP:</strong> {formData.zip_code || 'Not set'}</div>
+                  <div><strong>Region:</strong> {formData.region || 'Not set'}</div>
                   <div><strong>Country:</strong> {formData.country}</div>
                 </CardContent>
               </Card>
@@ -908,20 +1651,107 @@ const AddProperty = () => {
                   {formData.monthly_rent && <div><strong>Monthly:</strong> €{formData.monthly_rent}</div>}
                   {formData.weekly_rate && <div><strong>Weekly:</strong> €{formData.weekly_rate}</div>}
                   {formData.daily_rate && <div><strong>Daily:</strong> €{formData.daily_rate}</div>}
+                  {!formData.monthly_rent && !formData.weekly_rate && !formData.daily_rate && (
+                    <div className="text-muted-foreground">No pricing set</div>
+                  )}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Check Times</CardTitle>
+                  <CardTitle className="text-base">Times & Requirements</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div><strong>Check-in:</strong> {formData.checkin_time || 'Not set'}</div>
                   <div><strong>Check-out:</strong> {formData.checkout_time || 'Not set'}</div>
                   <div><strong>WGSB:</strong> {formData.provides_wgsb ? 'Yes' : 'No'}</div>
+                  <div><strong>Beds:</strong> {formData.beds.length} configured</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Amenities Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex flex-wrap gap-1">
+                    {formData.has_wifi && <Badge variant="secondary">WiFi</Badge>}
+                    {formData.has_air_conditioning && <Badge variant="secondary">AC</Badge>}
+                    {formData.has_heating && <Badge variant="secondary">Heating</Badge>}
+                    {formData.has_balcony && <Badge variant="secondary">Balcony</Badge>}
+                    {formData.has_kitchenette && <Badge variant="secondary">Kitchen</Badge>}
+                    {formData.has_lift && <Badge variant="secondary">Elevator</Badge>}
+                    {formData.parking_available !== 'none' && <Badge variant="secondary">Parking</Badge>}
+                  </div>
+                  {!formData.has_wifi && !formData.has_air_conditioning && !formData.has_heating && 
+                   !formData.has_balcony && !formData.has_kitchenette && !formData.has_lift && (
+                    <div className="text-muted-foreground">No amenities selected</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Additional Costs</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div><strong>Additional Fees:</strong> {formData.additional_fees.length}</div>
+                  <div><strong>Discounts:</strong> {formData.discounts.length}</div>
+                  <div><strong>Taxes:</strong> {formData.taxes.length}</div>
+                  <div><strong>Required Documents:</strong> {formData.required_documents.length}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Contact Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div><strong>Landlord:</strong> {formData.landlord_name || 'Not set'}</div>
+                  <div><strong>Contractual Partner:</strong> {formData.contractual_partner || 'Not set'}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Media & Links</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div><strong>Video Tour:</strong> {formData.video_tour_link ? '✓ Set' : 'Not set'}</div>
+                  <div><strong>Virtual Tour:</strong> {formData.virtual_tour_link ? '✓ Set' : 'Not set'}</div>
+                  <div><strong>Terms & Conditions:</strong> {formData.terms_conditions ? '✓ Uploaded' : 'Not uploaded'}</div>
+                  <div><strong>Cancellation Policy:</strong> {formData.cancellation_policy ? '✓ Uploaded' : 'Not uploaded'}</div>
                 </CardContent>
               </Card>
             </div>
+
+            <Card className="bg-muted/50">
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <h4 className="font-medium mb-2">Ready to {isEditing ? 'update' : 'publish'} your property?</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Review all the information above and make sure everything is correct before {isEditing ? 'updating' : 'publishing'}.
+                  </p>
+                  <div className="flex justify-center space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleSave('draft')}
+                      disabled={loading || !formData.title || !formData.city}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {isEditing ? 'Save Changes' : 'Save as Draft'}
+                    </Button>
+                    <Button
+                      onClick={() => handleSave('published')}
+                      disabled={loading || !formData.title || !formData.city}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {isEditing ? 'Update & Publish' : 'Publish Property'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
