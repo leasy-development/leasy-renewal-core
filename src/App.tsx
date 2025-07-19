@@ -27,19 +27,6 @@ import AdminPromptManager from "./components/AdminPromptManager";
 import { UpdateNotification } from "./components/UpdateNotification";
 
 const App = () => {
-  // Register service worker for PWA support
-  React.useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('SW registered: ', registration);
-        })
-        .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
-        });
-    }
-  }, []);
-
   return (
     <ErrorBoundary>
       <AuthProvider>
