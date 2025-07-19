@@ -1,259 +1,187 @@
-import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Users, Calendar, Settings, LogOut, Plus, Home } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
-import { EnhancedPropertyList } from "@/components/EnhancedPropertyList";
+import { BarChart3, Users, Calendar, Settings, Home, Plus, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">L</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">Leasy</span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Link 
-                to="/analytics" 
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Analytics
-              </Link>
-              <Link 
-                to="/account" 
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Account
-              </Link>
-              <span className="text-sm text-muted-foreground">
-                Welcome, {user?.email?.split('@')[0]}
-              </span>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="container mx-auto px-4 lg:px-8 py-8">
+      <div className="mb-8">
+        <h1 className="text-display text-foreground mb-2">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back, {user?.email?.split('@')[0]}! Here's an overview of your property management activity.
+        </p>
+      </div>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 lg:px-8 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-display text-foreground mb-2">Property Management</h1>
-            <p className="text-muted-foreground">
-              Manage your properties and track performance across all platforms.
-            </p>
-          </div>
-          {/* Add Property Button - Fixed position on desktop, floating on mobile */}
-          <Link to="/add-property">
-            <Button 
-              className="hidden md:flex items-center space-x-2"
-              size="lg"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Add Property</span>
-            </Button>
-          </Link>
-        </div>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Properties</CardTitle>
+            <Home className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-muted-foreground">+2 from last month</p>
+          </CardContent>
+        </Card>
 
-        {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Link to="/analytics">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center text-base">
-                  <BarChart3 className="h-5 w-5 mr-2 text-primary" />
-                  Analytics
-                </CardTitle>
-                <CardDescription>
-                  View performance insights and metrics
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Published Listings</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8</div>
+            <p className="text-xs text-muted-foreground">+3 this week</p>
+          </CardContent>
+        </Card>
 
-          <Link to="/account">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center text-base">
-                  <Settings className="h-5 w-5 mr-2 text-primary" />
-                  Account Settings
-                </CardTitle>
-                <CardDescription>
-                  Manage your profile and preferences
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sync Success Rate</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">94%</div>
+            <p className="text-xs text-muted-foreground">Last 7 days</p>
+          </CardContent>
+        </Card>
 
-          <Card className="opacity-60">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Draft Properties</CardTitle>
+            <Settings className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-xs text-muted-foreground">Needs attention</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Access Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Link to="/add-property">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow border-primary/20 hover:border-primary/40">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center text-base">
-                <Users className="h-5 w-5 mr-2 text-muted-foreground" />
-                Team Management
+                <Plus className="h-5 w-5 mr-2 text-primary" />
+                Add New Property
               </CardTitle>
               <CardDescription>
-                Coming soon - Manage team members
+                Create a new property listing to start managing and syncing
               </CardDescription>
             </CardHeader>
           </Card>
+        </Link>
 
-          <Card className="opacity-60">
+        <Link to="/properties">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center text-base">
-                <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
-                Bookings
+                <Home className="h-5 w-5 mr-2 text-primary" />
+                Manage Properties
               </CardTitle>
               <CardDescription>
-                Coming soon - Manage reservations
+                View and edit all your property listings
               </CardDescription>
             </CardHeader>
           </Card>
-        </div>
+        </Link>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Properties</CardTitle>
-              <Home className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">+2 from last month</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Published Listings</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-muted-foreground">+3 this week</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sync Success Rate</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">94%</div>
-              <p className="text-xs text-muted-foreground">Last 7 days</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Draft Properties</CardTitle>
-              <Settings className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">3</div>
-              <p className="text-xs text-muted-foreground">Needs attention</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Enhanced Property List */}
-        <EnhancedPropertyList />
-
-        {/* Quick Actions - Keep existing functionality */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Commonly used features</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Link to="/add-property">
-                <Button 
-                  className="w-full justify-start" 
-                  variant="outline"
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  Add New Property
-                </Button>
-              </Link>
-              <Button className="w-full justify-start" variant="outline">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Sync All Properties
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Calendar className="h-4 w-4 mr-2" />
+        <Link to="/analytics">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <BarChart3 className="h-5 w-5 mr-2 text-primary" />
                 View Analytics
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Settings className="h-4 w-4 mr-2" />
-                Platform Settings
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest updates from your properties</CardDescription>
+              </CardTitle>
+              <CardDescription>
+                Track performance and insights
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <div className="text-sm">
-                    <p className="font-medium">Property synced to ImmoScout24</p>
-                    <p className="text-muted-foreground">2 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <div className="text-sm">
-                    <p className="font-medium">New property draft created</p>
-                    <p className="text-muted-foreground">5 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <div className="text-sm">
-                    <p className="font-medium">Sync failed - Missing images</p>
-                    <p className="text-muted-foreground">1 day ago</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
           </Card>
-        </div>
-      </main>
+        </Link>
 
-      {/* Floating Add Button for Mobile */}
-      <Link to="/add-property">
-        <Button 
-          className="md:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
-          size="icon"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      </Link>
+        <Link to="/sync">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+                Platform Sync
+              </CardTitle>
+              <CardDescription>
+                Manage synchronization with rental platforms
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link to="/ai-tools">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <Settings className="h-5 w-5 mr-2 text-primary" />
+                AI Tools
+              </CardTitle>
+              <CardDescription>
+                Leverage AI to optimize your listings
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link to="/media">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <Calendar className="h-5 w-5 mr-2 text-primary" />
+                Media Library
+              </CardTitle>
+              <CardDescription>
+                Manage photos and media files
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>Latest updates from your properties</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="text-sm">
+                <p className="font-medium">Property synced to ImmoScout24</p>
+                <p className="text-muted-foreground">2 hours ago</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="text-sm">
+                <p className="font-medium">New property draft created</p>
+                <p className="text-muted-foreground">5 hours ago</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <div className="text-sm">
+                <p className="font-medium">Sync failed - Missing images</p>
+                <p className="text-muted-foreground">1 day ago</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
