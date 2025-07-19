@@ -394,6 +394,11 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     const rawHeaders = jsonData[0] as string[];
     const dataRows = jsonData.slice(1) as any[][];
     
+    // Validate that rawHeaders is actually an array
+    if (!Array.isArray(rawHeaders)) {
+      throw new Error('Invalid file format: Unable to read headers');
+    }
+    
     return dataRows.map(row => {
       const mappedRow: Partial<PropertyRow> = {};
       
