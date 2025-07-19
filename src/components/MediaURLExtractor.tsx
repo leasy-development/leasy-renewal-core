@@ -196,18 +196,47 @@ export function MediaURLExtractor() {
   };
 
   const processManualUrls = async () => {
-    if (extractedMedia.length === 0) return;
-
-    const totalUrls = extractedMedia.reduce((sum, item) => sum + item.urls.length, 0);
-    const allUrls: { url: string; propertyId: string }[] = [];
-    
-    extractedMedia.forEach(mediaItem => {
-      mediaItem.urls.forEach(url => {
-        allUrls.push({ url, propertyId: mediaItem.propertyId });
+    if (!manualUrls.trim()) {
+      toast({
+        title: "No URLs Provided",
+        description: "Please enter some image URLs to process.",
+        variant: "destructive",
       });
-    });
+      return;
+    }
 
-    await processUrlList(allUrls.map(item => item.url), allUrls[0]?.propertyId, "extracted");
+    // Parse URLs from the manual input
+    const urls = manualUrls
+      .split(/[,\n\r]+/)
+      .map(url => url.trim())
+      .filter(url => url && isValidImageUrl(url));
+
+    if (urls.length === 0) {
+      toast({
+        title: "No Valid URLs",
+        description: "No valid image URLs found in your input.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get the first property to attach images to
+    const { data: properties } = await supabase
+      .from('properties')
+      .select('id')
+      .limit(1);
+
+    if (!properties || properties.length === 0) {
+      toast({
+        title: "No Properties Found",
+        description: "You need at least one property to attach images to.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const testPropertyId = properties[0].id;
+    await processUrlList(urls, testPropertyId, "manual");
   };
 
   const processUrlList = async (urls: string[], defaultPropertyId: string, source: string) => {
@@ -270,6 +299,17 @@ export function MediaURLExtractor() {
       setIsProcessing(false);
       setProgress(0);
     }
+  };
+
+  const processExtractedUrls = async () => {
+    if (extractedMedia.length === 0) return;
+
+    const allUrls: string[] = [];
+    extractedMedia.forEach(mediaItem => {
+      allUrls.push(...mediaItem.urls);
+    });
+
+    await processUrlList(allUrls, extractedMedia[0]?.propertyId || '', "extracted");
   };
 
   return (
