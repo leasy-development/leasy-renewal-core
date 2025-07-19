@@ -174,6 +174,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const [uploadStep, setUploadStep] = useState<UploadStepStatus | null>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [manualProperties, setManualProperties] = useState<Partial<PropertyRow>[]>([{}]);
+  const [currentFileName, setCurrentFileName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -312,6 +313,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setCurrentFileName(file.name);
     setIsProcessing(true);
     setUploadStep({
       step: 'validation',
@@ -525,58 +527,126 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   };
 
   /**
-   * Extracts and saves all valid image URLs from a PropertyRow object.
-   * Downloads each image, uploads it to Supabase Storage, and links it in `property_media`.
+   * Extracts media items (photos and floorplans) from a property row
    */
-  const saveImagesForPropertyRow = async (property: PropertyRow, propertyId: string) => {
-    const urlRegex = /https?:\/\/[^\s<>"{}|\\^`$]*\.(?:jpg|jpeg|png|gif|webp|bmp|svg)(?:\?[^\s<>"{}|\\^`\[\]]*)?/gi;
+  const extractMediaItemsFromRow = (row: PropertyRow): { url: string; type: 'photo' | 'floorplan' }[] => {
+    const urlRegex = /https?:\/\/[^\s<>"{}|\\^`$]*\.(?:jpg|jpeg|png|gif|webp|bmp|svg|tiff)(?:\?[^\s<>"{}|\\^`\[\]]*)?/gi;
+    const items: { url: string; type: 'photo' | 'floorplan' }[] = [];
 
-    const imageUrls: string[] = [];
-
-    Object.entries(property).forEach(([key, value]) => {
-      if (typeof value === "string" && key.toLowerCase().includes("image") && value.match(urlRegex)) {
-        imageUrls.push(...value.match(urlRegex)!);
+    Object.entries(row).forEach(([key, value]) => {
+      const lowerKey = key.toLowerCase();
+      if (typeof value === "string") {
+        const matches = value.match(urlRegex);
+        if (matches && (lowerKey.includes("image") || lowerKey.includes("photo") || lowerKey.includes("floor"))) {
+          const type = lowerKey.includes("floor") ? "floorplan" : "photo";
+          matches.forEach((url) => items.push({ url, type }));
+        }
       }
     });
 
-    for (const url of imageUrls) {
+    return items;
+  };
+
+  /**
+   * Extracts and saves all media from a PropertyRow object, organized by CSV filename.
+   * Downloads each image/floorplan, uploads it to Supabase Storage, and links it in `property_media`.
+   */
+  const saveImagesForPropertyRow = async (
+    property: PropertyRow,
+    propertyId: string,
+    sourceFileName: string
+  ) => {
+    const mediaItems = extractMediaItemsFromRow(property);
+    const folderName = sourceFileName.replace(/[^a-z0-9_\-]/gi, "-").replace(/\.csv$/i, "").toLowerCase();
+
+    for (const item of mediaItems) {
+      const { url, type } = item;
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+        if (!response.ok) throw new Error(`Fetch failed for ${url}`);
 
         const blob = await response.blob();
-        const contentType = response.headers.get('content-type');
-        if (!contentType?.startsWith('image/')) throw new Error("Not an image");
+        const contentType = response.headers.get("content-type");
+        if (!contentType?.startsWith("image/")) throw new Error("Invalid image");
 
-        const extension = contentType.split('/')[1] || "jpg";
-        const filename = `${propertyId}/${Date.now()}-${Math.floor(Math.random() * 99999)}.${extension}`;
+        const extension = contentType.split("/")[1] || "jpg";
+        const filename = `${folderName}/${propertyId}/${Date.now()}-${Math.floor(Math.random() * 99999)}.${extension}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('property-photos')
-          .upload(filename, blob, {
-            contentType,
-            upsert: false,
-          });
+          .from("property-photos")
+          .upload(filename, blob, { contentType, upsert: false });
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
-          .from('property-photos')
+          .from("property-photos")
           .getPublicUrl(filename);
 
-        await supabase.from('property_media').insert({
+        await supabase.from("property_media").insert({
           property_id: propertyId,
-          media_type: 'photo',
+          media_type: type,
           url: publicUrl,
-          title: `Auto-uploaded image from CSV`,
+          title: `Auto-uploaded ${type}`,
           sort_order: 0,
         });
 
-        console.info(`✅ Image saved: ${publicUrl}`);
+        console.info(`✅ ${type} saved: ${publicUrl}`);
       } catch (err) {
-        console.warn(`❌ Failed to process image URL: ${url}`, err);
+        console.warn(`❌ Failed to process ${type} URL: ${url}`, err);
       }
     }
+  };
+
+  /**
+   * Cleanup function to remove all files and DB entries for a specific CSV folder
+   */
+  const cleanupByCSVFolder = async (folderName: string) => {
+    const prefix = folderName.replace(/[^a-z0-9_\-]/gi, "-").replace(/\.csv$/i, "").toLowerCase();
+
+    const { data: list, error: listError } = await supabase.storage
+      .from("property-photos")
+      .list(prefix, { limit: 1000 });
+
+    if (listError) {
+      console.error("Failed to list files", listError);
+      return;
+    }
+
+    const filePaths = list?.map((f) => `${prefix}/${f.name}`) || [];
+
+    if (filePaths.length === 0) {
+      console.warn("⚠️ No files found to delete.");
+      return;
+    }
+
+    const { error: deleteError } = await supabase.storage
+      .from("property-photos")
+      .remove(filePaths);
+
+    if (deleteError) {
+      console.error("Failed to delete images", deleteError);
+    } else {
+      console.log(`✅ Deleted ${filePaths.length} images from ${prefix}`);
+    }
+
+    const { error: dbError } = await supabase
+      .from("property_media")
+      .delete()
+      .like("url", `%/${prefix}/%`);
+
+    if (dbError) {
+      console.error("Failed to delete DB entries", dbError);
+    } else {
+      console.log(`✅ Deleted media DB entries for ${prefix}`);
+    }
+  };
+
+  /**
+   * Check if a filename indicates it's a test file
+   */
+  const isTestFile = (filename: string): boolean => {
+    const lowerName = filename.toLowerCase();
+    return lowerName.includes('test') || lowerName.includes('demo') || lowerName.includes('sample');
   };
 
   // Media download functionality
@@ -728,7 +798,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
           result.properties.success++;
           
           // Save images using the new helper function
-          await saveImagesForPropertyRow(property, insertedProperty.id);
+          await saveImagesForPropertyRow(property, insertedProperty.id, currentFileName);
           
           // Download and save media if any (for existing media URL detection)
           if (mediaItems.length > 0) {
@@ -782,6 +852,20 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         title: "🎉 Upload Complete",
         description: `Created ${result.properties.success} properties.${mediaMessage}${duplicateMessage}`,
       });
+
+      // Schedule automatic cleanup for test uploads
+      if (currentFileName && isTestFile(currentFileName)) {
+        console.log(`⏰ Scheduling cleanup for test file: ${currentFileName} in 10 minutes`);
+        setTimeout(() => {
+          cleanupByCSVFolder(currentFileName);
+        }, 10 * 60 * 1000); // 10 minutes
+        
+        toast({
+          title: "🧪 Test Upload Detected",
+          description: "This test data will be automatically cleaned up in 10 minutes.",
+          variant: "default"
+        });
+      }
       
       if (onSuccess) {
         onSuccess();
