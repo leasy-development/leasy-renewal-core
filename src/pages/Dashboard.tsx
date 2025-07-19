@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Users, Calendar, Settings, LogOut, Plus, Home } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { PropertyList } from "@/components/PropertyList";
+import { EnhancedPropertyList } from "@/components/EnhancedPropertyList";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -109,8 +109,8 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Property List */}
-        <PropertyList />
+        {/* Enhanced Property List */}
+        <EnhancedPropertyList />
 
         {/* Quick Actions - Keep existing functionality */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
