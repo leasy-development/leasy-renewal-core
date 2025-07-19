@@ -37,6 +37,7 @@ interface Property {
   checkout_time: string;
   provides_wgsb: boolean;
   created_at: string;
+  thumbnail_url?: string; // Add this for the first photo
 }
 
 interface FilterState {

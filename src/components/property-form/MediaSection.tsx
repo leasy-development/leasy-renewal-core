@@ -4,9 +4,10 @@ import PhotoUploader from "@/components/PhotoUploader";
 interface MediaSectionProps {
   formData: any;
   updateFormData: (field: string, value: any) => void;
+  propertyId?: string;
 }
 
-export function MediaSection({ formData, updateFormData }: MediaSectionProps) {
+export function MediaSection({ formData, updateFormData, propertyId }: MediaSectionProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -20,6 +21,7 @@ export function MediaSection({ formData, updateFormData }: MediaSectionProps) {
         </CardHeader>
         <CardContent>
           <PhotoUploader 
+            propertyId={propertyId}
             photos={formData.photos || []}
             onPhotosChange={(photos) => updateFormData('photos', photos)}
           />

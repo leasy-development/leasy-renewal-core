@@ -328,6 +328,7 @@ const AddProperty = () => {
       addItem,
       removeItem,
       updateItem,
+      propertyId: id, // Pass the property ID for editing mode
     };
 
     switch (activeSection) {
