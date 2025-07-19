@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { 
   Upload, 
   Download, 
@@ -23,11 +25,16 @@ import {
   Trash2,
   Edit3,
   MapPin,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  Shield,
+  Zap
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import { DuplicateDetectionModal } from "@/components/DuplicateDetectionModal";
+import { duplicateDetectionService, DuplicateDetectionConfig, PropertyForDetection, DuplicateMatch } from "@/lib/duplicateDetection";
 import * as XLSX from 'xlsx';
 
 interface BulkUploadModalProps {
@@ -269,6 +276,10 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
   const [mediaProgress, setMediaProgress] = useState<{ downloaded: number; total: number; current: string }>({ downloaded: 0, total: 0, current: '' });
   const [downloadingMedia, setDownloadingMedia] = useState(false);
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+  const [duplicateResults, setDuplicateResults] = useState<{ property: PropertyForDetection; matches: DuplicateMatch[]; index: number }[]>([]);
+  const [duplicateSettings, setDuplicateSettings] = useState<DuplicateDetectionConfig>(duplicateDetectionService.getConfig());
+  const [enableDuplicateDetection, setEnableDuplicateDetection] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -1067,11 +1078,83 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       return;
     }
 
+    // Duplicate detection step
+    if (enableDuplicateDetection) {
+      setIsUploading(true);
+      
+      toast({
+        title: "🔍 Scanning for Duplicates",
+        description: "Checking your import against existing properties...",
+      });
+
+      try {
+        const duplicatesFound: { property: PropertyForDetection; matches: DuplicateMatch[]; index: number }[] = [];
+        
+        for (let i = 0; i < uploadedData.length; i++) {
+          const property = uploadedData[i];
+          const propertyForDetection: PropertyForDetection = {
+            title: property.title,
+            street_name: property.street_name,
+            street_number: property.street_number,
+            zip_code: property.zip_code,
+            city: property.city,
+            monthly_rent: property.monthly_rent,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            square_meters: property.square_meters
+          };
+
+          const matches = await duplicateDetectionService.detectDuplicates(propertyForDetection, user.id);
+          
+          if (matches.length > 0 && matches.some(m => m.status === 'duplicate' || m.status === 'potential')) {
+            duplicatesFound.push({
+              property: propertyForDetection,
+              matches: matches.filter(m => m.status === 'duplicate' || m.status === 'potential'),
+              index: i
+            });
+          }
+        }
+
+        setIsUploading(false);
+
+        if (duplicatesFound.length > 0) {
+          setDuplicateResults(duplicatesFound);
+          setDuplicateModalOpen(true);
+          
+          toast({
+            title: "⚠️ Duplicates Detected",
+            description: `Found ${duplicatesFound.length} properties with potential duplicates. Please review before importing.`,
+            variant: "default",
+          });
+          return;
+        } else {
+          toast({
+            title: "✅ No Duplicates Found",
+            description: "All properties appear to be unique. Proceeding with import...",
+          });
+        }
+      } catch (error) {
+        console.error('Duplicate detection error:', error);
+        toast({
+          title: "Duplicate Detection Error",
+          description: "Could not check for duplicates. Proceeding with import...",
+          variant: "destructive",
+        });
+      }
+    }
+
+    // Proceed with actual upload
+    await performBulkUpload(uploadedData);
+  };
+
+  const performBulkUpload = async (dataToUpload: PropertyRow[]) => {
+    if (!user) return;
+
     setIsUploading(true);
     setUploadProgress(0);
 
     // Detect media URLs in the uploaded data
-    const mediaDetection = detectMediaUrls(uploadedData);
+    const mediaDetection = detectMediaUrls(dataToUpload);
     const totalMediaItems = mediaDetection.reduce((sum, item) => sum + item.mediaItems.length, 0);
     
     setMediaProgress({ downloaded: 0, total: totalMediaItems, current: '' });
@@ -1086,6 +1169,103 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     let mediaResults = { photos: 0, floorplans: 0, failed: 0, errors: [] as string[] };
 
     try {
+      for (let i = 0; i < dataToUpload.length; i++) {
+        const property = dataToUpload[i];
+        
+        try {
+          // Insert property first
+          const { data: insertedProperty, error } = await supabase
+            .from('properties')
+            .insert({
+              ...property,
+              user_id: user.id,
+              status: 'draft'
+            })
+            .select('id')
+            .single();
+
+          if (error) throw error;
+          
+          const propertyId = insertedProperty.id;
+          results.success++;
+          
+          // Download and save media for this property
+          const propertyMedia = mediaDetection.find(m => m.propertyIndex === i);
+          if (propertyMedia && propertyMedia.mediaItems.length > 0) {
+            const downloadResults = await downloadAndSaveMedia(propertyId, propertyMedia.mediaItems);
+            
+            propertyMedia.mediaItems.forEach(item => {
+              if (item.type === 'photo') mediaResults.photos++;
+              if (item.type === 'floorplan') mediaResults.floorplans++;
+            });
+            
+            mediaResults.failed += downloadResults.failed;
+            mediaResults.errors.push(...downloadResults.errors);
+          }
+          
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push({
+            row: i + 1,
+            field: 'general',
+            message: error.message || 'Failed to create property',
+            severity: 'error'
+          });
+        }
+
+        setUploadProgress(((i + 1) / dataToUpload.length) * 100);
+      }
+
+      setUploadResult(results);
+      
+      if (results.success > 0) {
+        const mediaMessage = totalMediaItems > 0 
+          ? ` • Downloaded ${mediaResults.photos} photos and ${mediaResults.floorplans} floorplans${mediaResults.failed > 0 ? ` (${mediaResults.failed} media failed)` : ''}`
+          : '';
+        
+        toast({
+          title: "🎉 Upload Complete",
+          description: `Successfully uploaded ${results.success} properties${results.failed > 0 ? ` (${results.failed} failed)` : ''}${mediaMessage}`,
+        });
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      }
+
+      setActiveTab("results");
+    } catch (error) {
+      toast({
+        title: "Upload Error",
+        description: "An unexpected error occurred during upload.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      setDownloadingMedia(false);
+    }
+  };
+
+  const handleDuplicateResolution = async (decisions: { [index: number]: 'import' | 'skip' }) => {
+    // Filter out skipped properties
+    const propertiesToImport = uploadedData.filter((_, index) => {
+      const duplicateEntry = duplicateResults.find(d => d.index === index);
+      return !duplicateEntry || decisions[index] === 'import';
+    });
+
+    const skippedCount = uploadedData.length - propertiesToImport.length;
+    
+    if (skippedCount > 0) {
+      toast({
+        title: "Duplicates Skipped",
+        description: `Skipped ${skippedCount} duplicate properties. Importing ${propertiesToImport.length} unique properties.`,
+      });
+    }
+
+    // Proceed with filtered data
+    await performBulkUpload(propertiesToImport);
+    setDuplicateModalOpen(false);
+  };
       for (let i = 0; i < uploadedData.length; i++) {
         const property = uploadedData[i];
         
@@ -1272,9 +1452,13 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="upload">Upload File</TabsTrigger>
             <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-2" />
+              Duplicate Settings
+            </TabsTrigger>
             <TabsTrigger value="review" disabled={uploadedData.length === 0}>
               Review ({uploadedData.length})
             </TabsTrigger>
