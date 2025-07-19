@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Star } from "lucide-react";
+import { EarlyAccessModal } from "@/components/EarlyAccessModal";
 const plans = [{
   name: "Starter",
   price: "29",
@@ -36,6 +38,7 @@ const plans = [{
   popular: false
 }];
 export const Pricing = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <section id="pricing" className="py-20 lg:py-28 bg-background">
       <div className="container mx-auto px-4 lg:px-8">
@@ -90,6 +93,7 @@ export const Pricing = () => {
                   <Button 
                     className={`w-full mt-6 ${plan.popular ? 'bg-gradient-primary hover:opacity-90' : ''}`}
                     variant={plan.popular ? "default" : "outline"}
+                    onClick={() => setIsModalOpen(true)}
                   >
                     Join Beta Waitlist
                   </Button>
@@ -106,6 +110,8 @@ export const Pricing = () => {
           </div>
         </div>
       </div>
+
+      <EarlyAccessModal open={isModalOpen} onOpenChange={setIsModalOpen} />
     </section>
   );
 };

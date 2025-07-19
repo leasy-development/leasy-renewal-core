@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play } from "lucide-react";
+import { EarlyAccessModal } from "@/components/EarlyAccessModal";
 import heroImage from "@/assets/hero-image.jpg";
 export const Hero = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return <section className="pt-20 lg:pt-32 pb-16 lg:pb-20 bg-gradient-to-br from-background via-accent/30 to-primary/5">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -26,7 +29,12 @@ export const Hero = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button variant="hero" size="xl" className="group">
+              <Button 
+                variant="hero" 
+                size="xl" 
+                className="group"
+                onClick={() => setIsModalOpen(true)}
+              >
                 Join Beta Waitlist
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -73,5 +81,7 @@ export const Hero = () => {
           </div>
         </div>
       </div>
+
+      <EarlyAccessModal open={isModalOpen} onOpenChange={setIsModalOpen} />
     </section>;
 };
