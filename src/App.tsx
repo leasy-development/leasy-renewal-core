@@ -4,9 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import AddProperty from "./pages/AddProperty";
+import Properties from "./pages/Properties";
+import Sync from "./pages/Sync";
+import AITools from "./pages/AITools";
+import Media from "./pages/Media";
 import NotFound from "./pages/NotFound";
 import AccountSettings from "./pages/AccountSettings";
 import Analytics from "./pages/Analytics";
@@ -23,7 +28,19 @@ const App = () => (
               path="/dashboard" 
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/properties" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Properties />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } 
             />
@@ -44,10 +61,42 @@ const App = () => (
               } 
             />
             <Route 
+              path="/sync" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Sync />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ai-tools" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <AITools />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/media" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Media />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/account" 
               element={
                 <ProtectedRoute>
-                  <AccountSettings />
+                  <DashboardLayout>
+                    <AccountSettings />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } 
             />
@@ -55,7 +104,9 @@ const App = () => (
               path="/analytics" 
               element={
                 <ProtectedRoute>
-                  <Analytics />
+                  <DashboardLayout>
+                    <Analytics />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } 
             />
