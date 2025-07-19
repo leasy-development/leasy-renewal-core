@@ -25,9 +25,7 @@ export const Hero = () => {
               </h1>
               
               <p className="text-subtitle text-muted-foreground content-width-wide">
-                Leasy automates your entire listing workflow — from importing properties via FARAWAYHOME or WordPress 
-                to syncing them with AI-optimized descriptions and images across all major platforms like ImmoScout24, 
-                Wunderflats, and your own website.
+                Cloud-based platform for landlords, property managers, and real estate professionals to manage and sync property listings across multiple channels effortlessly.
               </p>
             </div>
             
