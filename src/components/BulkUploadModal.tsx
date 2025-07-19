@@ -246,12 +246,18 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         // Extract headers from first row
         const rawHeaders = Object.keys(jsonData[0] || {});
 
-        // Map the data to our property structure
+        // Auto-map headers using fuzzy matching
+        const autoMappedHeaders = autoMapHeaders(rawHeaders);
+        
+        // Map the data to our property structure with auto-mapping
         const mappedData = jsonData.map((row: any) => {
           const mappedRow: Partial<PropertyRow> = {};
-          Object.entries(fieldMappings).forEach(([excelField, dbField]) => {
-            if (row[excelField] !== undefined) {
-              let value = row[excelField];
+          
+          // Use auto-mapped headers to find correct fields
+          autoMappedHeaders.forEach((mapping) => {
+            const { csvHeader, dbField, mapped } = mapping;
+            if (row[csvHeader] !== undefined && mapped && dbField) {
+              let value = row[csvHeader];
               
               // Handle boolean fields
               if (dbField === 'provides_wgsb') {
@@ -276,16 +282,24 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
 
         setUploadedData(mappedData);
         setOriginalHeaders(rawHeaders);
-        setColumnMappings(autoMapHeaders(rawHeaders));
+        setColumnMappings(autoMappedHeaders);
         validateData(mappedData);
         setActiveTab("review");
         
-        // Show unmapped headers warning
-        const unmappedHeaders = rawHeaders.filter(h => !fieldMappings[h as keyof typeof fieldMappings]);
-        if (unmappedHeaders.length > 0) {
+        // Show success message if auto-mapping worked
+        const mappedCount = autoMappedHeaders.filter(mapping => mapping.mapped).length;
+        const totalHeaders = rawHeaders.length;
+        
+        if (mappedCount > 0) {
+          toast({
+            title: "Auto-fix Applied",
+            description: `Automatically mapped ${mappedCount}/${totalHeaders} columns. Check the preview to verify.`,
+            variant: "default",
+          });
+        } else {
           toast({
             title: "Headers not recognized",
-            description: `Your CSV headers: ${rawHeaders.join(', ')}. Download template for correct format.`,
+            description: `Could not auto-map your headers: ${rawHeaders.join(', ')}. Download template for correct format.`,
             variant: "destructive",
           });
         }
