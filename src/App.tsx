@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import * as React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,7 +28,7 @@ import { UpdateNotification } from "./components/UpdateNotification";
 
 const App = () => {
   // Register service worker for PWA support
-  useEffect(() => {
+  React.useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
