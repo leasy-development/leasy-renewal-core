@@ -63,7 +63,9 @@ const useGoogleMapsLoader = (apiKey: string): GoogleMapsLoaderResult => {
     document.head.appendChild(script);
 
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
       delete window.initMap;
     };
   }, [apiKey]);
@@ -76,9 +78,9 @@ const AddressAutocomplete = ({ onAddressSelect, initialAddress, apiKey }: Props)
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [mapCenter, setMapCenter] = useState({ lat: 52.5200, lng: 13.4050 }); // Berlin default
   const [showMap, setShowMap] = useState(false);
-  const [map, setMap] = useState<any>(null);
-  const [marker, setMarker] = useState<any>(null);
-  const autocompleteRef = useRef<any>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -192,7 +194,7 @@ const AddressAutocomplete = ({ onAddressSelect, initialAddress, apiKey }: Props)
     // Reverse geocode to get updated address
     if (window.google) {
       const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: any, status: string) => {
+      geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
         if (status === 'OK' && results?.[0]) {
           const result = results[0];
           setAddress(result.formatted_address);

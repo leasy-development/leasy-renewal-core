@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -134,18 +135,18 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const detectMediaUrls = (data: PropertyRow[]): { propertyIndex: number; mediaItems: MediaItem[] }[] => {
     const results: { propertyIndex: number; mediaItems: MediaItem[] }[] = [];
     
-    console.log('🔍 Detecting media URLs in CSV data:', data.length, 'rows');
+    logger.debug('Detecting media URLs in CSV data', { rowCount: data.length });
     
     data.forEach((row, propertyIndex) => {
       const mediaItems: MediaItem[] = [];
       
       Object.entries(row).forEach(([key, value]) => {
-        console.log(`Checking field "${key}":`, value);
+        logger.debug(`Checking field "${key}"`, { value });
         if (typeof value === 'string' && isValidUrl(value)) {
-          console.log(`Found URL in "${key}":`, value);
+          logger.debug(`Found URL in field "${key}"`, { url: value });
           const mediaType = detectMediaType(key, value);
           if (mediaType) {
-            console.log(`Detected media type: ${mediaType}`);
+            logger.debug(`Detected media type: ${mediaType}`);
             mediaItems.push({
               url: value,
               type: mediaType,
@@ -156,12 +157,12 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       });
       
       if (mediaItems.length > 0) {
-        console.log(`Property ${propertyIndex} has ${mediaItems.length} media items:`, mediaItems);
+        logger.debug(`Property ${propertyIndex} has ${mediaItems.length} media items`, { mediaItems });
         results.push({ propertyIndex, mediaItems });
       }
     });
     
-    console.log('📊 Media detection results:', results.length, 'properties with media');
+    logger.debug('Media detection results', { propertiesWithMedia: results.length });
     return results;
   };
 
@@ -178,7 +179,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     const lowerKey = columnName.toLowerCase();
     const lowerUrl = url.toLowerCase();
     
-    console.log(`🔍 Analyzing column "${columnName}" with URL: ${url}`);
+    logger.debug(`Analyzing column "${columnName}"`, { url });
     
     // More comprehensive floorplan detection
     if (lowerKey.includes('floorplan') || lowerKey.includes('floor_plan') || 
@@ -187,7 +188,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         lowerUrl.includes('floorplan') || lowerUrl.includes('floor_plan') ||
         lowerUrl.includes('layout') || lowerUrl.includes('blueprint') ||
         lowerUrl.includes('plan')) {
-      console.log('✅ Detected as floorplan');
+      logger.debug('Detected as floorplan');
       return 'floorplan';
     }
     
@@ -198,11 +199,11 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         lowerKey.includes('jpg') || lowerKey.includes('png') ||
         lowerKey.includes('url') || lowerKey.includes('link') ||
         isImageUrl(url)) {
-      console.log('✅ Detected as photo');
+      logger.debug('Detected as photo');
       return 'photo';
     }
     
-    console.log('❌ No media type detected');
+    logger.debug('No media type detected');
     return null;
   };
 
@@ -223,7 +224,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     
     const hasImageHost = imageHostPatterns.some(pattern => lowerUrl.includes(pattern));
     
-    console.log(`Image URL check for ${url}: extension=${hasImageExtension}, host=${hasImageHost}`);
+    logger.debug(`Image URL check`, { url, hasImageExtension, hasImageHost });
     
     return hasImageExtension || hasImageHost;
   };

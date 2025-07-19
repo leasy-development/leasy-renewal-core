@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { ErrorBoundary } from "@/lib/errorBoundary";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import AddProperty from "./pages/AddProperty";
@@ -18,11 +19,12 @@ import Analytics from "./pages/Analytics";
 import UpdatePassword from "./pages/UpdatePassword";
 
 const App = () => (
-  <AuthProvider>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+  <ErrorBoundary>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route 
@@ -114,10 +116,11 @@ const App = () => (
             <Route path="/update-password" element={<UpdatePassword />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
+        </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
+  </ErrorBoundary>
 );
 
 export default App;
