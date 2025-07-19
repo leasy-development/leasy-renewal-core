@@ -45,7 +45,7 @@ const PhotoUploader = ({ propertyId, photos, onPhotosChange, maxFiles = 20, maxS
         .from('property_media')
         .select('*')
         .eq('property_id', propertyId)
-        .eq('media_type', 'image')
+        .eq('media_type', 'photo')
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
@@ -88,7 +88,7 @@ const PhotoUploader = ({ propertyId, photos, onPhotosChange, maxFiles = 20, maxS
         .from('property_media')
         .insert({
           property_id: propertyId,
-          media_type: 'image',
+          media_type: 'photo',
           url: url,
           sort_order: sortOrder
         });
