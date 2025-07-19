@@ -88,6 +88,48 @@ export type Database = {
           },
         ]
       }
+      duplicate_false_positives: {
+        Row: {
+          admin_user_id: string
+          created_at: string | null
+          id: string
+          property_id_1: string
+          property_id_2: string
+          reason: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string | null
+          id?: string
+          property_id_1: string
+          property_id_2: string
+          reason?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string | null
+          id?: string
+          property_id_1?: string
+          property_id_2?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duplicate_false_positives_property_id_1_fkey"
+            columns: ["property_id_1"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "duplicate_false_positives_property_id_2_fkey"
+            columns: ["property_id_2"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_duplicate_groups: {
         Row: {
           confidence_score: number
@@ -226,6 +268,7 @@ export type Database = {
           created_at: string
           daily_rate: number | null
           description: string | null
+          embedding_vector: string | null
           house_rules: string | null
           id: string
           landlord_info: Json | null
@@ -256,6 +299,7 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           description?: string | null
+          embedding_vector?: string | null
           house_rules?: string | null
           id?: string
           landlord_info?: Json | null
@@ -286,6 +330,7 @@ export type Database = {
           created_at?: string
           daily_rate?: number | null
           description?: string | null
+          embedding_vector?: string | null
           house_rules?: string | null
           id?: string
           landlord_info?: Json | null
@@ -374,6 +419,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "property_media_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_media_hashes: {
+        Row: {
+          created_at: string | null
+          hash_type: string
+          hash_value: string
+          id: string
+          media_url: string
+          property_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          hash_type?: string
+          hash_value: string
+          id?: string
+          media_url: string
+          property_id: string
+        }
+        Update: {
+          created_at?: string | null
+          hash_type?: string
+          hash_value?: string
+          id?: string
+          media_url?: string
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_media_hashes_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -481,6 +561,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
       changepassword: {
         Args: {
           current_plain_password: string
@@ -506,12 +590,100 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
       has_role: {
         Args: {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
     }
     Enums: {
