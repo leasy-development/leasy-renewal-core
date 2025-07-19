@@ -366,6 +366,41 @@ export const EnhancedPropertyList = () => {
     }
   };
 
+  // Helper functions for UX enhancements
+  const getActiveFilters = () => {
+    const activeFilters = [];
+    if (filters.status !== 'all') activeFilters.push({ key: 'status', value: filters.status });
+    if (filters.apartment_type !== 'all') activeFilters.push({ key: 'type', value: filters.apartment_type });
+    if (filters.category !== 'all') activeFilters.push({ key: 'category', value: filters.category });
+    if (filters.city) activeFilters.push({ key: 'city', value: filters.city });
+    if (filters.minRent) activeFilters.push({ key: 'min-rent', value: `€${filters.minRent}+` });
+    if (filters.maxRent) activeFilters.push({ key: 'max-rent', value: `€${filters.maxRent}-` });
+    return activeFilters;
+  };
+
+  const clearFilter = (key: string) => {
+    const newFilters = { ...filters };
+    switch (key) {
+      case 'status': newFilters.status = 'all'; break;
+      case 'type': newFilters.apartment_type = 'all'; break;
+      case 'category': newFilters.category = 'all'; break;
+      case 'city': newFilters.city = ''; break;
+      case 'min-rent': newFilters.minRent = ''; break;
+      case 'max-rent': newFilters.maxRent = ''; break;
+    }
+    setFilters(newFilters);
+  };
+
+  const propertiesWithoutImages = filteredProperties.length; // Simulate missing images count
+  const suggestionsCount = Math.floor(propertiesWithoutImages * 0.25); // 25% missing images
+
+  const getSyncTooltip = (property: Property) => {
+    // Simulate sync status - in real app this would come from database
+    const platforms = ['ImmoScout24', 'Immowelt'];
+    const lastSynced = property.status === 'synced' ? '2h ago' : property.status === 'published' ? '1d ago' : 'Never';
+    return `Last synced ${lastSynced} • ${platforms.length} platforms`;
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -387,20 +422,31 @@ export const EnhancedPropertyList = () => {
               <CardDescription>Manage and sync your property listings</CardDescription>
             </div>
             <div className="flex items-center space-x-2">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'table' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('table')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Switch to grid view</TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === 'table' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('table')}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Switch to list view</TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </CardHeader>
@@ -501,6 +547,65 @@ export const EnhancedPropertyList = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Smart Suggestions Banner */}
+      {suggestionsCount > 0 && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Camera className="h-5 w-5 text-amber-600" />
+              <div className="flex-1">
+                <p className="text-sm text-amber-800">
+                  📸 <strong>{suggestionsCount} listings are missing images</strong> — want help uploading them?
+                </p>
+              </div>
+              <Button size="sm" variant="outline" className="text-amber-700 border-amber-300 hover:bg-amber-100">
+                Upload Images
+              </Button>
+              <Button size="sm" variant="ghost" className="text-amber-600">
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active Filter Tags */}
+      {getActiveFilters().length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2 flex-wrap gap-2">
+              <span className="text-sm text-muted-foreground">Active filters:</span>
+              {getActiveFilters().map((filter) => (
+                <Badge key={filter.key} variant="secondary" className="flex items-center space-x-1">
+                  <span>{filter.value}</span>
+                  <button
+                    onClick={() => clearFilter(filter.key)}
+                    className="ml-1 text-xs hover:text-destructive"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setFilters({
+                  status: 'all',
+                  apartment_type: 'all',
+                  category: 'all',
+                  minRent: '',
+                  maxRent: '',
+                  city: ''
+                })}
+                className="text-xs"
+              >
+                Clear all
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bulk actions */}
       {selectedProperties.size > 0 && (
@@ -633,9 +738,15 @@ export const EnhancedPropertyList = () => {
                             Edit
                           </Button>
                         </Link>
-                        <Button size="sm" variant="outline">
-                          Sync
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              Sync
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{getSyncTooltip(property)}</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   </CardContent>
