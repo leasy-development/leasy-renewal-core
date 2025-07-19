@@ -37,6 +37,14 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/edit-property/:id" 
+              element={
+                <ProtectedRoute>
+                  <AddProperty />
+                </ProtectedRoute>
+              } 
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

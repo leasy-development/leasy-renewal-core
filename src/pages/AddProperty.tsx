@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronLeft, ChevronRight, Save, ArrowLeft, Plus, Trash2, Upload, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -221,30 +221,147 @@ const AddProperty = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<PropertyFormData>(initialFormData);
   const [loading, setLoading] = useState(false);
+  const [loadingProperty, setLoadingProperty] = useState(false);
   const [openSections, setOpenSections] = useState<{ [key: number]: boolean }>({});
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = !!id;
 
-  // Auto-save functionality
+  // Load existing property data when editing
   useEffect(() => {
-    const savedData = localStorage.getItem('property-form-draft');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setFormData({ ...initialFormData, ...parsed });
-      } catch (error) {
-        console.error('Error loading saved draft:', error);
+    if (isEditing && id && user) {
+      const loadProperty = async () => {
+        setLoadingProperty(true);
+        try {
+          const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            setFormData({
+              title: data.title || '',
+              description: data.description || '',
+              apartment_type: data.apartment_type || '',
+              category: data.category || '',
+              street_number: data.street_number || '',
+              street_name: data.street_name || '',
+              zip_code: data.zip_code || '',
+              city: data.city || '',
+              region: data.region || '',
+              country: data.country || 'Germany',
+              monthly_rent: data.monthly_rent || null,
+              monthly_rent_refundability: 'non-refundable',
+              weekly_rate: data.weekly_rate || null,
+              weekly_rate_flexibility: 'flexible',
+              daily_rate: data.daily_rate || null,
+              daily_rate_type: 'short-term',
+              checkin_time: data.checkin_time || '',
+              checkout_time: data.checkout_time || '',
+              provides_wgsb: data.provides_wgsb || false,
+              video_tour_link: '',
+              virtual_tour_link: '',
+              photos: [],
+              terms_conditions: null,
+              cancellation_policy: null,
+              additional_fees: [],
+              discounts: [],
+              taxes: [],
+              required_documents: [],
+              beds: [],
+              landlord_name: '',
+              contractual_partner: '',
+              // General Amenities - set defaults for existing properties
+              has_lift: false,
+              weekly_cleaning_included: false,
+              has_essentials_closet: false,
+              has_iron_and_board: false,
+              has_drying_rack: false,
+              shared_laundry_room: 'none',
+              parking_available: 'none',
+              has_luggage_storage: false,
+              pets_allowed: 'no',
+              yoga_mats_available: false,
+              breakfast_box_available: 'no',
+              is_accessible: false,
+              has_air_conditioning: false,
+              has_balcony: false,
+              has_terrace: false,
+              fire_extinguisher_available: false,
+              // Numa Standard Amenities
+              has_24_7_support: false,
+              has_wifi: false,
+              contactless_checkin: false,
+              free_tea_coffee: false,
+              has_shampoo_conditioner: false,
+              // Room-Specific Amenities
+              has_smart_tv: false,
+              has_kitchenette: false,
+              has_mini_fridge: false,
+              has_coffee_machine_kettle: false,
+              has_microwave: false,
+              has_cooking_essentials: false,
+              has_tableware: false,
+              has_glasses_and_cups: false,
+              has_hair_dryer: false,
+              has_complimentary_water: false,
+              has_heating: false,
+              has_work_station: false,
+              has_dishwasher: false,
+              has_oven: false,
+              has_stove: false,
+              is_sustainable_amenities: false,
+              // Rent Information
+              rent: data.monthly_rent || null,
+              rent_is_from: false,
+            });
+          }
+        } catch (error) {
+          console.error('Error loading property:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load property data",
+            variant: "destructive",
+          });
+          navigate('/dashboard');
+        } finally {
+          setLoadingProperty(false);
+        }
+      };
+
+      loadProperty();
+    }
+  }, [isEditing, id, user, navigate, toast]);
+
+  // Auto-save functionality (only for new properties)
+  useEffect(() => {
+    if (!isEditing) {
+      const savedData = localStorage.getItem('property-form-draft');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          setFormData({ ...initialFormData, ...parsed });
+        } catch (error) {
+          console.error('Error loading saved draft:', error);
+        }
       }
     }
-  }, []);
+  }, [isEditing]);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      localStorage.setItem('property-form-draft', JSON.stringify(formData));
-    }, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [formData]);
+    if (!isEditing) {
+      const timeoutId = setTimeout(() => {
+        localStorage.setItem('property-form-draft', JSON.stringify(formData));
+      }, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formData, isEditing]);
 
   const handleInputChange = (field: keyof PropertyFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -343,29 +460,47 @@ const AddProperty = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('properties')
-        .insert({
-          ...formData,
-          user_id: user.id,
-          status,
-        });
+      let error;
+      
+      if (isEditing && id) {
+        // Update existing property
+        const { error: updateError } = await supabase
+          .from('properties')
+          .update({
+            ...formData,
+            status,
+          })
+          .eq('id', id);
+        error = updateError;
+      } else {
+        // Create new property
+        const { error: insertError } = await supabase
+          .from('properties')
+          .insert({
+            ...formData,
+            user_id: user.id,
+            status,
+          });
+        error = insertError;
+      }
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Property ${status === 'draft' ? 'saved as draft' : 'published'} successfully`,
+        description: `Property ${isEditing ? 'updated' : status === 'draft' ? 'saved as draft' : 'published'} successfully`,
       });
 
-      // Clear draft and navigate back to dashboard
-      localStorage.removeItem('property-form-draft');
+      // Clear draft only for new properties and navigate back to dashboard
+      if (!isEditing) {
+        localStorage.removeItem('property-form-draft');
+      }
       navigate('/dashboard');
     } catch (error) {
       console.error('Error saving property:', error);
       toast({
         title: "Error",
-        description: "Failed to save property",
+        description: `Failed to ${isEditing ? 'update' : 'save'} property`,
         variant: "destructive",
       });
     } finally {
@@ -394,7 +529,18 @@ const AddProperty = () => {
           </div>
         );
       case 2:
-        return (
+  if (loadingProperty) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading property data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
           <div>
             <Label htmlFor="street_name">Street Name</Label>
             <Input
@@ -431,8 +577,8 @@ const AddProperty = () => {
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-semibold">Add New Property</h1>
-                <p className="text-muted-foreground">Create a new property listing step by step</p>
+                <h1 className="text-2xl font-semibold">{isEditing ? 'Edit Property' : 'Add New Property'}</h1>
+                <p className="text-muted-foreground">{isEditing ? 'Update your property details' : 'Create a new property listing step by step'}</p>
               </div>
             </div>
           </div>
@@ -509,14 +655,14 @@ const AddProperty = () => {
                   disabled={loading || !formData.title || !formData.city}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Save Draft
+                  {isEditing ? 'Save Changes' : 'Save Draft'}
                 </Button>
                 <Button
                   onClick={() => handleSave('published')}
                   disabled={loading || !formData.title || !formData.city}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Publish Now
+                  {isEditing ? 'Update & Publish' : 'Publish Now'}
                 </Button>
               </>
             ) : (
