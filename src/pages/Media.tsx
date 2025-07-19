@@ -28,6 +28,49 @@ const Media = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
 
+  // Fetch all media files with properties
+  const { data: allMediaFiles, isLoading: mediaLoading, refetch: refetchMedia } = useQuery({
+    queryKey: ['all-media', user?.id, searchTerm],
+    queryFn: async () => {
+      if (!user) return [];
+
+      let query = supabase
+        .from('property_media')
+        .select(`
+          id,
+          url,
+          title,
+          media_type,
+          created_at,
+          sort_order,
+          properties!inner(
+            id,
+            title,
+            city,
+            user_id
+          )
+        `)
+        .eq('properties.user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      // Apply search filter if provided
+      if (searchTerm) {
+        query = query.or(`title.ilike.%${searchTerm}%,properties.title.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching media:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!user,
+    refetchInterval: 10000 // Refresh every 10 seconds
+  });
+
   // Real-time media stats query
   const { data: mediaStats, isLoading: statsLoading } = useQuery({
     queryKey: ['media-stats', user?.id],
@@ -498,75 +541,161 @@ const Media = () => {
           </TabsContent>
 
           <TabsContent value="all" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Recent Uploads */}
+            {/* Loading state */}
+            {mediaLoading && (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p>Loading media files...</p>
+              </div>
+            )}
+
+            {/* No media state */}
+            {!mediaLoading && (!allMediaFiles || allMediaFiles.length === 0) && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Upload className="h-5 w-5" />
-                    <span>Recent Uploads</span>
-                  </CardTitle>
-                  <CardDescription>Latest media files added to your library</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {recentUploads?.map((file) => (
-                      <div key={file.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                        <Checkbox
-                          checked={selectedFiles.includes(file.id)}
-                          onCheckedChange={() => toggleFileSelection(file.id)}
-                        />
-                        <div className="flex items-center space-x-3 flex-1">
-                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded flex items-center justify-center">
-                            {file.type === 'photo' && <FileImage className="h-4 w-4 text-white" />}
-                            {file.type === 'floorplan' && <Grid className="h-4 w-4 text-white" />}
-                            {file.type === 'video' && <Video className="h-4 w-4 text-white" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{file.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{file.property}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <p className="text-xs text-muted-foreground">{file.uploaded}</p>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Full Screen
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <ExternalLink className="h-4 w-4 mr-2" />
-                                View Property
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Tag className="h-4 w-4 mr-2" />
-                                Add Tags
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Copy className="h-4 w-4 mr-2" />
-                                Copy URL
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <CardContent className="text-center py-12">
+                  <Images className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Media Files Found</h3>
+                  <p className="text-muted-foreground mb-6">
+                    {searchTerm ? `No files match "${searchTerm}"` : 'Upload your first media files to get started'}
+                  </p>
+                  <Button>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Media
+                  </Button>
                 </CardContent>
               </Card>
+            )}
 
-              {/* Quick Actions */}
-              <Card>
+            {/* Media Gallery Grid */}
+            {!mediaLoading && allMediaFiles && allMediaFiles.length > 0 && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold">All Media Files</h3>
+                    <Badge variant="secondary">{allMediaFiles.length} files</Badge>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => refetchMedia()}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {allMediaFiles.map((file) => (
+                    <Card key={file.id} className="group hover-scale overflow-hidden">
+                      <div className="relative">
+                        {/* Media Preview */}
+                        <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative overflow-hidden">
+                          {file.media_type === 'photo' && file.url && (
+                            <img 
+                              src={file.url} 
+                              alt={file.title || 'Property photo'}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                const img = e.currentTarget;
+                                const fallback = img.nextElementSibling as HTMLElement;
+                                img.style.display = 'none';
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                          )}
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center" style={{display: file.media_type === 'photo' ? 'none' : 'flex'}}>
+                            {file.media_type === 'photo' && <FileImage className="h-12 w-12 text-white" />}
+                            {file.media_type === 'floorplan' && <Grid className="h-12 w-12 text-white" />}
+                            {file.media_type === 'video' && <Video className="h-12 w-12 text-white" />}
+                          </div>
+                          
+                          {/* Overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-2">
+                              <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Selection checkbox */}
+                          <div className="absolute top-2 left-2">
+                            <Checkbox
+                              checked={selectedFiles.includes(file.id)}
+                              onCheckedChange={() => toggleFileSelection(file.id)}
+                              className="bg-white/80 border-white"
+                            />
+                          </div>
+
+                          {/* Media type badge */}
+                          <div className="absolute top-2 right-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {file.media_type}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* File Info */}
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm truncate">
+                                {file.title || 'Untitled'}
+                              </h4>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {file.properties.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(file.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Full Size
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <ExternalLink className="h-4 w-4 mr-2" />
+                                  View Property
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Copy URL
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Tag className="h-4 w-4 mr-2" />
+                                  Add Tags
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </CardContent>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Quick Actions - Only show when there are media files */}
+            {!mediaLoading && allMediaFiles && allMediaFiles.length > 0 && (
+              <Card className="mt-8">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Zap className="h-5 w-5" />
@@ -575,7 +704,7 @@ const Media = () => {
                   <CardDescription>Power user tools and shortcuts</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <Button variant="outline" className="flex items-center space-x-2 h-auto p-4">
                       <Upload className="h-5 w-5" />
                       <div className="text-left">
@@ -610,7 +739,7 @@ const Media = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
           </TabsContent>
 
           <TabsContent value="floorplans" className="space-y-6">
