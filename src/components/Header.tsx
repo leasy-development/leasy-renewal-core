@@ -1,13 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import { useState } from "react";
 import { EarlyAccessModal } from "@/components/EarlyAccessModal";
 import { AuthModal } from "@/components/AuthModal";
+import { useAuth } from "@/components/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleUserClick = () => {
+    navigate("/dashboard");
+  };
   return <header className="fixed top-0 w-full bg-background/80 backdrop-blur-md border-b border-border z-50">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -40,14 +48,27 @@ export const Header = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => setIsAuthModalOpen(true)}>Sign In</Button>
-            <Button 
-              variant="hero" 
-              size="lg"
-              onClick={() => setIsModalOpen(true)}
-            >
-              Join Waitlist
-            </Button>
+            {user ? (
+              <Button 
+                variant="ghost" 
+                className="flex items-center space-x-2"
+                onClick={handleUserClick}
+              >
+                <User className="h-4 w-4" />
+                <span>{user.email?.split('@')[0]}</span>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => setIsAuthModalOpen(true)}>Sign In</Button>
+                <Button 
+                  variant="hero" 
+                  size="lg"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  Join Waitlist
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -72,13 +93,26 @@ export const Header = () => {
                 FAQ
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border">
-                <Button variant="ghost" onClick={() => setIsAuthModalOpen(true)}>Sign In</Button>
-                <Button 
-                  variant="hero"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  Join Waitlist
-                </Button>
+                {user ? (
+                  <Button 
+                    variant="ghost" 
+                    className="justify-start"
+                    onClick={handleUserClick}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    {user.email?.split('@')[0]}
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="ghost" onClick={() => setIsAuthModalOpen(true)}>Sign In</Button>
+                    <Button 
+                      variant="hero"
+                      onClick={() => setIsModalOpen(true)}
+                    >
+                      Join Waitlist
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </div>}
