@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Download, Search, CheckCircle, AlertCircle, Image } from 'lucide-react';
+import { Download, Search, CheckCircle, AlertCircle, Image, TestTube } from 'lucide-react';
 
 interface ExtractedMedia {
   propertyId: string;
@@ -27,11 +29,12 @@ export function MediaURLExtractor() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedMedia, setExtractedMedia] = useState<ExtractedMedia[]>([]);
   const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
+  const [manualUrls, setManualUrls] = useState('');
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
 
-  // URL pattern to match image URLs
-  const imageUrlPattern = /https?:\/\/[^\s<>"{}|\\^`[\]]*\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?[^\s<>"{}|\\^`[\]]*)?/gi;
+  // Enhanced URL pattern to match various image URLs including CDN URLs with query parameters
+  const imageUrlPattern = /https?:\/\/[^\s<>"{}|\\^`[\]]*\.(?:jpg|jpeg|png|gif|webp|bmp|svg)(?:\?[^\s<>"{}|\\^`[\]]*)?/gi;
 
   const scanForImageUrls = async () => {
     setIsScanning(true);
@@ -192,9 +195,22 @@ export function MediaURLExtractor() {
     }
   };
 
-  const processExtractedUrls = async () => {
+  const processManualUrls = async () => {
     if (extractedMedia.length === 0) return;
 
+    const totalUrls = extractedMedia.reduce((sum, item) => sum + item.urls.length, 0);
+    const allUrls: { url: string; propertyId: string }[] = [];
+    
+    extractedMedia.forEach(mediaItem => {
+      mediaItem.urls.forEach(url => {
+        allUrls.push({ url, propertyId: mediaItem.propertyId });
+      });
+    });
+
+    await processUrlList(allUrls.map(item => item.url), allUrls[0]?.propertyId, "extracted");
+  };
+
+  const processUrlList = async (urls: string[], defaultPropertyId: string, source: string) => {
     setIsProcessing(true);
     setProgress(0);
     
@@ -205,24 +221,29 @@ export function MediaURLExtractor() {
       errors: []
     };
 
-    const totalUrls = extractedMedia.reduce((sum, item) => sum + item.urls.length, 0);
-    let processedUrls = 0;
-
     try {
-      for (const mediaItem of extractedMedia) {
-        for (const url of mediaItem.urls) {
-          const success = await downloadAndSaveImage(url, mediaItem.propertyId);
-          
-          if (success) {
-            result.success++;
-          } else {
-            result.failed++;
-            result.errors.push(`Failed to process: ${url}`);
+      for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        let propertyId = defaultPropertyId;
+        
+        // For extracted URLs, find the correct property ID
+        if (source === "extracted") {
+          const mediaItem = extractedMedia.find(item => item.urls.includes(url));
+          if (mediaItem) {
+            propertyId = mediaItem.propertyId;
           }
-
-          processedUrls++;
-          setProgress((processedUrls / totalUrls) * 100);
         }
+
+        const success = await downloadAndSaveImage(url, propertyId);
+        
+        if (success) {
+          result.success++;
+        } else {
+          result.failed++;
+          result.errors.push(`Failed to process: ${url}`);
+        }
+
+        setProgress(((i + 1) / urls.length) * 100);
       }
 
       setProcessResult(result);
@@ -233,8 +254,8 @@ export function MediaURLExtractor() {
         variant: result.failed > 0 ? "destructive" : "default",
       });
 
-      // Refresh the extracted media list
-      if (result.success > 0) {
+      // Refresh the extracted media list for extracted URLs
+      if (result.success > 0 && source === "extracted") {
         await scanForImageUrls();
       }
 
@@ -260,31 +281,64 @@ export function MediaURLExtractor() {
             Media URL Extractor
           </CardTitle>
           <CardDescription>
-            Scan your existing properties for image URLs and automatically download and store them as proper media files.
+            Scan your existing properties for image URLs and automatically download and store them as proper media files, or test with specific URLs.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button 
-              onClick={scanForImageUrls}
-              disabled={isScanning || isProcessing}
-              className="flex items-center gap-2"
-            >
-              <Search className="h-4 w-4" />
-              {isScanning ? 'Scanning...' : 'Scan for Image URLs'}
-            </Button>
+        <CardContent>
+          <Tabs defaultValue="scan" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="scan">Scan Properties</TabsTrigger>
+              <TabsTrigger value="manual">Manual URLs</TabsTrigger>
+            </TabsList>
             
-            {extractedMedia.length > 0 && (
+            <TabsContent value="scan" className="space-y-4">
+              <div className="flex gap-2">
+                <Button 
+                  onClick={scanForImageUrls}
+                  disabled={isScanning || isProcessing}
+                  className="flex items-center gap-2"
+                >
+                  <Search className="h-4 w-4" />
+                  {isScanning ? 'Scanning...' : 'Scan for Image URLs'}
+                </Button>
+                
+                {extractedMedia.length > 0 && (
+                  <Button 
+                    onClick={processExtractedUrls}
+                    disabled={isProcessing || isScanning}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    {isProcessing ? 'Processing...' : 'Download & Save Images'}
+                  </Button>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="manual" className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Image URLs (one per line or comma-separated)</label>
+                <Textarea
+                  placeholder="https://example.com/image1.jpg
+https://example.com/image2.png
+https://www.datocms-assets.com/49893/1752067314-copy-of-numa-berlin-arc_room-614_001-rt.jpg?fm=webp&w=480"
+                  value={manualUrls}
+                  onChange={(e) => setManualUrls(e.target.value)}
+                  rows={6}
+                  className="font-mono text-sm"
+                />
+              </div>
+              
               <Button 
-                onClick={processExtractedUrls}
-                disabled={isProcessing || isScanning}
+                onClick={processManualUrls}
+                disabled={isProcessing || !manualUrls.trim()}
                 className="flex items-center gap-2"
               >
-                <Download className="h-4 w-4" />
-                {isProcessing ? 'Processing...' : 'Download & Save Images'}
+                <TestTube className="h-4 w-4" />
+                {isProcessing ? 'Processing...' : 'Process URLs'}
               </Button>
-            )}
-          </div>
+            </TabsContent>
+          </Tabs>
 
           {isProcessing && (
             <div className="space-y-2">
@@ -346,8 +400,8 @@ export function MediaURLExtractor() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
       )}
     </div>
   );
