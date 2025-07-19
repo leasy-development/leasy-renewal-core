@@ -111,6 +111,49 @@ interface PropertyFormData {
   beds: Bed[];
   landlord_name: string;
   contractual_partner: string;
+  // General Amenities
+  has_lift: boolean;
+  weekly_cleaning_included: boolean;
+  has_essentials_closet: boolean;
+  has_iron_and_board: boolean;
+  has_drying_rack: boolean;
+  shared_laundry_room: string;
+  parking_available: string;
+  has_luggage_storage: boolean;
+  pets_allowed: string;
+  yoga_mats_available: boolean;
+  breakfast_box_available: string;
+  is_accessible: boolean;
+  has_air_conditioning: boolean;
+  has_balcony: boolean;
+  has_terrace: boolean;
+  fire_extinguisher_available: boolean;
+  // Numa Standard Amenities
+  has_24_7_support: boolean;
+  has_wifi: boolean;
+  contactless_checkin: boolean;
+  free_tea_coffee: boolean;
+  has_shampoo_conditioner: boolean;
+  // Room-Specific Amenities
+  has_smart_tv: boolean;
+  has_kitchenette: boolean;
+  has_mini_fridge: boolean;
+  has_coffee_machine_kettle: boolean;
+  has_microwave: boolean;
+  has_cooking_essentials: boolean;
+  has_tableware: boolean;
+  has_glasses_and_cups: boolean;
+  has_hair_dryer: boolean;
+  has_complimentary_water: boolean;
+  has_heating: boolean;
+  has_work_station: boolean;
+  has_dishwasher: boolean;
+  has_oven: boolean;
+  has_stove: boolean;
+  is_sustainable_amenities: boolean;
+  // Rent Information
+  rent: number | null;
+  rent_is_from: boolean;
 }
 
 const initialFormData: PropertyFormData = {
@@ -145,19 +188,63 @@ const initialFormData: PropertyFormData = {
   beds: [],
   landlord_name: '',
   contractual_partner: '',
+  // General Amenities
+  has_lift: false,
+  weekly_cleaning_included: false,
+  has_essentials_closet: false,
+  has_iron_and_board: false,
+  has_drying_rack: false,
+  shared_laundry_room: 'none',
+  parking_available: 'none',
+  has_luggage_storage: false,
+  pets_allowed: 'no',
+  yoga_mats_available: false,
+  breakfast_box_available: 'no',
+  is_accessible: false,
+  has_air_conditioning: false,
+  has_balcony: false,
+  has_terrace: false,
+  fire_extinguisher_available: false,
+  // Numa Standard Amenities
+  has_24_7_support: false,
+  has_wifi: false,
+  contactless_checkin: false,
+  free_tea_coffee: false,
+  has_shampoo_conditioner: false,
+  // Room-Specific Amenities
+  has_smart_tv: false,
+  has_kitchenette: false,
+  has_mini_fridge: false,
+  has_coffee_machine_kettle: false,
+  has_microwave: false,
+  has_cooking_essentials: false,
+  has_tableware: false,
+  has_glasses_and_cups: false,
+  has_hair_dryer: false,
+  has_complimentary_water: false,
+  has_heating: false,
+  has_work_station: false,
+  has_dishwasher: false,
+  has_oven: false,
+  has_stove: false,
+  is_sustainable_amenities: false,
+  // Rent Information
+  rent: null,
+  rent_is_from: false,
 };
 
 const steps = [
   { id: 1, title: 'Basic Info', description: 'Apartment details and photos' },
   { id: 2, title: 'Address', description: 'Location information' },
   { id: 3, title: 'Rental Fees', description: 'Pricing and rates' },
-  { id: 4, title: 'Additional Costs', description: 'Fees, discounts, and taxes' },
-  { id: 5, title: 'Check-in/out', description: 'Times and agreements' },
-  { id: 6, title: 'Documents', description: 'Required documents' },
-  { id: 7, title: 'Beds', description: 'Bedroom configuration' },
-  { id: 8, title: 'Landlord Info', description: 'Landlord and partner details' },
-  { id: 9, title: 'WGSB', description: 'Legal requirements' },
-  { id: 10, title: 'Review', description: 'Review and submit' },
+  { id: 4, title: 'Amenities', description: 'Features and facilities' },
+  { id: 5, title: 'Additional Costs', description: 'Fees, discounts, and taxes' },
+  { id: 6, title: 'Check-in/out', description: 'Times and agreements' },
+  { id: 7, title: 'Documents', description: 'Required documents' },
+  { id: 8, title: 'Beds', description: 'Bedroom configuration' },
+  { id: 9, title: 'Landlord Info', description: 'Landlord and partner details' },
+  { id: 10, title: 'WGSB', description: 'Legal requirements' },
+  { id: 11, title: 'Review', description: 'Review and submit' },
 ];
 
 export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated }: AddPropertyModalProps) => {
@@ -227,6 +314,49 @@ export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated 
         beds: [],
         landlord_name: '',
         contractual_partner: '',
+        // General Amenities - set defaults for existing properties
+        has_lift: false,
+        weekly_cleaning_included: false,
+        has_essentials_closet: false,
+        has_iron_and_board: false,
+        has_drying_rack: false,
+        shared_laundry_room: 'none',
+        parking_available: 'none',
+        has_luggage_storage: false,
+        pets_allowed: 'no',
+        yoga_mats_available: false,
+        breakfast_box_available: 'no',
+        is_accessible: false,
+        has_air_conditioning: false,
+        has_balcony: false,
+        has_terrace: false,
+        fire_extinguisher_available: false,
+        // Numa Standard Amenities
+        has_24_7_support: false,
+        has_wifi: false,
+        contactless_checkin: false,
+        free_tea_coffee: false,
+        has_shampoo_conditioner: false,
+        // Room-Specific Amenities
+        has_smart_tv: false,
+        has_kitchenette: false,
+        has_mini_fridge: false,
+        has_coffee_machine_kettle: false,
+        has_microwave: false,
+        has_cooking_essentials: false,
+        has_tableware: false,
+        has_glasses_and_cups: false,
+        has_hair_dryer: false,
+        has_complimentary_water: false,
+        has_heating: false,
+        has_work_station: false,
+        has_dishwasher: false,
+        has_oven: false,
+        has_stove: false,
+        is_sustainable_amenities: false,
+        // Rent Information
+        rent: property.monthly_rent || null,
+        rent_is_from: false,
       });
     } else if (!property && isOpen) {
       setFormData(initialFormData);
@@ -677,7 +807,431 @@ export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated 
           </div>
         );
 
-      case 4: // Additional Costs
+      case 4: // Amenities
+        return (
+          <div className="space-y-6">
+            <TooltipProvider>
+              <h3 className="font-medium">🏡 Amenities & Features</h3>
+              
+              {/* General Amenities */}
+              <Collapsible open={openSections[4] !== false} onOpenChange={() => toggleSection(4)}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium">General Amenities</h4>
+                  {openSections[4] === false ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_lift"
+                        checked={formData.has_lift}
+                        onCheckedChange={(checked) => handleInputChange('has_lift', checked)}
+                      />
+                      <Label htmlFor="has_lift">Lift available</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="weekly_cleaning_included"
+                        checked={formData.weekly_cleaning_included}
+                        onCheckedChange={(checked) => handleInputChange('weekly_cleaning_included', checked)}
+                      />
+                      <Label htmlFor="weekly_cleaning_included">Weekly cleaning included</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_essentials_closet"
+                        checked={formData.has_essentials_closet}
+                        onCheckedChange={(checked) => handleInputChange('has_essentials_closet', checked)}
+                      />
+                      <Label htmlFor="has_essentials_closet">Essentials closet</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_iron_and_board"
+                        checked={formData.has_iron_and_board}
+                        onCheckedChange={(checked) => handleInputChange('has_iron_and_board', checked)}
+                      />
+                      <Label htmlFor="has_iron_and_board">Iron and ironing board</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_drying_rack"
+                        checked={formData.has_drying_rack}
+                        onCheckedChange={(checked) => handleInputChange('has_drying_rack', checked)}
+                      />
+                      <Label htmlFor="has_drying_rack">Drying rack</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_luggage_storage"
+                        checked={formData.has_luggage_storage}
+                        onCheckedChange={(checked) => handleInputChange('has_luggage_storage', checked)}
+                      />
+                      <Label htmlFor="has_luggage_storage">Luggage storage available</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="yoga_mats_available"
+                        checked={formData.yoga_mats_available}
+                        onCheckedChange={(checked) => handleInputChange('yoga_mats_available', checked)}
+                      />
+                      <Label htmlFor="yoga_mats_available">Yoga mats available</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="is_accessible"
+                        checked={formData.is_accessible}
+                        onCheckedChange={(checked) => handleInputChange('is_accessible', checked)}
+                      />
+                      <Label htmlFor="is_accessible">Wheelchair accessible</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_air_conditioning"
+                        checked={formData.has_air_conditioning}
+                        onCheckedChange={(checked) => handleInputChange('has_air_conditioning', checked)}
+                      />
+                      <Label htmlFor="has_air_conditioning">Air conditioning</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_balcony"
+                        checked={formData.has_balcony}
+                        onCheckedChange={(checked) => handleInputChange('has_balcony', checked)}
+                      />
+                      <Label htmlFor="has_balcony">Balcony</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_terrace"
+                        checked={formData.has_terrace}
+                        onCheckedChange={(checked) => handleInputChange('has_terrace', checked)}
+                      />
+                      <Label htmlFor="has_terrace">Terrace</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="fire_extinguisher_available"
+                        checked={formData.fire_extinguisher_available}
+                        onCheckedChange={(checked) => handleInputChange('fire_extinguisher_available', checked)}
+                      />
+                      <Label htmlFor="fire_extinguisher_available">Fire extinguisher available</Label>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="shared_laundry_room">Shared laundry room</Label>
+                      <Select value={formData.shared_laundry_room} onValueChange={(value) => handleInputChange('shared_laundry_room', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="free">Free</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="parking_available">Parking availability</Label>
+                      <Select value={formData.parking_available} onValueChange={(value) => handleInputChange('parking_available', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="free">Free</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="pets_allowed">Pets allowed</Label>
+                      <Select value={formData.pets_allowed} onValueChange={(value) => handleInputChange('pets_allowed', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">No</SelectItem>
+                          <SelectItem value="free">Free</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="breakfast_box_available">Breakfast box</Label>
+                      <Select value={formData.breakfast_box_available} onValueChange={(value) => handleInputChange('breakfast_box_available', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">No</SelectItem>
+                          <SelectItem value="free">Free</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              
+              {/* Numa Standard Amenities */}
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium">🛎️ Numa Standard Amenities</h4>
+                  <ChevronDown className="h-4 w-4" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_24_7_support"
+                        checked={formData.has_24_7_support}
+                        onCheckedChange={(checked) => handleInputChange('has_24_7_support', checked)}
+                      />
+                      <Label htmlFor="has_24_7_support">24/7 support</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_wifi"
+                        checked={formData.has_wifi}
+                        onCheckedChange={(checked) => handleInputChange('has_wifi', checked)}
+                      />
+                      <Label htmlFor="has_wifi">Wi-Fi</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="contactless_checkin"
+                        checked={formData.contactless_checkin}
+                        onCheckedChange={(checked) => handleInputChange('contactless_checkin', checked)}
+                      />
+                      <Label htmlFor="contactless_checkin">Contactless check-in</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="free_tea_coffee"
+                        checked={formData.free_tea_coffee}
+                        onCheckedChange={(checked) => handleInputChange('free_tea_coffee', checked)}
+                      />
+                      <Label htmlFor="free_tea_coffee">Free tea & coffee</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_shampoo_conditioner"
+                        checked={formData.has_shampoo_conditioner}
+                        onCheckedChange={(checked) => handleInputChange('has_shampoo_conditioner', checked)}
+                      />
+                      <Label htmlFor="has_shampoo_conditioner">Shampoo & conditioner</Label>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              
+              {/* Room-Specific Amenities */}
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium">🛏️ Room-Specific Amenities</h4>
+                  <ChevronDown className="h-4 w-4" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_smart_tv"
+                        checked={formData.has_smart_tv}
+                        onCheckedChange={(checked) => handleInputChange('has_smart_tv', checked)}
+                      />
+                      <Label htmlFor="has_smart_tv">Smart TV</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_kitchenette"
+                        checked={formData.has_kitchenette}
+                        onCheckedChange={(checked) => handleInputChange('has_kitchenette', checked)}
+                      />
+                      <Label htmlFor="has_kitchenette">Kitchenette</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_mini_fridge"
+                        checked={formData.has_mini_fridge}
+                        onCheckedChange={(checked) => handleInputChange('has_mini_fridge', checked)}
+                      />
+                      <Label htmlFor="has_mini_fridge">Mini fridge</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_coffee_machine_kettle"
+                        checked={formData.has_coffee_machine_kettle}
+                        onCheckedChange={(checked) => handleInputChange('has_coffee_machine_kettle', checked)}
+                      />
+                      <Label htmlFor="has_coffee_machine_kettle">Coffee machine / Kettle</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_microwave"
+                        checked={formData.has_microwave}
+                        onCheckedChange={(checked) => handleInputChange('has_microwave', checked)}
+                      />
+                      <Label htmlFor="has_microwave">Microwave</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_cooking_essentials"
+                        checked={formData.has_cooking_essentials}
+                        onCheckedChange={(checked) => handleInputChange('has_cooking_essentials', checked)}
+                      />
+                      <Label htmlFor="has_cooking_essentials">Cooking essentials</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_tableware"
+                        checked={formData.has_tableware}
+                        onCheckedChange={(checked) => handleInputChange('has_tableware', checked)}
+                      />
+                      <Label htmlFor="has_tableware">Tableware</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_glasses_and_cups"
+                        checked={formData.has_glasses_and_cups}
+                        onCheckedChange={(checked) => handleInputChange('has_glasses_and_cups', checked)}
+                      />
+                      <Label htmlFor="has_glasses_and_cups">Glasses and cups</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_hair_dryer"
+                        checked={formData.has_hair_dryer}
+                        onCheckedChange={(checked) => handleInputChange('has_hair_dryer', checked)}
+                      />
+                      <Label htmlFor="has_hair_dryer">Hair dryer</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_complimentary_water"
+                        checked={formData.has_complimentary_water}
+                        onCheckedChange={(checked) => handleInputChange('has_complimentary_water', checked)}
+                      />
+                      <Label htmlFor="has_complimentary_water">Complimentary water</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_heating"
+                        checked={formData.has_heating}
+                        onCheckedChange={(checked) => handleInputChange('has_heating', checked)}
+                      />
+                      <Label htmlFor="has_heating">Heating</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_work_station"
+                        checked={formData.has_work_station}
+                        onCheckedChange={(checked) => handleInputChange('has_work_station', checked)}
+                      />
+                      <Label htmlFor="has_work_station">Work station / Desk</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_dishwasher"
+                        checked={formData.has_dishwasher}
+                        onCheckedChange={(checked) => handleInputChange('has_dishwasher', checked)}
+                      />
+                      <Label htmlFor="has_dishwasher">Dishwasher</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_oven"
+                        checked={formData.has_oven}
+                        onCheckedChange={(checked) => handleInputChange('has_oven', checked)}
+                      />
+                      <Label htmlFor="has_oven">Oven</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="has_stove"
+                        checked={formData.has_stove}
+                        onCheckedChange={(checked) => handleInputChange('has_stove', checked)}
+                      />
+                      <Label htmlFor="has_stove">Stove</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="is_sustainable_amenities"
+                        checked={formData.is_sustainable_amenities}
+                        onCheckedChange={(checked) => handleInputChange('is_sustainable_amenities', checked)}
+                      />
+                      <Label htmlFor="is_sustainable_amenities">Sustainable / eco-friendly amenities</Label>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              
+              {/* Rent Information */}
+              <div className="space-y-4">
+                <h4 className="font-medium">💶 Rent Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="rent">Monthly rent (€)</Label>
+                    <Input
+                      id="rent"
+                      type="number"
+                      value={formData.rent || ''}
+                      onChange={(e) => handleInputChange('rent', e.target.value ? parseFloat(e.target.value) : null)}
+                      placeholder="1200"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="rent_is_from"
+                        checked={formData.rent_is_from}
+                        onCheckedChange={(checked) => handleInputChange('rent_is_from', checked)}
+                      />
+                      <Label htmlFor="rent_is_from">Display rent as "From €XXX"</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TooltipProvider>
+          </div>
+        );
+
+      case 5: // Additional Costs
         return (
           <div className="space-y-6">
             <h3 className="font-medium">➕ Additional Fees, Discounts, Taxes</h3>
@@ -776,7 +1330,7 @@ export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated 
           </div>
         );
 
-      case 5: // Check-in/out & Agreements
+      case 6: // Check-in/out & Agreements
         return (
           <div className="space-y-6">
             <h3 className="font-medium">🕒 Check-in / Check-out Times</h3>
@@ -832,7 +1386,7 @@ export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated 
           </div>
         );
 
-      case 6: // Documents
+      case 7: // Documents
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -874,7 +1428,7 @@ export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated 
           </div>
         );
 
-      case 7: // Beds
+      case 8: // Beds
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -935,7 +1489,7 @@ export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated 
           </div>
         );
 
-      case 8: // Landlord Info
+      case 9: // Landlord Info
         return (
           <div className="space-y-4">
             <h3 className="font-medium">👤 Landlord & Contractual Partner</h3>
@@ -975,7 +1529,7 @@ export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated 
           </div>
         );
 
-      case 9: // WGSB
+      case 10: // WGSB
         return (
           <div className="space-y-4">
             <h3 className="font-medium">✅ WGSB</h3>
@@ -1000,7 +1554,7 @@ export const AddPropertyModal = ({ isOpen, onClose, property, onPropertyUpdated 
           </div>
         );
 
-      case 10: // Review
+      case 11: // Review
         return (
           <div className="space-y-6">
             <h3 className="font-medium">🧭 Review & Submit</h3>
