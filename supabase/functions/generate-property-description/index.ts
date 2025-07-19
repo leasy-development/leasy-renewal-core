@@ -60,10 +60,30 @@ serve(async (req) => {
 
     console.log(`🤖 AI ${type} generation requested`);
 
-    let systemPrompt = '';
+    // Get dynamic prompt from database
+    const { data: promptData } = await supabase
+      .from('ai_prompts')
+      .select('prompt')
+      .eq('type', type)
+      .eq('is_active', true)
+      .single();
+
+    let systemPrompt = promptData?.prompt || '';
     let userPrompt = '';
     let maxTokens = 1000;
     let temperature = 0.7;
+
+    // Use dynamic prompt, or fall back to type-specific handling for backwards compatibility
+    if (systemPrompt && type !== 'description') {
+      // For non-description types, use the dynamic prompt with basic user content
+      if (customPrompt) {
+        userPrompt = customPrompt;
+      } else {
+        userPrompt = buildUserPrompt(type, property, content, imageUrl, request);
+      }
+    } else if (type === 'description') {
+      return await generateDescription(openAIApiKey, request, supabase);
+    }
 
     switch (type) {
       case 'description':
