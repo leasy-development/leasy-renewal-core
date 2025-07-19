@@ -264,9 +264,9 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Postal code to city mapping (German cities)
+  // Enhanced postal code to city mapping (German cities)
   const POSTAL_CODE_CITIES: { [key: string]: string } = {
-    // Berlin
+    // Berlin (expanded coverage)
     '10115': 'Berlin', '10117': 'Berlin', '10119': 'Berlin', '10178': 'Berlin', '10179': 'Berlin',
     '10243': 'Berlin', '10245': 'Berlin', '10247': 'Berlin', '10249': 'Berlin', '10318': 'Berlin',
     '10435': 'Berlin', '10437': 'Berlin', '10439': 'Berlin', '10551': 'Berlin', '10553': 'Berlin',
@@ -276,7 +276,8 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     '10717': 'Berlin', '10719': 'Berlin', '10777': 'Berlin', '10779': 'Berlin', '10781': 'Berlin',
     '10783': 'Berlin', '10785': 'Berlin', '10787': 'Berlin', '10789': 'Berlin', '10823': 'Berlin',
     '10825': 'Berlin', '10827': 'Berlin', '10829': 'Berlin', '10961': 'Berlin', '10963': 'Berlin',
-    '10965': 'Berlin', '10967': 'Berlin', '10969': 'Berlin', '12043': 'Berlin', '12045': 'Berlin',
+    '10965': 'Berlin', '10967': 'Berlin', '10969': 'Berlin', '10971': 'Berlin', '10973': 'Berlin',
+    '10975': 'Berlin', '10977': 'Berlin', '10999': 'Berlin', '12043': 'Berlin', '12045': 'Berlin',
     '12047': 'Berlin', '12049': 'Berlin', '12051': 'Berlin', '12053': 'Berlin', '12055': 'Berlin',
     '12057': 'Berlin', '12059': 'Berlin', '12099': 'Berlin', '12101': 'Berlin', '12103': 'Berlin',
     '12105': 'Berlin', '12107': 'Berlin', '12109': 'Berlin', '12157': 'Berlin', '12159': 'Berlin',
@@ -342,7 +343,54 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     '50996': 'Cologne', '50997': 'Cologne', '50999': 'Cologne', '51061': 'Cologne', '51063': 'Cologne',
     '51065': 'Cologne', '51067': 'Cologne', '51069': 'Cologne', '51103': 'Cologne', '51105': 'Cologne',
     '51107': 'Cologne', '51109': 'Cologne', '51143': 'Cologne', '51145': 'Cologne', '51147': 'Cologne',
-    '51149': 'Cologne'
+    '51149': 'Cologne',
+    
+    // Frankfurt
+    '60306': 'Frankfurt', '60308': 'Frankfurt', '60309': 'Frankfurt', '60311': 'Frankfurt', '60313': 'Frankfurt',
+    '60314': 'Frankfurt', '60316': 'Frankfurt', '60318': 'Frankfurt', '60320': 'Frankfurt', '60322': 'Frankfurt',
+    '60323': 'Frankfurt', '60325': 'Frankfurt', '60326': 'Frankfurt', '60327': 'Frankfurt', '60329': 'Frankfurt',
+    '60385': 'Frankfurt', '60386': 'Frankfurt', '60388': 'Frankfurt', '60389': 'Frankfurt', '60431': 'Frankfurt',
+    '60433': 'Frankfurt', '60435': 'Frankfurt', '60437': 'Frankfurt', '60439': 'Frankfurt', '60486': 'Frankfurt',
+    '60487': 'Frankfurt', '60488': 'Frankfurt', '60489': 'Frankfurt', '60528': 'Frankfurt', '60529': 'Frankfurt',
+    '60594': 'Frankfurt', '60596': 'Frankfurt', '60598': 'Frankfurt', '60599': 'Frankfurt',
+    
+    // Stuttgart  
+    '70173': 'Stuttgart', '70174': 'Stuttgart', '70176': 'Stuttgart', '70178': 'Stuttgart', '70180': 'Stuttgart',
+    '70182': 'Stuttgart', '70184': 'Stuttgart', '70186': 'Stuttgart', '70188': 'Stuttgart', '70190': 'Stuttgart',
+    '70191': 'Stuttgart', '70192': 'Stuttgart', '70193': 'Stuttgart', '70195': 'Stuttgart', '70197': 'Stuttgart',
+    '70199': 'Stuttgart', '70327': 'Stuttgart', '70329': 'Stuttgart', '70372': 'Stuttgart', '70374': 'Stuttgart',
+    '70376': 'Stuttgart', '70378': 'Stuttgart', '70435': 'Stuttgart', '70437': 'Stuttgart', '70439': 'Stuttgart',
+    '70469': 'Stuttgart', '70499': 'Stuttgart', '70563': 'Stuttgart', '70565': 'Stuttgart', '70567': 'Stuttgart',
+    '70569': 'Stuttgart', '70597': 'Stuttgart', '70599': 'Stuttgart', '70619': 'Stuttgart', '70629': 'Stuttgart',
+    '70794': 'Stuttgart', '70806': 'Stuttgart', '70839': 'Stuttgart'
+  };
+
+  // Enhanced region-based city inference
+  const inferCityFromRegion = (region: string): string | null => {
+    if (!region) return null;
+    
+    const regionLower = region.toLowerCase();
+    
+    // Berlin districts
+    if (['mitte', 'kreuzberg', 'friedrichshain', 'prenzlauer berg', 'charlottenburg', 'wilmersdorf', 
+         'tempelhof', 'neukölln', 'treptow', 'köpenick', 'lichtenberg', 'marzahn', 'hellersdorf',
+         'pankow', 'reinickendorf', 'spandau', 'steglitz', 'zehlendorf', 'wedding', 'moabit'].includes(regionLower)) {
+      return 'Berlin';
+    }
+    
+    // Munich districts
+    if (['maxvorstadt', 'ludwigsvorstadt', 'isarvorstadt', 'au', 'haidhausen', 'bogenhausen',
+         'schwabing', 'neuhausen', 'nymphenburg', 'laim', 'sendling', 'thalkirchen'].includes(regionLower)) {
+      return 'Munich';
+    }
+    
+    // Hamburg districts  
+    if (['altona', 'eimsbüttel', 'harburg', 'wandsbek', 'bergedorf', 'nord', 'hamburg-mitte',
+         'st. pauli', 'altstadt', 'neustadt', 'st. georg'].includes(regionLower)) {
+      return 'Hamburg';
+    }
+    
+    return null;
   };
 
   const inferApartmentType = (bedrooms: number, livingRooms: number = 0): string => {
@@ -364,11 +412,30 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     const processedData = data.map(row => {
       const updatedRow = { ...row };
 
-      // Auto-fill city based on postal code
-      if (!updatedRow.city && updatedRow.zip_code) {
-        const city = POSTAL_CODE_CITIES[updatedRow.zip_code];
-        if (city) {
-          updatedRow.city = city;
+      // Auto-fill city with multiple strategies
+      if (!updatedRow.city) {
+        let inferredCity = null;
+        
+        // Strategy 1: Use postal code
+        if (updatedRow.zip_code) {
+          inferredCity = POSTAL_CODE_CITIES[updatedRow.zip_code];
+        }
+        
+        // Strategy 2: Use region/district (fallback)
+        if (!inferredCity && updatedRow.region) {
+          inferredCity = inferCityFromRegion(updatedRow.region);
+        }
+        
+        // Strategy 3: If we have "Kreuzberg" in region, that's definitely Berlin
+        if (!inferredCity && updatedRow.region) {
+          const regionLower = updatedRow.region.toLowerCase();
+          if (regionLower.includes('kreuzberg') || regionLower.includes('berlin')) {
+            inferredCity = 'Berlin';
+          }
+        }
+        
+        if (inferredCity) {
+          updatedRow.city = inferredCity;
           cityFills++;
         }
       }
@@ -392,7 +459,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     });
 
     // Build summary of auto-filled values
-    if (cityFills > 0) autoFilled.push(`Added ${cityFills} cities based on postal codes`);
+    if (cityFills > 0) autoFilled.push(`Added ${cityFills} cities based on postal codes and regions`);
     if (categoryFills > 0) autoFilled.push(`Set category to apartment for ${categoryFills} rows`);
     if (apartmentTypeFills > 0) autoFilled.push(`Inferred apartment type for ${apartmentTypeFills} rows`);
 
