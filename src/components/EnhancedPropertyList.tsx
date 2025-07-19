@@ -555,19 +555,30 @@ export const EnhancedPropertyList = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedProperties.map((property) => (
                 <Card key={property.id} className="hover:shadow-md transition-shadow">
+                  {/* Property Thumbnail */}
+                  <div className="relative h-48 w-full overflow-hidden rounded-t-lg bg-muted">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Camera className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                    <div className="absolute top-2 left-2">
+                      <Checkbox
+                        checked={selectedProperties.has(property.id)}
+                        onCheckedChange={() => handleSelectProperty(property.id)}
+                        className="bg-background/80 backdrop-blur-sm"
+                      />
+                    </div>
+                    <div className="absolute top-2 right-2">
+                      {getStatusBadge(property.status)}
+                    </div>
+                  </div>
+                  
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <Checkbox
-                          checked={selectedProperties.has(property.id)}
-                          onCheckedChange={() => handleSelectProperty(property.id)}
-                        />
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{property.title}</CardTitle>
-                          <CardDescription className="mt-1">
-                            {property.apartment_type} • {property.city}
-                          </CardDescription>
-                        </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-lg line-clamp-1">{property.title}</CardTitle>
+                        <CardDescription className="mt-1">
+                          {property.apartment_type} • {property.city}
+                        </CardDescription>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -643,43 +654,49 @@ export const EnhancedPropertyList = () => {
                             checked={selectedProperties.size === paginatedProperties.length && paginatedProperties.length > 0}
                             onCheckedChange={handleSelectAll}
                           />
-                        </th>
-                        <th className="text-left p-4">
-                          <Button variant="ghost" size="sm" onClick={() => handleSort('title')}>
-                            Title
-                            {sortField === 'title' && (
-                              sortDirection === 'asc' ? <SortAsc className="h-4 w-4 ml-1" /> : <SortDesc className="h-4 w-4 ml-1" />
-                            )}
-                          </Button>
-                        </th>
-                        <th className="text-left p-4">Type</th>
-                        <th className="text-left p-4">Location</th>
-                        <th className="text-left p-4">
-                          <Button variant="ghost" size="sm" onClick={() => handleSort('monthly_rent')}>
-                            Rent
-                            {sortField === 'monthly_rent' && (
-                              sortDirection === 'asc' ? <SortAsc className="h-4 w-4 ml-1" /> : <SortDesc className="h-4 w-4 ml-1" />
-                            )}
-                          </Button>
-                        </th>
-                        <th className="text-left p-4">Status</th>
-                        <th className="text-left p-4">Actions</th>
+                         </th>
+                         <th className="text-left p-4 w-16">Photo</th>
+                         <th className="text-left p-4">
+                           <Button variant="ghost" size="sm" onClick={() => handleSort('title')}>
+                             Title
+                             {sortField === 'title' && (
+                               sortDirection === 'asc' ? <SortAsc className="h-4 w-4 ml-1" /> : <SortDesc className="h-4 w-4 ml-1" />
+                             )}
+                           </Button>
+                         </th>
+                         <th className="text-left p-4">Type</th>
+                         <th className="text-left p-4">Location</th>
+                         <th className="text-left p-4">
+                           <Button variant="ghost" size="sm" onClick={() => handleSort('monthly_rent')}>
+                             Rent
+                             {sortField === 'monthly_rent' && (
+                               sortDirection === 'asc' ? <SortAsc className="h-4 w-4 ml-1" /> : <SortDesc className="h-4 w-4 ml-1" />
+                             )}
+                           </Button>
+                         </th>
+                         <th className="text-left p-4">Status</th>
+                         <th className="text-left p-4">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedProperties.map((property) => (
-                        <tr key={property.id} className="border-b hover:bg-muted/50">
-                          <td className="p-4">
-                            <Checkbox
-                              checked={selectedProperties.has(property.id)}
-                              onCheckedChange={() => handleSelectProperty(property.id)}
-                            />
-                          </td>
-                          <td className="p-4 font-medium">{property.title}</td>
-                          <td className="p-4">{property.apartment_type}</td>
-                          <td className="p-4">{property.city}</td>
-                          <td className="p-4">{property.monthly_rent ? `€${property.monthly_rent}` : '-'}</td>
-                          <td className="p-4">{getStatusBadge(property.status)}</td>
+                       {paginatedProperties.map((property) => (
+                         <tr key={property.id} className="border-b hover:bg-muted/50">
+                           <td className="p-4">
+                             <Checkbox
+                               checked={selectedProperties.has(property.id)}
+                               onCheckedChange={() => handleSelectProperty(property.id)}
+                             />
+                           </td>
+                           <td className="p-4">
+                             <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center">
+                               <Camera className="h-4 w-4 text-muted-foreground" />
+                             </div>
+                           </td>
+                           <td className="p-4 font-medium">{property.title}</td>
+                           <td className="p-4">{property.apartment_type}</td>
+                           <td className="p-4">{property.city}</td>
+                           <td className="p-4">{property.monthly_rent ? `€${property.monthly_rent}` : '-'}</td>
+                           <td className="p-4">{getStatusBadge(property.status)}</td>
                           <td className="p-4">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
