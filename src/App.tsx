@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import AddProperty from "./pages/AddProperty";
 import NotFound from "./pages/NotFound";
+import AccountSettings from "./pages/AccountSettings";
+import Analytics from "./pages/Analytics";
 
 const App = () => (
   <AuthProvider>
@@ -38,6 +40,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AddProperty />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/account" 
+              element={
+                <ProtectedRoute>
+                  <AccountSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analytics" 
+              element={
+                <ProtectedRoute>
+                  <Analytics />
                 </ProtectedRoute>
               } 
             />

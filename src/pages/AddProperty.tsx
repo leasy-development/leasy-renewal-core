@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -397,6 +397,20 @@ const AddProperty = () => {
           <h1 className="text-lg font-semibold">
             {isEditing ? 'Edit Property' : 'Add New Property'}
           </h1>
+          <div className="ml-auto flex items-center space-x-4">
+            <Link 
+              to="/analytics" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Analytics
+            </Link>
+            <Link 
+              to="/account" 
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Account
+            </Link>
+          </div>
         </div>
       </header>
 

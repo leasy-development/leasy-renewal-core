@@ -29,8 +29,20 @@ const Dashboard = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Link 
+                to="/analytics" 
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Analytics
+              </Link>
+              <Link 
+                to="/account" 
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Account
+              </Link>
               <span className="text-sm text-muted-foreground">
-                Welcome, {user?.email}
+                Welcome, {user?.email?.split('@')[0]}
               </span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
@@ -60,6 +72,61 @@ const Dashboard = () => {
               <span>Add Property</span>
             </Button>
           </Link>
+        </div>
+
+        {/* Navigation Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Link to="/analytics">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base">
+                  <BarChart3 className="h-5 w-5 mr-2 text-primary" />
+                  Analytics
+                </CardTitle>
+                <CardDescription>
+                  View performance insights and metrics
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          <Link to="/account">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base">
+                  <Settings className="h-5 w-5 mr-2 text-primary" />
+                  Account Settings
+                </CardTitle>
+                <CardDescription>
+                  Manage your profile and preferences
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+
+          <Card className="opacity-60">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <Users className="h-5 w-5 mr-2 text-muted-foreground" />
+                Team Management
+              </CardTitle>
+              <CardDescription>
+                Coming soon - Manage team members
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="opacity-60">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-base">
+                <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
+                Bookings
+              </CardTitle>
+              <CardDescription>
+                Coming soon - Manage reservations
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </div>
 
         {/* Stats Cards */}
