@@ -41,7 +41,7 @@ export const Features = () => {
           <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-4">
             Everything you need to{" "}
             <span className="bg-gradient-primary bg-clip-text text-transparent">
-              scale your listings
+              scale and supercharge your listings
             </span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
