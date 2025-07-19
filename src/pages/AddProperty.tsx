@@ -219,7 +219,7 @@ const AddProperty = () => {
       let propertyId = id;
       
       // Extract fields that don't belong in properties table
-      const { additional_fees, discounts, taxes, required_documents, beds, photos, amenities, landlord_info, contractual_partner, ...propertyData } = formData;
+      const { additional_fees, discounts, taxes, required_documents, beds, photos, amenities, landlord_info, contractual_partner, bedrooms, bathrooms, max_guests, square_meters, ...propertyData } = formData;
       
       if (isEditing && id) {
         // Update existing property
