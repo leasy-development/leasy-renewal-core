@@ -50,6 +50,168 @@ export type Database = {
         }
         Relationships: []
       }
+      duplicate_detection_log: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          affected_properties: string[]
+          created_at: string
+          details: Json
+          duplicate_group_id: string | null
+          id: string
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          affected_properties?: string[]
+          created_at?: string
+          details?: Json
+          duplicate_group_id?: string | null
+          id?: string
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          affected_properties?: string[]
+          created_at?: string
+          details?: Json
+          duplicate_group_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duplicate_detection_log_duplicate_group_id_fkey"
+            columns: ["duplicate_group_id"]
+            isOneToOne: false
+            referencedRelation: "global_duplicate_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_duplicate_groups: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          id: string
+          merge_target_property_id: string | null
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confidence_score: number
+          created_at?: string
+          id?: string
+          merge_target_property_id?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          id?: string
+          merge_target_property_id?: string | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_duplicate_groups_merge_target_property_id_fkey"
+            columns: ["merge_target_property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_duplicate_properties: {
+        Row: {
+          created_at: string
+          duplicate_group_id: string
+          id: string
+          property_id: string
+          similarity_reasons: Json
+        }
+        Insert: {
+          created_at?: string
+          duplicate_group_id: string
+          id?: string
+          property_id: string
+          similarity_reasons?: Json
+        }
+        Update: {
+          created_at?: string
+          duplicate_group_id?: string
+          id?: string
+          property_id?: string
+          similarity_reasons?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_duplicate_properties_duplicate_group_id_fkey"
+            columns: ["duplicate_group_id"]
+            isOneToOne: false
+            referencedRelation: "global_duplicate_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "global_duplicate_properties_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merged_properties_tracking: {
+        Row: {
+          fingerprint: string
+          id: string
+          merge_date: string
+          merge_reason: string | null
+          merged_by: string
+          original_data: Json
+          original_property_id: string
+          target_property_id: string
+        }
+        Insert: {
+          fingerprint: string
+          id?: string
+          merge_date?: string
+          merge_reason?: string | null
+          merged_by: string
+          original_data: Json
+          original_property_id: string
+          target_property_id: string
+        }
+        Update: {
+          fingerprint?: string
+          id?: string
+          merge_date?: string
+          merge_reason?: string | null
+          merged_by?: string
+          original_data?: Json
+          original_property_id?: string
+          target_property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merged_properties_tracking_target_property_id_fkey"
+            columns: ["target_property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       properties: {
         Row: {
           apartment_type: string | null
@@ -260,6 +422,30 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       waitlist_submissions: {
         Row: {
           company: string
@@ -303,9 +489,33 @@ export type Database = {
         }
         Returns: string
       }
+      generate_property_fingerprint: {
+        Args: {
+          p_title: string
+          p_street_name: string
+          p_street_number: string
+          p_zip_code: string
+          p_city: string
+          p_monthly_rent: number
+          p_bedrooms: number
+          p_square_meters: number
+        }
+        Returns: string
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -432,6 +642,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

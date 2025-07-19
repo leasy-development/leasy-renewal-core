@@ -8,7 +8,8 @@ import {
   RefreshCw,
   Bot,
   Images,
-  LogOut
+  LogOut,
+  Shield
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
@@ -47,6 +48,10 @@ const settingsItems = [
   { title: "Account", url: "/account", icon: Settings },
   { title: "Team", url: "/team", icon: Users, disabled: true },
   { title: "Bookings", url: "/bookings", icon: Calendar, disabled: true },
+];
+
+const adminItems = [
+  { title: "Duplicate Detection", url: "/admin/duplicates", icon: Shield },
 ];
 
 export function AppSidebar() {
@@ -124,6 +129,25 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {toolsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} className={getNavCls}>
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Admin Section - Show only for admin users */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavCls}>

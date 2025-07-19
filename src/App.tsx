@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import AccountSettings from "./pages/AccountSettings";
 import Analytics from "./pages/Analytics";
 import UpdatePassword from "./pages/UpdatePassword";
+import AdminDuplicates from "./pages/AdminDuplicates";
 
 const App = () => (
   <ErrorBoundary>
@@ -110,6 +111,14 @@ const App = () => (
                   <DashboardLayout>
                     <Analytics />
                   </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/duplicates" 
+              element={
+                <ProtectedRoute>
+                  <AdminDuplicates />
                 </ProtectedRoute>
               } 
             />
