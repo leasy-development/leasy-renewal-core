@@ -1154,6 +1154,55 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     return `${timestamp}_${sanitizedTitle}.${extension}`;
   };
 
+  // AI Description generation for CSV properties
+  const generatePropertyDescription = async (propertyId: string, property: PropertyRow) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-property-description', {
+        body: {
+          property: {
+            title: property.title,
+            street_name: property.street_name,
+            city: property.city,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            square_meters: property.square_meters,
+            monthly_rent: property.monthly_rent,
+            weekly_rate: property.weekly_rate,
+            daily_rate: property.daily_rate,
+            apartment_type: property.apartment_type,
+            category: property.category
+          },
+          tone: 'professional and premium',
+          format: 'html',
+          language: 'en',
+          maxLength: 400,
+          includeFeatures: true
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.description) {
+        // Update property with AI-generated description
+        const { error: updateError } = await supabase
+          .from('properties')
+          .update({ description: data.description })
+          .eq('id', propertyId);
+
+        if (updateError) {
+          logger.error('Failed to save AI description', { propertyId, error: updateError.message });
+        } else {
+          logger.info('AI description generated and saved', { propertyId });
+        }
+      }
+
+    } catch (error) {
+      logger.error('AI description generation failed', { propertyId, error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
   const getFileExtension = (url: string): string => {
     try {
       const path = new URL(url).pathname;
@@ -1202,8 +1251,8 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         status: 'in_progress'
       });
 
-      // Create properties first, then handle media
-      const createdProperties: Array<{ id: string; data: PropertyRow; mediaUrls: string[] }> = [];
+      // Create properties first, then handle media and AI descriptions
+      const createdProperties: Array<{ id: string; data: PropertyRow; mediaUrls: string[]; needsAIDescription: boolean }> = [];
       
       for (let i = 0; i < validProperties.length; i++) {
         const { property, mediaItems } = validProperties[i];
@@ -1223,13 +1272,25 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
           
           result.properties.success++;
           
+          // Check if property needs AI-generated description
+          const hasMinimalDescription = !property.description || property.description.trim().length < 20;
+          
           // Extract media URLs for batch processing
           const mediaUrls = mediaItems.map(item => item.originalUrl);
           createdProperties.push({
             id: insertedProperty.id,
             data: property,
-            mediaUrls
+            mediaUrls,
+            needsAIDescription: hasMinimalDescription
           });
+          
+          // Generate AI description in background if needed
+          if (hasMinimalDescription) {
+            // Don't await - run in background
+            generatePropertyDescription(insertedProperty.id, property).catch(error => {
+              logger.warn('AI description generation failed', { propertyId: insertedProperty.id, error: error.message });
+            });
+          }
           
           setUploadStep({
             step: 'property_creation',

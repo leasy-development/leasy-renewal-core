@@ -1,207 +1,181 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Bot, Sparkles, FileText, Image, Zap, Brain } from "lucide-react";
+import React from 'react';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { AIBulkDescriptionGenerator } from '@/components/AIBulkDescriptionGenerator';
+import MediaProcessor from '@/components/MediaProcessor';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { 
+  Wand2, 
+  FileText, 
+  Image, 
+  Sparkles, 
+  TrendingUp,
+  Bot,
+  Lightbulb
+} from 'lucide-react';
 
-const AITools = () => {
-  const aiFeatures = [
-    {
-      title: "Property Description Generator",
-      description: "Generate compelling property descriptions automatically",
-      icon: FileText,
-      status: "available",
-      category: "Content"
-    },
-    {
-      title: "Image Enhancement",
-      description: "Automatically enhance and optimize property photos",
-      icon: Image,
-      status: "coming-soon",
-      category: "Media"
-    },
-    {
-      title: "Pricing Optimization",
-      description: "AI-powered pricing recommendations based on market data",
-      icon: Zap,
-      status: "coming-soon",
-      category: "Analytics"
-    },
-    {
-      title: "Content Translation",
-      description: "Translate listings to multiple languages instantly",
-      icon: Brain,
-      status: "available",
-      category: "Content"
-    },
-    {
-      title: "SEO Optimization",
-      description: "Optimize listing titles and descriptions for better visibility",
-      icon: Sparkles,
-      status: "coming-soon",
-      category: "Marketing"
-    },
-    {
-      title: "Virtual Staging",
-      description: "AI-powered virtual furniture placement in empty rooms",
-      icon: Image,
-      status: "coming-soon",
-      category: "Media"
-    }
-  ];
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "available":
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Available</Badge>;
-      case "coming-soon":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Coming Soon</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "Content":
-        return "text-blue-500";
-      case "Media":
-        return "text-purple-500";
-      case "Analytics":
-        return "text-green-500";
-      case "Marketing":
-        return "text-orange-500";
-      default:
-        return "text-gray-500";
-    }
-  };
-
+export default function AITools() {
   return (
-    <div className="container mx-auto px-4 lg:px-8 py-8">
-      <div className="mb-8">
-        <div className="flex items-center space-x-3 mb-4">
-          <Bot className="h-8 w-8 text-primary" />
-          <h1 className="text-display text-foreground">AI Tools</h1>
+    <DashboardLayout>
+      <div className="container mx-auto py-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Bot className="w-8 h-8 text-primary" />
+            AI Tools Center
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Leverage artificial intelligence to enhance your property management workflow
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Leverage artificial intelligence to optimize your property listings and automate tasks.
-        </p>
-      </div>
 
-      {/* Usage Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">AI Tasks This Month</CardTitle>
-            <Bot className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">127</div>
-            <p className="text-xs text-muted-foreground">+23 from last month</p>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="descriptions" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="descriptions" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Descriptions
+            </TabsTrigger>
+            <TabsTrigger value="media" className="flex items-center gap-2">
+              <Image className="w-4 h-4" />
+              Media Processing
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Insights & Analytics
+            </TabsTrigger>
+          </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Descriptions Generated</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground">For 12 properties</p>
-          </CardContent>
-        </Card>
+          <TabsContent value="descriptions" className="mt-6 space-y-6">
+            <div className="grid gap-6">
+              {/* AI Description Overview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Wand2 className="w-5 h-5 text-primary" />
+                    AI Property Descriptions
+                  </CardTitle>
+                  <CardDescription>
+                    Generate compelling, professional property descriptions that attract quality tenants and buyers
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Card className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
+                        <h3 className="font-semibold text-blue-900">Smart Generation</h3>
+                      </div>
+                      <p className="text-sm text-blue-700 mb-3">
+                        AI analyzes property details to create unique, engaging descriptions tailored to your market
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="secondary" className="text-xs">Professional Tone</Badge>
+                        <Badge variant="secondary" className="text-xs">Multiple Languages</Badge>
+                        <Badge variant="secondary" className="text-xs">SEO Optimized</Badge>
+                      </div>
+                    </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Time Saved</CardTitle>
-            <Sparkles className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">18h</div>
-            <p className="text-xs text-muted-foreground">This month</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-            <Zap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">96%</div>
-            <p className="text-xs text-muted-foreground">AI task completion</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* AI Features Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {aiFeatures.map((feature, index) => (
-          <Card key={index} className={feature.status === "coming-soon" ? "opacity-60" : ""}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <feature.icon className={`h-6 w-6 ${getCategoryColor(feature.category)}`} />
-                  <div>
-                    <CardTitle className="text-base">{feature.title}</CardTitle>
-                    <Badge variant="outline" className="text-xs mt-1">
-                      {feature.category}
-                    </Badge>
+                    <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                        <h3 className="font-semibold text-green-900">Bulk Processing</h3>
+                      </div>
+                      <p className="text-sm text-green-700 mb-3">
+                        Process multiple properties at once, perfect for large portfolios and CSV imports
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="secondary" className="text-xs">Batch Processing</Badge>
+                        <Badge variant="secondary" className="text-xs">CSV Integration</Badge>
+                        <Badge variant="secondary" className="text-xs">Background Jobs</Badge>
+                      </div>
+                    </Card>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Bulk Description Generator */}
+              <AIBulkDescriptionGenerator />
+
+              {/* Usage Guidelines */}
+              <Alert>
+                <Lightbulb className="h-4 w-4" />
+                <AlertTitle>💡 Pro Tips for Better Descriptions</AlertTitle>
+                <AlertDescription>
+                  <div className="mt-2 space-y-2 text-sm">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-semibold mb-1">Optimize Your Input Data:</h4>
+                        <ul className="space-y-1 list-disc list-inside text-xs">
+                          <li>Include accurate square footage</li>
+                          <li>Specify amenities and features</li>
+                          <li>Provide clear location details</li>
+                          <li>Set appropriate property categories</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-1">Choose the Right Tone:</h4>
+                        <ul className="space-y-1 list-disc list-inside text-xs">
+                          <li><strong>Luxury:</strong> High-end properties with premium features</li>
+                          <li><strong>Family:</strong> Properties targeting families with children</li>
+                          <li><strong>Corporate:</strong> Business-oriented rental markets</li>
+                          <li><strong>Modern:</strong> Contemporary properties with smart features</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="media" className="mt-6">
+            <MediaProcessor />
+          </TabsContent>
+
+          <TabsContent value="insights" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  AI Insights & Analytics
+                </CardTitle>
+                <CardDescription>
+                  Coming soon: Market analysis, pricing optimization, and performance insights
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card className="p-4 border-dashed border-2 border-muted-foreground/20">
+                    <div className="text-center text-muted-foreground">
+                      <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <h3 className="font-semibold mb-1">Market Analysis</h3>
+                      <p className="text-sm">AI-powered market insights and competitive analysis</p>
+                    </div>
+                  </Card>
+
+                  <Card className="p-4 border-dashed border-2 border-muted-foreground/20">
+                    <div className="text-center text-muted-foreground">
+                      <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <h3 className="font-semibold mb-1">Pricing Optimization</h3>
+                      <p className="text-sm">Smart pricing recommendations based on market data</p>
+                    </div>
+                  </Card>
                 </div>
-                {getStatusBadge(feature.status)}
-              </div>
-              <CardDescription className="text-sm mt-2">
-                {feature.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                className="w-full" 
-                variant={feature.status === "available" ? "default" : "outline"}
-                disabled={feature.status === "coming-soon"}
-              >
-                {feature.status === "available" ? "Use Tool" : "Coming Soon"}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+
+                <Alert>
+                  <Bot className="h-4 w-4" />
+                  <AlertTitle>🚀 Coming Soon</AlertTitle>
+                  <AlertDescription>
+                    We're working on advanced AI features including market analysis, pricing optimization, 
+                    and automated property scoring. Stay tuned for updates!
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {/* Recent AI Activity */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Recent AI Activity</CardTitle>
-          <CardDescription>Latest AI-powered tasks and their results</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <FileText className="h-4 w-4 text-blue-500" />
-              <div className="text-sm">
-                <p className="font-medium">Generated description for "Modern Apartment in Berlin"</p>
-                <p className="text-muted-foreground">3 hours ago • 98% quality score</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Brain className="h-4 w-4 text-green-500" />
-              <div className="text-sm">
-                <p className="font-medium">Translated 5 listings to English and French</p>
-                <p className="text-muted-foreground">1 day ago • High accuracy</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <FileText className="h-4 w-4 text-blue-500" />
-              <div className="text-sm">
-                <p className="font-medium">Generated SEO-optimized titles for 3 properties</p>
-                <p className="text-muted-foreground">2 days ago • 15% visibility improvement</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </DashboardLayout>
   );
-};
-
-export default AITools;
+}

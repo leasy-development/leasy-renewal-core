@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_generation_logs: {
+        Row: {
+          character_count: number | null
+          created_at: string
+          format: string | null
+          id: string
+          language: string | null
+          property_title: string | null
+          tone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          character_count?: number | null
+          created_at?: string
+          format?: string | null
+          id?: string
+          language?: string | null
+          property_title?: string | null
+          tone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          character_count?: number | null
+          created_at?: string
+          format?: string | null
+          id?: string
+          language?: string | null
+          property_title?: string | null
+          tone?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dashboard_widgets: {
         Row: {
           config: Json
