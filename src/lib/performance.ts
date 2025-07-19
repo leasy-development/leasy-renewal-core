@@ -15,7 +15,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   delay: number
 ): T {
   const callbackRef = useRef(callback);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     callbackRef.current = callback;
@@ -123,7 +123,7 @@ export async function* processBatches<T, R>(
 
 // Performance monitoring hook
 export function usePerformanceMonitor(name: string) {
-  const startTimeRef = useRef<number>();
+  const startTimeRef = useRef<number | undefined>(undefined);
 
   const start = useCallback(() => {
     startTimeRef.current = performance.now();
