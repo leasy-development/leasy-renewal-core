@@ -53,6 +53,8 @@ export type Database = {
       properties: {
         Row: {
           apartment_type: string | null
+          bathrooms: number | null
+          bedrooms: number | null
           category: string | null
           checkin_time: string | null
           checkout_time: string | null
@@ -64,9 +66,11 @@ export type Database = {
           description: string | null
           id: string
           landlord_info: Json | null
+          max_guests: number | null
           monthly_rent: number | null
           provides_wgsb: boolean | null
           region: string | null
+          square_meters: number | null
           status: string | null
           street_name: string | null
           street_number: string | null
@@ -78,6 +82,8 @@ export type Database = {
         }
         Insert: {
           apartment_type?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
           category?: string | null
           checkin_time?: string | null
           checkout_time?: string | null
@@ -89,9 +95,11 @@ export type Database = {
           description?: string | null
           id?: string
           landlord_info?: Json | null
+          max_guests?: number | null
           monthly_rent?: number | null
           provides_wgsb?: boolean | null
           region?: string | null
+          square_meters?: number | null
           status?: string | null
           street_name?: string | null
           street_number?: string | null
@@ -103,6 +111,8 @@ export type Database = {
         }
         Update: {
           apartment_type?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
           category?: string | null
           checkin_time?: string | null
           checkout_time?: string | null
@@ -114,9 +124,11 @@ export type Database = {
           description?: string | null
           id?: string
           landlord_info?: Json | null
+          max_guests?: number | null
           monthly_rent?: number | null
           provides_wgsb?: boolean | null
           region?: string | null
+          square_meters?: number | null
           status?: string | null
           street_name?: string | null
           street_number?: string | null

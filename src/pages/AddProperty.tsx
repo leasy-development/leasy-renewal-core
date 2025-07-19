@@ -219,7 +219,7 @@ const AddProperty = () => {
       let propertyId = id;
       
       // Extract fields that don't belong in properties table
-      const { additional_fees, discounts, taxes, required_documents, beds, photos, amenities, landlord_info, contractual_partner, bedrooms, bathrooms, max_guests, square_meters, ...propertyData } = formData;
+      const { additional_fees, discounts, taxes, required_documents, beds, photos, amenities, ...propertyData } = formData;
       
       if (isEditing && id) {
         // Update existing property
@@ -227,8 +227,8 @@ const AddProperty = () => {
           .from('properties')
           .update({
             ...propertyData,
-            landlord_info: landlord_info as any,
-            contractual_partner: contractual_partner as any,
+            landlord_info: formData.landlord_info as any,
+            contractual_partner: formData.contractual_partner as any,
             status,
           })
           .eq('id', id);
@@ -239,8 +239,8 @@ const AddProperty = () => {
           .from('properties')
           .insert({
             ...propertyData,
-            landlord_info: landlord_info as any,
-            contractual_partner: contractual_partner as any,
+            landlord_info: formData.landlord_info as any,
+            contractual_partner: formData.contractual_partner as any,
             user_id: user.id,
             status,
           })
