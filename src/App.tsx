@@ -23,6 +23,7 @@ import AdminAISettings from "./pages/AdminAISettings";
 import TranslationDashboard from "./pages/TranslationDashboard";
 import AIOptimizationDashboard from "./pages/AIOptimizationDashboard";
 import MediaExtractor from "./pages/MediaExtractor";
+import AdminPromptManager from "./components/AdminPromptManager";
 import { UpdateNotification } from "./components/UpdateNotification";
 
 const App = () => {
@@ -169,15 +170,25 @@ const App = () => {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/admin/duplicates" 
-              element={
-                <ProtectedRoute>
-                  <AdminDuplicates />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/update-password" element={<UpdatePassword />} />
+             <Route 
+               path="/admin/duplicates" 
+               element={
+                 <ProtectedRoute>
+                   <AdminDuplicates />
+                 </ProtectedRoute>
+               } 
+             />
+             <Route 
+               path="/admin/prompts" 
+               element={
+                 <ProtectedRoute>
+                   <DashboardLayout>
+                     <AdminPromptManager />
+                   </DashboardLayout>
+                 </ProtectedRoute>
+               } 
+             />
+             <Route path="/update-password" element={<UpdatePassword />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

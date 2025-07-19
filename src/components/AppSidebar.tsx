@@ -12,7 +12,8 @@ import {
   Shield,
   Download,
   Image,
-  Brain
+  Brain,
+  MessageSquare
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
@@ -57,6 +58,7 @@ const settingsItems = [
 const adminItems = [
   { title: "Duplicate Detection", url: "/admin/duplicates", icon: Shield },
   { title: "AI Settings", url: "/admin/ai-settings", icon: Brain },
+  { title: "AI Prompts", url: "/admin/prompts", icon: MessageSquare },
 ];
 
 export function AppSidebar() {
