@@ -1,34 +1,27 @@
-/// <reference types="vite/client" />
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ErrorBoundary } from "./lib/errorBoundary";
-import { AuthProvider } from "./components/AuthProvider";
-import { Toaster } from "sonner";
-import App from "./App";
-import "./index.css";
-import "./lib/pwa"; // Initialize PWA features
+import React, { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+import { AuthProvider } from "@/components/AuthProvider";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from "@/components/ui/toaster";
+import { ErrorBoundary } from "@/lib/errorBoundary";
+import "@/lib/pwa"; // Initialize PWA features
 
-// Enhanced error safety checks
-if (!React) {
-  throw new Error("React is not available");
+// Safety check for React hooks
+if (!React || typeof React.useEffect !== 'function') {
+  throw new Error("React hooks are not available. This might be a version compatibility issue.");
 }
 
-if (!ReactDOM) {
-  throw new Error("ReactDOM is not available");
-}
-
-// Create query client with improved error handling
+// Create query client with error handling
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retry: false,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000,
     },
     mutations: {
-      retry: 1,
+      retry: false,
     }
   },
 });
@@ -38,24 +31,15 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
-const root = ReactDOM.createRoot(rootElement);
-
-root.render(
-  <React.StrictMode>
-    <ErrorBoundary>
+createRoot(rootElement).render(
+  <ErrorBoundary>
+    <StrictMode>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <Toaster 
-            richColors 
-            position="bottom-right" 
-            closeButton
-            toastOptions={{
-              duration: 4000,
-            }}
-          />
           <App />
+          <Toaster />
         </AuthProvider>
       </QueryClientProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
+    </StrictMode>
+  </ErrorBoundary>
 );
