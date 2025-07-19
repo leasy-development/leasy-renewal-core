@@ -1,22 +1,27 @@
-import React, { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import { AuthProvider } from "@/components/AuthProvider";
-import { Toaster } from "@/components/ui/toaster";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
 import { ErrorBoundary } from "@/lib/errorBoundary";
+import { Toaster } from "sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "@/components/AuthProvider";
+import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
 
-// Critical: Ensure React is fully available before proceeding
-if (!React || !React.useEffect || !React.useState || !React.createContext) {
+// 🔐 Critical: Check React import is not null before proceeding
+if (!React || !React.useEffect) {
+  throw new Error("React not initialized correctly. useEffect is undefined.");
+}
+
+// Additional safety checks for React hooks
+if (typeof React.useEffect !== 'function' || typeof React.useState !== 'function') {
   throw new Error("React hooks are not available. This might be a version compatibility issue.");
 }
 
-console.log("React verification:", {
+console.log("✅ React hooks verification passed:", {
   React: !!React,
-  useEffect: !!React.useEffect,
-  useState: !!React.useState,
-  createContext: !!React.createContext
+  useEffect: typeof React.useEffect,
+  useState: typeof React.useState,
 });
 
 const rootElement = document.getElementById("root");
@@ -24,14 +29,30 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
-// Simple render without QueryClient to isolate the issue
-createRoot(rootElement).render(
-  <ErrorBoundary>
-    <StrictMode>
-      <AuthProvider>
-        <App />
-        <Toaster />
-      </AuthProvider>
-    </StrictMode>
-  </ErrorBoundary>
+// Create QueryClient with safe defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: false,
+    }
+  },
+});
+
+const root = ReactDOM.createRoot(rootElement);
+
+root.render(
+  <React.StrictMode>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Toaster richColors position="bottom-right" />
+          <App />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  </React.StrictMode>
 );
