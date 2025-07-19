@@ -1,3 +1,4 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,14 +22,30 @@ import AdminDuplicates from "./pages/AdminDuplicates";
 import AdminAISettings from "./pages/AdminAISettings";
 import TranslationDashboard from "./pages/TranslationDashboard";
 import MediaExtractor from "./pages/MediaExtractor";
+import { UpdateNotification } from "./components/UpdateNotification";
 
-const App = () => (
-  <ErrorBoundary>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+const App = () => {
+  // Register service worker for PWA support
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('SW registration failed: ', registrationError);
+        });
+    }
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <UpdateNotification />
+          <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route 
@@ -154,11 +171,12 @@ const App = () => (
             <Route path="/update-password" element={<UpdatePassword />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-        </Routes>
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
   </ErrorBoundary>
 );
+};
 
 export default App;
