@@ -295,7 +295,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      changepassword: {
+        Args: {
+          current_plain_password: string
+          new_plain_password: string
+          current_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Bell, User, Shield, CreditCard, Globe, Smartphone, Download } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Bell, User, Shield, CreditCard, Globe, Smartphone, Download, Key, AlertCircle } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import PhotoUploader from "@/components/PhotoUploader";
 
 interface UserProfile {
@@ -36,6 +38,12 @@ interface SecuritySettings {
   twoFactorAuth: boolean;
   loginAlerts: boolean;
   apiAccess: boolean;
+}
+
+interface PasswordChangeForm {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 const AccountSettings = () => {
@@ -65,6 +73,13 @@ const AccountSettings = () => {
     loginAlerts: true,
     apiAccess: false
   });
+
+  const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'billing'>('profile');
 
@@ -113,6 +128,83 @@ const AccountSettings = () => {
         description: error.message || "Failed to update security settings. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!user) return;
+    
+    // Validate form
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all password fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "New password and confirmation don't match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "New password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    
+    try {
+      const { data, error } = await supabase.rpc('changepassword', {
+        current_plain_password: passwordForm.currentPassword,
+        new_plain_password: passwordForm.newPassword,
+        current_id: user.id
+      });
+
+      if (error) throw error;
+
+      if (data === 'success') {
+        toast({
+          title: "Password Changed",
+          description: "Your password has been successfully updated.",
+        });
+        // Clear the form
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else if (data === 'incorrect') {
+        toast({
+          title: "Incorrect Password",
+          description: "Your current password is incorrect.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Password Change Failed",
+          description: "An error occurred while changing your password.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Password Change Failed",
+        description: error.message || "Failed to change password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -432,6 +524,64 @@ const AccountSettings = () => {
                         }
                       />
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Password Change Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Key className="h-5 w-5" />
+                      <h4 className="font-medium">Change Password</h4>
+                    </div>
+                    
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        For security reasons, you must enter your current password to set a new one.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="currentPassword">Current Password</Label>
+                        <Input
+                          id="currentPassword"
+                          type="password"
+                          value={passwordForm.currentPassword}
+                          onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                          placeholder="Enter current password"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={passwordForm.newPassword}
+                          onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                          placeholder="Enter new password"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={passwordForm.confirmPassword}
+                          onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={handlePasswordChange} 
+                      disabled={isChangingPassword}
+                      className="w-full md:w-auto"
+                    >
+                      {isChangingPassword ? 'Changing Password...' : 'Change Password'}
+                    </Button>
                   </div>
 
                   <Separator />
