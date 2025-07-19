@@ -16,19 +16,20 @@ export const Hero = () => {
             </div>
             
             <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Sync your listings.{" "}
+              List once.{" "}
               <span className="bg-gradient-primary bg-clip-text text-transparent">
-                Save time.
+                Sync everywhere.
               </span>{" "}
-              Boost reach.
+              Effortlessly.
             </h1>
             
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed max-w-2xl lg:max-w-none">
-              Cloud-based platform for landlords, property managers, and real estate professionals 
-              to manage and sync property listings across multiple channels effortlessly.
+              Leasy automates your entire listing workflow — from importing properties via FARAWAYHOME or WordPress 
+              to syncing them with AI-optimized descriptions and images across all major platforms like ImmoScout24, 
+              Wunderflats, and your own website.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
               <Button 
                 variant="hero" 
                 size="xl" 
@@ -39,43 +40,82 @@ export const Hero = () => {
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               
+              <Button 
+                variant="outline" 
+                size="xl" 
+                className="group border-border/50 hover:bg-accent/50"
+              >
+                <Play className="mr-2 h-5 w-5" />
+                See Live Sync in Action
+              </Button>
             </div>
-            
-            <div className="flex items-center gap-8 mt-8 justify-center lg:justify-start text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-primary rounded-full"></span>
-                Currently in Beta
+
+            {/* Floating Benefit Tags */}
+            <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+              <div className="inline-flex items-center gap-2 bg-success/10 text-success px-3 py-2 rounded-full text-sm font-medium">
+                ✅ +247% Reach
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-success rounded-full"></span>
-                Early access available
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-2 rounded-full text-sm font-medium">
+                ⏱ –12h/week Saved
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-success rounded-full"></span>
-                No commitment required
+              <div className="inline-flex items-center gap-2 bg-accent/20 text-foreground px-3 py-2 rounded-full text-sm font-medium">
+                🔁 1-Click Sync
+              </div>
+              <div className="inline-flex items-center gap-2 bg-purple-500/10 text-purple-600 px-3 py-2 rounded-full text-sm font-medium">
+                🧠 AI Description in 30 sec
+              </div>
+              <div className="inline-flex items-center gap-2 bg-orange-500/10 text-orange-600 px-3 py-2 rounded-full text-sm font-medium">
+                📸 Auto-Optimized Images
               </div>
             </div>
           </div>
           
-          {/* Hero Image */}
+          {/* Live Sync Animation */}
           <div className="relative">
-            <div className="relative rounded-2xl overflow-hidden shadow-large">
-              <img src={heroImage} alt="Leasy Dashboard" className="w-full h-auto object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent"></div>
-            </div>
-            
-            {/* Floating Elements */}
-            <div className="absolute -top-4 -right-4 bg-card border border-border rounded-lg p-4 shadow-medium">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-success rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Live Sync Active</span>
+            <div className="relative rounded-2xl overflow-hidden shadow-large bg-card border border-border/50 p-6">
+              {/* Animation Container */}
+              <div className="space-y-4">
+                {/* Step 1: Importing */}
+                <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Importing from FARAWAYHOME.com</span>
+                </div>
+
+                {/* Step 2: AI Optimizing */}
+                <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="flex gap-1">
+                    <span className="text-sm">✏️</span>
+                    <span className="text-sm">📷</span>
+                  </div>
+                  <span className="text-sm font-medium">Optimizing content with AI...</span>
+                </div>
+
+                {/* Step 3: Syncing */}
+                <div className="flex items-center gap-3 p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Syncing to 4 platforms...</span>
+                </div>
+
+                {/* Step 4: Success */}
+                <div className="flex items-center gap-3 p-4 bg-success/10 rounded-lg border border-success/20">
+                  <span className="text-sm">✅</span>
+                  <span className="text-sm font-medium text-success">Synced successfully</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="absolute -bottom-4 -left-4 bg-card border border-border rounded-lg p-4 shadow-medium">
-              <div className="text-sm">
-                <div className="font-medium text-foreground">+247% reach</div>
-                <div className="text-muted-foreground">vs manual posting</div>
+
+              {/* Floating Status Badge */}
+              <div className="absolute -top-3 -right-3 bg-card border border-border rounded-lg p-3 shadow-medium">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium">Live Sync Active</span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Last updated 6s ago</div>
+              </div>
+
+              {/* Auto-sync overlay */}
+              <div className="absolute -bottom-3 -left-3 bg-primary/90 text-primary-foreground rounded-lg p-3 shadow-medium">
+                <div className="text-xs font-medium">Auto-syncing listings</div>
+                <div className="text-xs opacity-90">No manual posting</div>
               </div>
             </div>
           </div>
