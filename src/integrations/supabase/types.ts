@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      dashboard_widgets: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          position: Json
+          size: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          position?: Json
+          size?: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          position?: Json
+          size?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       properties: {
         Row: {
           apartment_type: string | null
