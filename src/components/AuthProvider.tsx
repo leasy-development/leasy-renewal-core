@@ -1,6 +1,11 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+
+// Safety check for React hooks
+if (!React || typeof React.useEffect !== 'function') {
+  throw new Error("React hooks are not available. This might be a version compatibility issue.");
+}
 
 interface AuthContextType {
   user: User | null;
