@@ -477,7 +477,14 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     const missingFields = new Set<string>();
     const groupedErrors: { [field: string]: number } = {};
     
-    data.forEach((row, index) => {
+    // Filter out any rows that look like headers
+    const dataRows = data.filter(row => {
+      // Skip rows where title contains obvious header keywords
+      const title = row.title?.toLowerCase() || '';
+      return !['title', 'property title', 'name', 'property name'].includes(title);
+    });
+    
+    dataRows.forEach((row, index) => {
       requiredFields.forEach(field => {
         if (!row[field as keyof PropertyRow] || row[field as keyof PropertyRow] === '') {
           errors.push({
