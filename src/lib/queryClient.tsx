@@ -1,10 +1,7 @@
-// React Query provider setup for Leasy
-import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// Query client instance for use across the app
+import { QueryClient } from '@tanstack/react-query';
 
-// Create a client with optimized settings for Leasy
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
@@ -19,18 +16,3 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-interface ReactQueryProviderProps {
-  children: React.ReactNode;
-}
-
-export function ReactQueryProvider({ children }: ReactQueryProviderProps) {
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
-    </QueryClientProvider>
-  );
-}
-
-export { queryClient };
