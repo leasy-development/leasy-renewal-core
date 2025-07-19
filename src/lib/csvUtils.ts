@@ -1,4 +1,10 @@
 // CSV processing utilities with enhanced validation and conversion
+import { logger } from './logger';
+import stringSimilarity from 'string-similarity';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
+import DOMPurify from 'dompurify';
+import Joi from 'joi';
 
 interface PropertyRow {
   title: string;
@@ -369,4 +375,281 @@ function isFloorplanUrl(columnName: string, url: string): boolean {
   return floorplanKeywords.some(keyword => 
     lowerKey.includes(keyword) || lowerUrl.includes(keyword)
   );
+}
+
+// Enhanced validation schema for property data
+const propertyValidationSchema = Joi.object({
+  title: Joi.string().required().min(1).max(200).messages({
+    'string.empty': 'Title cannot be empty',
+    'string.min': 'Title must be at least 1 character',
+    'string.max': 'Title cannot exceed 200 characters',
+    'any.required': 'Title is required'
+  }),
+  apartment_type: Joi.string().required().valid(
+    'apartment', 'house', 'studio', 'room', 'shared_apartment', 'other'
+  ).messages({
+    'any.required': 'Apartment type is required',
+    'any.only': 'Invalid apartment type'
+  }),
+  category: Joi.string().required().valid(
+    'rental', 'sale', 'short_term', 'long_term'
+  ).messages({
+    'any.required': 'Category is required',
+    'any.only': 'Invalid category'
+  }),
+  street_name: Joi.string().required().min(1).max(100).messages({
+    'any.required': 'Street name is required',
+    'string.empty': 'Street name cannot be empty',
+    'string.max': 'Street name cannot exceed 100 characters'
+  }),
+  city: Joi.string().required().min(1).max(50).messages({
+    'any.required': 'City is required',
+    'string.empty': 'City cannot be empty',
+    'string.max': 'City cannot exceed 50 characters'
+  }),
+  street_number: Joi.string().allow('').max(20),
+  zip_code: Joi.string().allow('').max(20),
+  country: Joi.string().allow('').max(50),
+  region: Joi.string().allow('').max(50),
+  monthly_rent: Joi.number().min(0).max(999999).allow(null).messages({
+    'number.min': 'Monthly rent cannot be negative',
+    'number.max': 'Monthly rent seems unreasonably high'
+  }),
+  weekly_rate: Joi.number().min(0).max(999999).allow(null),
+  daily_rate: Joi.number().min(0).max(9999).allow(null),
+  bedrooms: Joi.number().integer().min(0).max(50).allow(null).messages({
+    'number.min': 'Bedrooms cannot be negative',
+    'number.max': 'Number of bedrooms seems unreasonable',
+    'number.integer': 'Bedrooms must be a whole number'
+  }),
+  bathrooms: Joi.number().integer().min(0).max(50).allow(null),
+  max_guests: Joi.number().integer().min(1).max(100).allow(null),
+  square_meters: Joi.number().min(1).max(10000).allow(null).messages({
+    'number.min': 'Square meters must be at least 1',
+    'number.max': 'Square meters seems unreasonably large'
+  }),
+  landlord_email: Joi.string().email().allow('').messages({
+    'string.email': 'Invalid email format'
+  }),
+  description: Joi.string().allow('').max(5000),
+  house_rules: Joi.string().allow('').max(2000),
+  provides_wgsb: Joi.boolean().allow(null),
+  checkin_time: Joi.string().allow('').pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).messages({
+    'string.pattern.base': 'Check-in time must be in HH:MM format'
+  }),
+  checkout_time: Joi.string().allow('').pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).messages({
+    'string.pattern.base': 'Check-out time must be in HH:MM format'
+  })
+}).unknown(true); // Allow additional fields
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationError[];
+  sanitizedData: any;
+}
+
+// Validate property data with comprehensive checks
+export function validatePropertyData(data: any, rowNumber: number): ValidationResult {
+  const errors: ValidationError[] = [];
+  const warnings: ValidationError[] = [];
+  
+  // Sanitize input first
+  const sanitizedData = sanitizePropertyInput(data);
+  
+  // Run Joi validation
+  const { error } = propertyValidationSchema.validate(sanitizedData, { 
+    abortEarly: false,
+    allowUnknown: true 
+  });
+  
+  if (error) {
+    error.details.forEach(detail => {
+      errors.push({
+        row: rowNumber,
+        field: detail.path.join('.'),
+        message: detail.message,
+        value: detail.context?.value,
+        severity: 'error'
+      });
+    });
+  }
+  
+  // Additional business logic validations
+  if (sanitizedData.checkout_time && sanitizedData.checkin_time) {
+    const checkin = parseTime(sanitizedData.checkin_time);
+    const checkout = parseTime(sanitizedData.checkout_time);
+    if (checkin && checkout && checkout <= checkin) {
+      warnings.push({
+        row: rowNumber,
+        field: 'checkout_time',
+        message: 'Check-out time should be after check-in time',
+        severity: 'warning'
+      });
+    }
+  }
+  
+  // Price consistency warnings
+  if (sanitizedData.daily_rate && sanitizedData.weekly_rate) {
+    const expectedWeekly = sanitizedData.daily_rate * 7;
+    const difference = Math.abs(sanitizedData.weekly_rate - expectedWeekly);
+    if (difference > expectedWeekly * 0.1) { // 10% tolerance
+      warnings.push({
+        row: rowNumber,
+        field: 'weekly_rate',
+        message: 'Weekly rate doesn\'t match daily rate calculation',
+        severity: 'warning'
+      });
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    sanitizedData
+  };
+}
+
+// Sanitize and normalize property input data
+export function sanitizePropertyInput(data: any): any {
+  const sanitized = { ...data };
+  
+  // Sanitize string fields
+  Object.keys(sanitized).forEach(key => {
+    if (typeof sanitized[key] === 'string') {
+      // Remove HTML tags except for allowed ones in specific fields
+      if (['description', 'house_rules'].includes(key)) {
+        sanitized[key] = DOMPurify.sanitize(sanitized[key], {
+          ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li'],
+          ALLOWED_ATTR: []
+        });
+      } else {
+        sanitized[key] = DOMPurify.sanitize(sanitized[key], {
+          ALLOWED_TAGS: [],
+          ALLOWED_ATTR: []
+        });
+      }
+      
+      // Trim whitespace
+      sanitized[key] = sanitized[key].trim();
+    }
+  });
+  
+  // Convert numeric fields
+  const numericFields = [
+    'monthly_rent', 'weekly_rate', 'daily_rate', 'bedrooms', 
+    'bathrooms', 'max_guests', 'square_meters'
+  ];
+  
+  numericFields.forEach(field => {
+    if (sanitized[field] !== undefined && sanitized[field] !== null) {
+      const converted = convertToNumeric(sanitized[field], field);
+      sanitized[field] = converted;
+    }
+  });
+  
+  // Convert boolean fields
+  const booleanFields = ['provides_wgsb'];
+  booleanFields.forEach(field => {
+    if (sanitized[field] !== undefined) {
+      sanitized[field] = convertToBooleanEx(sanitized[field]);
+    }
+  });
+  
+  return sanitized;
+}
+
+// Convert various input formats to numeric values
+export function convertToNumeric(value: any, fieldType?: string): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  
+  if (typeof value === 'number') {
+    return isNaN(value) ? null : value;
+  }
+  
+  if (typeof value !== 'string') {
+    return null;
+  }
+  
+  // Remove currency symbols and clean the string
+  let cleaned = value.toString()
+    .replace(/[€$£¥₹]/g, '') // Remove currency symbols
+    .replace(/[^\d.,\-]/g, '') // Keep only digits, comma, period, minus
+    .trim();
+  
+  if (!cleaned) return null;
+  
+  // Handle European number format (1.234,56)
+  if (cleaned.includes(',') && cleaned.includes('.')) {
+    if (cleaned.lastIndexOf(',') > cleaned.lastIndexOf('.')) {
+      // European format: 1.234,56
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    } else {
+      // US format: 1,234.56
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else if (cleaned.includes(',')) {
+    // Check if it's decimal separator or thousand separator
+    const parts = cleaned.split(',');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // Likely decimal: 123,45
+      cleaned = cleaned.replace(',', '.');
+    } else {
+      // Likely thousand separator: 1,234
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  }
+  
+  const numeric = parseFloat(cleaned);
+  
+  if (isNaN(numeric)) {
+    return null;
+  }
+  
+  // Unit conversions
+  if (fieldType === 'square_feet') {
+    // Convert square feet to square meters
+    return Math.round(numeric * 0.092903 * 100) / 100;
+  }
+  
+  return numeric;
+}
+
+// Convert various input formats to boolean
+function convertToBooleanEx(value: any): boolean | null {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  if (typeof value === 'string') {
+    const lower = value.toLowerCase().trim();
+    if (['true', 'yes', '1', 'on', 'enabled'].includes(lower)) {
+      return true;
+    }
+    if (['false', 'no', '0', 'off', 'disabled'].includes(lower)) {
+      return false;
+    }
+  }
+  
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+  
+  return null;
+}
+
+// Parse time string to minutes for comparison
+function parseTime(timeStr: string): number | null {
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  
+  const hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  
+  if (hours > 23 || minutes > 59) return null;
+  
+  return hours * 60 + minutes;
 }
