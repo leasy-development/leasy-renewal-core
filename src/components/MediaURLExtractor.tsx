@@ -3,11 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/AuthProvider';
+import { mediaUploader } from '@/lib/mediaUploader';
 import { Download, Search, CheckCircle, AlertCircle, Image, TestTube } from 'lucide-react';
 
 interface ExtractedMedia {
@@ -31,7 +33,15 @@ export function MediaURLExtractor() {
   const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
   const [manualUrls, setManualUrls] = useState('');
   const [progress, setProgress] = useState(0);
+  const [isProcessingExisting, setIsProcessingExisting] = useState(false);
+  const [existingProcessResult, setExistingProcessResult] = useState<{
+    processedProperties: number;
+    totalMediaDownloaded: number;
+    totalFailed: number;
+    errors: string[];
+  } | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Enhanced URL pattern to match various image URLs including CDN URLs with query parameters
   const imageUrlPattern = /https?:\/\/[^\s<>"{}|\\^`[\]]*\.(?:jpg|jpeg|png|gif|webp|bmp|svg)(?:\?[^\s<>"{}|\\^`[\]]*)?/gi;
@@ -312,6 +322,77 @@ export function MediaURLExtractor() {
     await processUrlList(allUrls, extractedMedia[0]?.propertyId || '', "extracted");
   };
 
+  // Process existing properties missing media
+  const processExistingPropertiesMissingMedia = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to process existing properties.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsProcessingExisting(true);
+    setExistingProcessResult(null);
+
+    try {
+      const result = await mediaUploader.processExistingPropertiesMissingMedia(
+        user.id,
+        (current, total, propertyId) => {
+          setProgress((current / total) * 100);
+        }
+      );
+
+      setExistingProcessResult(result);
+
+      toast({
+        title: "Existing Properties Processed",
+        description: `✅ ${result.processedProperties} properties processed, ${result.totalMediaDownloaded} media files downloaded`,
+        variant: result.totalFailed > 0 ? "default" : "default"
+      });
+
+    } catch (error) {
+      toast({
+        title: "Processing Failed",
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessingExisting(false);
+      setProgress(0);
+    }
+  };
+
+  // Enhanced function to auto-extract and upload media from CSV data
+  const extractAndUploadMediaFromCSV = async (
+    properties: Array<{ id: string; data: Record<string, any> }>,
+    csvFileName: string,
+    onProgress?: (current: number, total: number) => void
+  ): Promise<{
+    totalSuccess: number;
+    totalFailed: number;
+    processedProperties: number;
+    errors: string[];
+  }> => {
+    if (!user) throw new Error('User not authenticated');
+
+    const results = await mediaUploader.uploadBatchMedia(properties, {
+      userId: user.id,
+      csvFileName,
+      onPropertyProgress: onProgress,
+      batchSize: 2 // Process 2 properties at a time for CSV uploads
+    });
+
+    return {
+      totalSuccess: results.summary.totalSuccess,
+      totalFailed: results.summary.totalFailed,
+      processedProperties: Object.keys(results.results).length,
+      errors: Object.values(results.summary.propertyResults)
+        .flatMap((r: any) => r.errors || [])
+    };
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -326,8 +407,9 @@ export function MediaURLExtractor() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="scan" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="scan">Scan Properties</TabsTrigger>
+              <TabsTrigger value="existing">Process Existing</TabsTrigger>
               <TabsTrigger value="manual">Manual URLs</TabsTrigger>
             </TabsList>
             
@@ -353,9 +435,71 @@ export function MediaURLExtractor() {
                   </Button>
                 )}
               </div>
-            </TabsContent>
-            
-            <TabsContent value="manual" className="space-y-4">
+        </TabsContent>
+
+        <TabsContent value="existing" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                Process Existing Properties Missing Media
+              </CardTitle>
+              <CardDescription>
+                Automatically scan and download media for all existing properties that don't have any media files yet.
+                This will look for image URLs in property descriptions and other text fields.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button 
+                onClick={processExistingPropertiesMissingMedia}
+                disabled={isProcessingExisting}
+                className="w-full"
+              >
+                {isProcessingExisting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Processing Existing Properties...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Process All Existing Properties
+                  </>
+                )}
+              </Button>
+
+              {existingProcessResult && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertTitle>Processing Complete</AlertTitle>
+                  <AlertDescription>
+                    <div className="space-y-1">
+                      <p>✅ Properties processed: {existingProcessResult.processedProperties}</p>
+                      <p>📸 Media files downloaded: {existingProcessResult.totalMediaDownloaded}</p>
+                      {existingProcessResult.totalFailed > 0 && (
+                        <p>❌ Failed downloads: {existingProcessResult.totalFailed}</p>
+                      )}
+                      {existingProcessResult.errors.length > 0 && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-sm font-semibold">
+                            View Errors ({existingProcessResult.errors.length})
+                          </summary>
+                          <div className="mt-2 text-sm bg-muted p-2 rounded max-h-40 overflow-y-auto">
+                            {existingProcessResult.errors.map((error, i) => (
+                              <div key={i} className="text-red-600 mb-1">{error}</div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="manual" className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Image URLs (one per line or comma-separated)</label>
                 <Textarea

@@ -36,6 +36,7 @@ import { mediaUploader, MediaUploadProgress } from "@/lib/mediaUploader";
 import { ColumnMapper } from "@/components/ColumnMapper";
 import { ErrorReportDownloader } from "@/components/ErrorReportDownloader";
 import { processRowsWithFallback, detectMediaColumns } from "@/lib/csvUtils";
+import { MediaURLExtractor } from "@/components/MediaURLExtractor";
 import stringSimilarity from "string-similarity";
 import Papa from "papaparse";
 import * as XLSX from 'xlsx';
@@ -1250,13 +1251,13 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         }
       }
 
-      // Now process media for all created properties
+      // Now process media for all created properties (background processing)
       if (createdProperties.length > 0) {
         setUploadStep({
           step: 'media_download',
           current: 0,
           total: createdProperties.length,
-          message: 'Processing media files...',
+          message: 'Processing media files in background...',
           status: 'in_progress'
         });
 
@@ -1264,7 +1265,8 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         setAbortController(controller);
 
         try {
-          const { summary } = await mediaUploader.uploadBatchMedia(
+          // Schedule media processing without blocking UI completion
+          const mediaProcessingPromise = mediaUploader.uploadBatchMedia(
             createdProperties.map(p => ({ id: p.id, data: p.data })),
             {
               userId: user.id,
@@ -1278,24 +1280,55 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
                   mediaTotal: 0,
                   propertyId: createdProperties[propertyIndex]?.id
                 });
-              }
+              },
+              batchSize: 3 // Process 3 properties at a time for bulk uploads
             }
           );
 
-          result.media.success = summary.totalSuccess;
-          result.media.failed = summary.totalFailed;
+          // Don't await - let it run in background
+          mediaProcessingPromise.then(({ summary }) => {
+            result.media.success = summary.totalSuccess;
+            result.media.failed = summary.totalFailed;
+            result.mediaDetails = {
+              totalUrls: Object.values(summary.propertyResults).reduce((sum, p: any) => sum + (p.success + p.failed), 0),
+              processedProperties: createdProperties.length,
+              avgMediaPerProperty: Math.round(summary.totalSuccess / createdProperties.length * 10) / 10
+            };
+
+            // Update the UI with final media results
+            setUploadResult(prev => prev ? { ...prev, media: result.media, mediaDetails: result.mediaDetails } : result);
+            
+            toast({
+              title: "Media Processing Complete",
+              description: `📸 Downloaded ${summary.totalSuccess} media files across ${createdProperties.length} properties`,
+            });
+          }).catch((error: any) => {
+            logger.error('Background media processing failed', error);
+            result.media.errors.push({ url: '', error: error.message });
+            toast({
+              title: "Media Processing Failed", 
+              description: "Some media files could not be downloaded. Check the logs for details.",
+              variant: "destructive"
+            });
+          }).finally(() => {
+            setAbortController(null);
+            setMediaUploadProgress(null);
+          });
+
+          // Set initial placeholder values for immediate UI feedback
+          result.media = { success: 0, failed: 0, errors: [] };
           result.mediaDetails = {
-            totalUrls: Object.values(summary.propertyResults).reduce((sum, p: any) => sum + (p.success + p.failed), 0),
+            totalUrls: createdProperties.reduce((sum, p) => {
+              const mediaUrls = mediaUploader.extractMediaUrls(p.data);
+              return sum + mediaUrls.length;
+            }, 0),
             processedProperties: createdProperties.length,
-            avgMediaPerProperty: Math.round(summary.totalSuccess / createdProperties.length * 10) / 10
+            avgMediaPerProperty: 0
           };
 
         } catch (error: any) {
-          logger.error('Media processing failed', error);
+          logger.error('Media processing setup failed', error);
           result.media.errors.push({ url: '', error: error.message });
-        } finally {
-          setAbortController(null);
-          setMediaUploadProgress(null);
         }
       }
 

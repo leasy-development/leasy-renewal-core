@@ -30,9 +30,100 @@ interface MediaUploadOptions {
 class MediaUploader {
   private readonly maxFileSize: number;
   private readonly allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+  private readonly duplicateCache = new Set<string>(); // Cache for duplicate detection
 
   constructor(maxFileSize = 10 * 1024 * 1024) { // 10MB default
     this.maxFileSize = maxFileSize;
+  }
+
+  // Check if URL has already been processed (duplicate detection)
+  private async isUrlAlreadyProcessed(url: string, propertyId: string): Promise<boolean> {
+    const cacheKey = `${url}:${propertyId}`;
+    if (this.duplicateCache.has(cacheKey)) {
+      return true;
+    }
+
+    // Check database for existing media with same original URL
+    const { data } = await supabase
+      .from('property_media')
+      .select('id')
+      .eq('property_id', propertyId)
+      .like('category', `%${url}%`)
+      .limit(1);
+
+    const exists = data && data.length > 0;
+    if (exists) {
+      this.duplicateCache.add(cacheKey);
+    }
+    return exists;
+  }
+
+  // Extract and process all media from existing properties missing media
+  async processExistingPropertiesMissingMedia(
+    userId: string,
+    onProgress?: (current: number, total: number, propertyId: string) => void
+  ): Promise<{
+    processedProperties: number;
+    totalMediaDownloaded: number;
+    totalFailed: number;
+    errors: string[];
+  }> {
+    let processedProperties = 0;
+    let totalMediaDownloaded = 0;
+    let totalFailed = 0;
+    const errors: string[] = [];
+
+    try {
+      // Get all properties for user that have no media
+      const { data: propertiesWithoutMedia } = await supabase
+        .from('properties')
+        .select('id, title, description')
+        .eq('user_id', userId)
+        .not('id', 'in', `(
+          SELECT DISTINCT property_id 
+          FROM property_media 
+          WHERE property_id IS NOT NULL
+        )`);
+
+      if (!propertiesWithoutMedia || propertiesWithoutMedia.length === 0) {
+        return { processedProperties: 0, totalMediaDownloaded: 0, totalFailed: 0, errors: [] };
+      }
+
+      for (let i = 0; i < propertiesWithoutMedia.length; i++) {
+        const property = propertiesWithoutMedia[i];
+        
+        if (onProgress) {
+          onProgress(i + 1, propertiesWithoutMedia.length, property.id);
+        }
+
+        // Extract media URLs from property data
+        const mediaItems = this.extractMediaUrls(property);
+        
+        if (mediaItems.length > 0) {
+          const { summary } = await this.uploadPropertyMedia(property, {
+            userId,
+            propertyId: property.id,
+            csvFileName: 'existing_properties_scan'
+          });
+
+          totalMediaDownloaded += summary.success;
+          totalFailed += summary.failed;
+          errors.push(...summary.errors);
+          processedProperties++;
+        }
+      }
+
+      return {
+        processedProperties,
+        totalMediaDownloaded,
+        totalFailed,
+        errors
+      };
+
+    } catch (error) {
+      errors.push(`Failed to process existing properties: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return { processedProperties, totalMediaDownloaded, totalFailed, errors };
+    }
   }
 
   // Extract media URLs from CSV row data

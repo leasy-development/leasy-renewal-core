@@ -32,13 +32,15 @@ serve(async (req) => {
 
     const { properties, userId, csvFileName }: MediaProcessingRequest = await req.json();
 
-    console.log(`Starting media processing for ${properties.length} properties`);
+    console.log(`🚀 Starting background media processing for ${properties.length} properties`);
 
     let totalSuccess = 0;
     let totalFailed = 0;
     const errors: string[] = [];
+    const processedProperties: string[] = [];
+    const skippedUrls: string[] = [];
 
-    // Extract media URLs from row data
+    // Enhanced media URL extraction with better validation
     const extractMediaUrls = (rowData: Record<string, any>): MediaItem[] => {
       const mediaItems: MediaItem[] = [];
       
@@ -46,24 +48,31 @@ serve(async (req) => {
         if (!value || typeof value !== 'string') return;
         
         const lowerKey = key.toLowerCase();
-        const isPhotoField = lowerKey.includes('photo') || lowerKey.includes('image') || lowerKey.includes('picture');
-        const isFloorplanField = lowerKey.includes('floorplan') || lowerKey.includes('floor_plan') || lowerKey.includes('layout') || lowerKey.includes('plan');
+        const isPhotoField = lowerKey.includes('photo') || lowerKey.includes('image') || lowerKey.includes('picture') || lowerKey.includes('img');
+        const isFloorplanField = lowerKey.includes('floorplan') || lowerKey.includes('floor_plan') || lowerKey.includes('layout') || lowerKey.includes('plan') || lowerKey.includes('blueprint');
         
         if (isPhotoField || isFloorplanField) {
-          const urls = value.split(/[,;]/).map(url => url.trim()).filter(url => {
+          // Handle multiple URLs separated by various delimiters
+          const urls = value.split(/[,;|\n\r]/).map(url => url.trim()).filter(url => {
             try {
-              new URL(url);
-              return url.match(/\.(jpg|jpeg|png|gif|webp|pdf)(\?.*)?$/i) !== null;
+              const urlObj = new URL(url);
+              // Enhanced validation for image/PDF URLs
+              return urlObj.protocol.startsWith('http') && 
+                     (url.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|pdf)(\?.*)?$/i) !== null ||
+                      isImageHostUrl(url));
             } catch {
               return false;
             }
           });
           
           urls.forEach(url => {
-            mediaItems.push({
-              url,
-              type: isFloorplanField ? 'floorplan' : 'photo'
-            });
+            // Check for duplicates within same property
+            if (!mediaItems.some(item => item.url === url)) {
+              mediaItems.push({
+                url,
+                type: isFloorplanField ? 'floorplan' : 'photo'
+              });
+            }
           });
         }
       });
@@ -71,82 +80,141 @@ serve(async (req) => {
       return mediaItems;
     };
 
-    // Process media for each property
-    for (const property of properties) {
+    // Check if URL is from a known image hosting service
+    const isImageHostUrl = (url: string): boolean => {
+      const imageHosts = [
+        'imgur.com', 'flickr.com', 'cloudinary.com', 'unsplash.com', 
+        'pexels.com', 'amazonaws.com', 'googleusercontent.com',
+        'dropbox.com', 'onedrive.com', 'googledrive.com', 'cdn.',
+        'images.', 'photos.', 'media.'
+      ];
+      return imageHosts.some(host => url.toLowerCase().includes(host));
+    };
+
+    // Check if media already exists for property (duplicate detection)
+    const isMediaAlreadyProcessed = async (propertyId: string, url: string): Promise<boolean> => {
+      const { data } = await supabase
+        .from('property_media')
+        .select('id')
+        .eq('property_id', propertyId)
+        .like('category', `%${url}%`)
+        .limit(1);
+      
+      return data && data.length > 0;
+    };
+
+    // Process media for each property with enhanced error handling
+    for (let propIndex = 0; propIndex < properties.length; propIndex++) {
+      const property = properties[propIndex];
       const mediaItems = extractMediaUrls(property.data);
       
-      if (mediaItems.length === 0) continue;
+      if (mediaItems.length === 0) {
+        console.log(`⏩ Skipping property ${property.id} - no media URLs found`);
+        continue;
+      }
 
-      console.log(`Processing ${mediaItems.length} media items for property ${property.id}`);
+      console.log(`📂 Processing ${mediaItems.length} media items for property ${property.id} (${propIndex + 1}/${properties.length})`);
+      processedProperties.push(property.id);
 
-      // Process each media item
+      // Process each media item with duplicate detection
       for (let i = 0; i < mediaItems.length; i++) {
         const mediaItem = mediaItems[i];
         
         try {
-          // Download media with timeout
+          // Check if media already exists (duplicate detection)
+          const alreadyExists = await isMediaAlreadyProcessed(property.id, mediaItem.url);
+          if (alreadyExists) {
+            skippedUrls.push(mediaItem.url);
+            console.log(`⏭️ Skipping duplicate: ${mediaItem.url}`);
+            continue;
+          }
+
+          // Download media with enhanced timeout and retry
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000);
+          const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased timeout
           
           const response = await fetch(mediaItem.url, {
             signal: controller.signal,
             headers: {
-              'User-Agent': 'Leasy-Media-Processor/1.0'
+              'User-Agent': 'Leasy-Media-Processor/1.0',
+              'Accept': 'image/*, application/pdf',
+              'Cache-Control': 'no-cache'
             }
           });
           
           clearTimeout(timeoutId);
 
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
 
-          const contentType = response.headers.get('content-type') || '';
+          const contentType = response.headers.get('content-type') || 'image/jpeg';
           const blob = await response.blob();
           
-          // Check file size (max 10MB)
-          if (blob.size > 10 * 1024 * 1024) {
-            throw new Error(`File too large: ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+          // Enhanced file size and type validation
+          if (blob.size > 15 * 1024 * 1024) { // Increased limit to 15MB
+            throw new Error(`File too large: ${(blob.size / 1024 / 1024).toFixed(1)}MB (max 15MB)`);
           }
 
-          // Generate unique filename
+          if (blob.size < 1024) { // Minimum 1KB
+            throw new Error('File too small, likely invalid');
+          }
+
+          // Generate descriptive filename with property context
           const timestamp = Date.now();
           const random = Math.floor(Math.random() * 1000);
-          const extension = mediaItem.url.split('.').pop()?.split('?')[0] || 'jpg';
-          const fileName = `${mediaItem.type}_${timestamp}_${random}.${extension}`;
+          const extension = mediaItem.url.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg';
+          const safePropertyId = property.id.replace(/[^a-z0-9_-]/gi, '');
+          const fileName = `${mediaItem.type}_${safePropertyId}_${i + 1}_${timestamp}_${random}.${extension}`;
           
-          // Create file path
+          // Create organized file path structure
           const csvFolder = csvFileName ? 
-            csvFileName.replace(/[^a-z0-9_-]/gi, '-').replace(/\.csv$/i, '') : 
+            csvFileName.replace(/[^a-z0-9_-]/gi, '-').replace(/\.csv$/i, '').toLowerCase() : 
             'bulk_upload';
-          const filePath = `${csvFolder}/${property.id}/${fileName}`;
+          const mediaTypeFolder = mediaItem.type === 'floorplan' ? 'floorplans' : 'photos';
+          const filePath = `bulkuploads/${csvFolder}/${property.id}/${mediaTypeFolder}/${fileName}`;
 
-          // Upload to Supabase storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('property-photos')
-            .upload(filePath, blob, {
-              contentType,
-              upsert: false
-            });
+          // Upload to Supabase storage with retry logic
+          let uploadResult;
+          try {
+            uploadResult = await supabase.storage
+              .from('property-photos')
+              .upload(filePath, blob, {
+                contentType,
+                upsert: false,
+                cacheControl: '3600'
+              });
+          } catch (uploadError) {
+            // Retry once with different filename if conflict
+            const retryFileName = `retry_${fileName}`;
+            const retryFilePath = `bulkuploads/${csvFolder}/${property.id}/${mediaTypeFolder}/${retryFileName}`;
+            uploadResult = await supabase.storage
+              .from('property-photos')
+              .upload(retryFilePath, blob, {
+                contentType,
+                upsert: false,
+                cacheControl: '3600'
+              });
+          }
 
-          if (uploadError) {
-            throw new Error(`Storage upload failed: ${uploadError.message}`);
+          if (uploadResult.error) {
+            throw new Error(`Storage upload failed: ${uploadResult.error.message}`);
           }
 
           // Get public URL
           const { data: { publicUrl } } = supabase.storage
             .from('property-photos')
-            .getPublicUrl(filePath);
+            .getPublicUrl(uploadResult.data.path);
 
-          // Save to property_media table
+          // Save to property_media table with enhanced metadata
           const { error: dbError } = await supabase
             .from('property_media')
             .insert({
               property_id: property.id,
               url: publicUrl,
               media_type: mediaItem.type,
-              title: `Auto-imported ${mediaItem.type}`,
-              category: mediaItem.type === 'floorplan' ? 'floorplan' : 'exterior',
+              title: `Auto-imported ${mediaItem.type} ${i + 1}`,
+              category: mediaItem.url, // Store original URL for reference/duplicate detection
               sort_order: i
             });
 
@@ -154,20 +222,30 @@ serve(async (req) => {
             // Clean up uploaded file if DB insert fails
             await supabase.storage
               .from('property-photos')
-              .remove([filePath]);
+              .remove([uploadResult.data.path]);
             
             throw new Error(`Database insert failed: ${dbError.message}`);
           }
 
           totalSuccess++;
-          console.log(`✅ Successfully processed: ${mediaItem.url}`);
+          console.log(`✅ Successfully processed (${totalSuccess}): ${mediaItem.url} -> ${publicUrl}`);
+
+          // Small delay to be respectful to external servers
+          if (i < mediaItems.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
 
         } catch (error) {
           totalFailed++;
           const errorMessage = `${mediaItem.url}: ${error.message}`;
           errors.push(errorMessage);
-          console.warn(`❌ Failed to process: ${errorMessage}`);
+          console.warn(`❌ Failed to process (${totalFailed}): ${errorMessage}`);
         }
+      }
+
+      // Delay between properties to avoid overwhelming external servers
+      if (propIndex < properties.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
