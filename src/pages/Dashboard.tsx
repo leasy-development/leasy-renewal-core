@@ -3,14 +3,12 @@ import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Users, Calendar, Settings, LogOut, Plus, Home } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { PropertyList } from "@/components/PropertyList";
-import { AddPropertyModal } from "@/components/AddPropertyModal";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [showAddModal, setShowAddModal] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -53,14 +51,15 @@ const Dashboard = () => {
             </p>
           </div>
           {/* Add Property Button - Fixed position on desktop, floating on mobile */}
-          <Button 
-            onClick={() => setShowAddModal(true)}
-            className="hidden md:flex items-center space-x-2"
-            size="lg"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Add Property</span>
-          </Button>
+          <Link to="/add-property">
+            <Button 
+              className="hidden md:flex items-center space-x-2"
+              size="lg"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Add Property</span>
+            </Button>
+          </Link>
         </div>
 
         {/* Stats Cards */}
@@ -121,14 +120,15 @@ const Dashboard = () => {
               <CardDescription>Commonly used features</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button 
-                className="w-full justify-start" 
-                variant="outline"
-                onClick={() => setShowAddModal(true)}
-              >
-                <Home className="h-4 w-4 mr-2" />
-                Add New Property
-              </Button>
+              <Link to="/add-property">
+                <Button 
+                  className="w-full justify-start" 
+                  variant="outline"
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Add New Property
+                </Button>
+              </Link>
               <Button className="w-full justify-start" variant="outline">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Sync All Properties
@@ -179,19 +179,14 @@ const Dashboard = () => {
       </main>
 
       {/* Floating Add Button for Mobile */}
-      <Button 
-        onClick={() => setShowAddModal(true)}
-        className="md:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
-        size="icon"
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
-
-      {/* Add Property Modal */}
-      <AddPropertyModal 
-        isOpen={showAddModal} 
-        onClose={() => setShowAddModal(false)} 
-      />
+      <Link to="/add-property">
+        <Button 
+          className="md:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
+          size="icon"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </Link>
     </div>
   );
 };
