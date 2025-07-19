@@ -21,6 +21,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import AdminDuplicates from "./pages/AdminDuplicates";
 import AdminAISettings from "./pages/AdminAISettings";
 import TranslationDashboard from "./pages/TranslationDashboard";
+import AIOptimizationDashboard from "./pages/AIOptimizationDashboard";
 import MediaExtractor from "./pages/MediaExtractor";
 import { UpdateNotification } from "./components/UpdateNotification";
 
@@ -149,6 +150,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <TranslationDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ai-optimization" 
+              element={
+                <ProtectedRoute>
+                  <AIOptimizationDashboard />
                 </ProtectedRoute>
               } 
             />

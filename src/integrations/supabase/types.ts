@@ -47,6 +47,62 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generation_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          max_attempts: number | null
+          priority: number | null
+          property_id: string | null
+          result: Json | null
+          status: string | null
+          target_language: string | null
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_attempts?: number | null
+          priority?: number | null
+          property_id?: string | null
+          result?: Json | null
+          status?: string | null
+          target_language?: string | null
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_attempts?: number | null
+          priority?: number | null
+          property_id?: string | null
+          result?: Json | null
+          status?: string | null
+          target_language?: string | null
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generation_queue_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_prompt_versions: {
         Row: {
           created_at: string
@@ -114,6 +170,50 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      ai_versions: {
+        Row: {
+          ai_generated: boolean | null
+          content: string
+          created_at: string | null
+          created_by: string | null
+          field_name: string
+          id: string
+          prompt_version: string | null
+          property_id: string | null
+          quality_score: number | null
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          field_name: string
+          id?: string
+          prompt_version?: string | null
+          property_id?: string | null
+          quality_score?: number | null
+        }
+        Update: {
+          ai_generated?: boolean | null
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          field_name?: string
+          id?: string
+          prompt_version?: string | null
+          property_id?: string | null
+          quality_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_versions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dashboard_widgets: {
         Row: {
@@ -357,6 +457,8 @@ export type Database = {
       }
       properties: {
         Row: {
+          ai_optimized: boolean | null
+          ai_ready: boolean | null
           apartment_type: string | null
           bathrooms: number | null
           bedrooms: number | null
@@ -364,6 +466,7 @@ export type Database = {
           checkin_time: string | null
           checkout_time: string | null
           city: string | null
+          content_quality_score: number | null
           contractual_partner: Json | null
           country: string | null
           created_at: string
@@ -376,6 +479,7 @@ export type Database = {
           id: string
           landlord_info: Json | null
           language_detected: string | null
+          listing_segment: string | null
           max_guests: number | null
           meta_description_de: string | null
           meta_description_en: string | null
@@ -389,12 +493,15 @@ export type Database = {
           title: string
           title_de: string | null
           title_en: string | null
+          translation_verified: boolean | null
           updated_at: string
           user_id: string
           weekly_rate: number | null
           zip_code: string | null
         }
         Insert: {
+          ai_optimized?: boolean | null
+          ai_ready?: boolean | null
           apartment_type?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
@@ -402,6 +509,7 @@ export type Database = {
           checkin_time?: string | null
           checkout_time?: string | null
           city?: string | null
+          content_quality_score?: number | null
           contractual_partner?: Json | null
           country?: string | null
           created_at?: string
@@ -414,6 +522,7 @@ export type Database = {
           id?: string
           landlord_info?: Json | null
           language_detected?: string | null
+          listing_segment?: string | null
           max_guests?: number | null
           meta_description_de?: string | null
           meta_description_en?: string | null
@@ -427,12 +536,15 @@ export type Database = {
           title: string
           title_de?: string | null
           title_en?: string | null
+          translation_verified?: boolean | null
           updated_at?: string
           user_id: string
           weekly_rate?: number | null
           zip_code?: string | null
         }
         Update: {
+          ai_optimized?: boolean | null
+          ai_ready?: boolean | null
           apartment_type?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
@@ -440,6 +552,7 @@ export type Database = {
           checkin_time?: string | null
           checkout_time?: string | null
           city?: string | null
+          content_quality_score?: number | null
           contractual_partner?: Json | null
           country?: string | null
           created_at?: string
@@ -452,6 +565,7 @@ export type Database = {
           id?: string
           landlord_info?: Json | null
           language_detected?: string | null
+          listing_segment?: string | null
           max_guests?: number | null
           meta_description_de?: string | null
           meta_description_en?: string | null
@@ -465,6 +579,7 @@ export type Database = {
           title?: string
           title_de?: string | null
           title_en?: string | null
+          translation_verified?: boolean | null
           updated_at?: string
           user_id?: string
           weekly_rate?: number | null
