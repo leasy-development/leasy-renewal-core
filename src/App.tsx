@@ -24,8 +24,6 @@ import TranslationDashboard from "./pages/TranslationDashboard";
 import AIOptimizationDashboard from "./pages/AIOptimizationDashboard";
 import MediaExtractor from "./pages/MediaExtractor";
 import AdminPromptManager from "./components/AdminPromptManager";
-import { UpdateNotification } from "./components/UpdateNotification";
-
 const App = () => {
   return (
     <ErrorBoundary>
@@ -33,7 +31,6 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <UpdateNotification />
           <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
