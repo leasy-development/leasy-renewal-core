@@ -595,6 +595,8 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
           switch (error.field) {
             case 'title':
               return 'Provide a descriptive property title (e.g., "Modern Studio in Mitte")';
+            case 'description':
+              return 'This property has no description - this is just a note, the property will still be imported';
             case 'apartment_type':
               return 'Use: studio, apartment, house, or room';
             case 'category':
@@ -826,7 +828,14 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       }
 
       // Add warnings for common issues
-      if (!row.description || row.description.length < 10) {
+      if (!row.description || row.description.trim() === '') {
+        errors.push({
+          row: index + 1,
+          field: 'description',
+          message: 'This property has no description - will import anyway',
+          severity: 'warning'
+        });
+      } else if (row.description.length < 10) {
         errors.push({
           row: index + 1,
           field: 'description',
@@ -862,10 +871,13 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
 
   const handleBulkUpload = async () => {
     if (!user) return;
-    if (validationErrors.length > 0) {
+    
+    // Only check for errors, not warnings
+    const errorCount = validationErrors.filter(e => e.severity === 'error').length;
+    if (errorCount > 0) {
       toast({
         title: "Validation Error",
-        description: "Please fix all validation errors before uploading.",
+        description: "Please fix all validation errors before uploading. Warnings are okay and won't block the upload.",
         variant: "destructive",
       });
       return;
