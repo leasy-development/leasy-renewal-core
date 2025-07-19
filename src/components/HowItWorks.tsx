@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Download, Wand2, Share2 } from "lucide-react";
+import { useState } from "react";
+import { EarlyAccessModal } from "@/components/EarlyAccessModal";
 
 const steps = [
   {
@@ -30,6 +32,8 @@ const steps = [
 ];
 
 export const HowItWorks = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   return (
     <section id="how-it-works" className="py-20 lg:py-28">
       <div className="container mx-auto px-4 lg:px-8">
@@ -104,13 +108,20 @@ export const HowItWorks = () => {
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
               Join our exclusive beta program and help shape the future of property listing management.
             </p>
-            <Button variant="hero" size="xl" className="group">
+            <Button 
+              variant="hero" 
+              size="xl" 
+              className="group"
+              onClick={() => setIsModalOpen(true)}
+            >
               Join Beta Waitlist
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
         </div>
       </div>
+
+      <EarlyAccessModal open={isModalOpen} onOpenChange={setIsModalOpen} />
     </section>
   );
 };
