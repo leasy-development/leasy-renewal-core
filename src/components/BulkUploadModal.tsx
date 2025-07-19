@@ -24,7 +24,8 @@ import {
   Clock,
   AlertTriangle,
   Image,
-  FileImage
+  FileImage,
+  MapPin
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -32,6 +33,9 @@ import { useToast } from "@/hooks/use-toast";
 import { logger, logAsyncError } from "@/lib/logger";
 import { duplicateDetectionService } from "@/lib/duplicateDetection";
 import { mediaUploader, MediaUploadProgress } from "@/lib/mediaUploader";
+import { ColumnMapper } from "@/components/ColumnMapper";
+import { ErrorReportDownloader } from "@/components/ErrorReportDownloader";
+import { processRowsWithFallback, detectMediaColumns } from "@/lib/csvUtils";
 import stringSimilarity from "string-similarity";
 import Papa from "papaparse";
 import * as XLSX from 'xlsx';
@@ -46,6 +50,8 @@ interface PreviewData {
   rows: PropertyRow[];
   headers: string[];
   missingHeaders: string[];
+  detectedMappings: Record<string, string>;
+  needsMapping: boolean;
 }
 
 interface LocalMediaUploadProgress {
@@ -138,83 +144,239 @@ interface UploadResult {
 
 const REQUIRED_HEADERS = ['title', 'apartment_type', 'category', 'street_name', 'city'];
 
-// Enhanced field mappings with more variations
-const fieldMappings: { [key: string]: string } = {
+// Enhanced field mappings with fuzzy matching and aliases
+const headerAliases: { [key: string]: string } = {
+  // Basic mappings
   'title': 'title',
   'property_title': 'title',
   'name': 'title',
+  'listing_title': 'title',
+  'property_name': 'title',
   'description': 'description',
+  'desc': 'description',
+  'details': 'description',
+  'property_description': 'description',
   'apartment_type': 'apartment_type',
   'type': 'apartment_type',
   'property_type': 'apartment_type',
+  'unit_type': 'apartment_type',
+  'room_type': 'apartment_type',
   'category': 'category',
   'rental_type': 'category',
+  'listing_category': 'category',
+  
+  // Address fields with common European variations
   'street_number': 'street_number',
   'house_number': 'street_number',
+  'number': 'street_number',
+  'hausnummer': 'street_number',
   'street_name': 'street_name',
   'street': 'street_name',
   'address': 'street_name',
+  'strasse': 'street_name',
+  'straße': 'street_name',
+  'adress_street': 'street_name',
+  'adresse': 'street_name',
   'city': 'city',
+  'location': 'city',
+  'town': 'city',
+  'stadt': 'city',
+  'adress_city_part': 'city',
   'region': 'region',
   'state': 'region',
+  'province': 'region',
+  'bundesland': 'region',
   'zip_code': 'zip_code',
   'postal_code': 'zip_code',
   'zipcode': 'zip_code',
+  'zip': 'zip_code',
+  'plz': 'zip_code',
+  'postleitzahl': 'zip_code',
   'country': 'country',
+  'nation': 'country',
+  'land': 'country',
+  
+  // Pricing fields
   'monthly_rent': 'monthly_rent',
   'rent': 'monthly_rent',
   'price': 'monthly_rent',
+  'monthly_price': 'monthly_rent',
+  'miete': 'monthly_rent',
+  'kaltmiete': 'monthly_rent',
   'weekly_rate': 'weekly_rate',
+  'weekly_rent': 'weekly_rate',
+  'weekly_price': 'weekly_rate',
   'daily_rate': 'daily_rate',
+  'daily_rent': 'daily_rate',
+  'daily_price': 'daily_rate',
+  'nightly_rate': 'daily_rate',
+  
+  // Room specifications
   'bedrooms': 'bedrooms',
   'beds': 'bedrooms',
   'rooms': 'bedrooms',
+  'bedroom_count': 'bedrooms',
+  'zimmer': 'bedrooms',
+  'schlafzimmer': 'bedrooms',
   'bathrooms': 'bathrooms',
   'baths': 'bathrooms',
+  'bathroom_count': 'bathrooms',
+  'badezimmer': 'bathrooms',
   'max_guests': 'max_guests',
   'capacity': 'max_guests',
   'guests': 'max_guests',
+  'occupancy': 'max_guests',
+  'personen': 'max_guests',
   'square_meters': 'square_meters',
   'area': 'square_meters',
   'size': 'square_meters',
   'sqm': 'square_meters',
+  'qm': 'square_meters',
+  'quadratmeter': 'square_meters',
+  'square_feet': 'square_meters', // Will need conversion
+  'sqft': 'square_meters', // Will need conversion
+  
+  // Time fields
   'checkin_time': 'checkin_time',
   'check_in': 'checkin_time',
+  'checkin': 'checkin_time',
+  'arrival_time': 'checkin_time',
   'checkout_time': 'checkout_time',
   'check_out': 'checkout_time',
+  'checkout': 'checkout_time',
+  'departure_time': 'checkout_time',
+  
+  // Special fields
   'provides_wgsb': 'provides_wgsb',
   'wgsb': 'provides_wgsb',
+  'housing_benefit': 'provides_wgsb',
   'house_rules': 'house_rules',
-  'rules': 'house_rules'
+  'rules': 'house_rules',
+  'policies': 'house_rules',
+  'hausordnung': 'house_rules',
+  
+  // Media fields
+  'image_urls': 'image_urls',
+  'images': 'image_urls',
+  'photos': 'image_urls',
+  'photo_urls': 'image_urls',
+  'pictures': 'image_urls',
+  'picture_urls': 'image_urls',
+  'bilder': 'image_urls',
+  'floorplan_urls': 'floorplan_urls',
+  'floorplan': 'floorplan_urls',
+  'layout': 'floorplan_urls',
+  'plan': 'floorplan_urls',
+  'grundriss': 'floorplan_urls'
 };
 
-// Smart parser that supports semicolon, tab, UTF-8, ISO-8859-1
+// Smart header matching with fuzzy string matching
+const findBestHeaderMatch = (header: string): string | null => {
+  const normalizedHeader = header.toLowerCase()
+    .replace(/[äöüß]/g, match => ({ 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss' }[match] || match))
+    .replace(/[^a-z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+
+  // Direct match
+  if (headerAliases[normalizedHeader]) {
+    return headerAliases[normalizedHeader];
+  }
+
+  // Fuzzy matching with similarity threshold
+  let bestMatch = '';
+  let bestScore = 0;
+  const threshold = 0.75; // 75% similarity required
+
+  Object.keys(headerAliases).forEach(alias => {
+    const similarity = stringSimilarity.compareTwoStrings(normalizedHeader, alias);
+    if (similarity > bestScore && similarity >= threshold) {
+      bestMatch = headerAliases[alias];
+      bestScore = similarity;
+    }
+  });
+
+  return bestMatch || null;
+};
+
+// Enhanced CSV parser with UTF-8 support and auto-detection
 function parseCsvSmart(file: File): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
     reader.onload = () => {
-      const text = reader.result as string;
-      const delimiters = [",", ";", "\t"];
+      let text = reader.result as string;
+      
+      // Fix common UTF-8 encoding issues
+      text = fixUtf8Encoding(text);
+      
+      const delimiters = [",", ";", "\t", "|"];
+      let bestResult = null;
+      let maxFields = 0;
 
       for (const delimiter of delimiters) {
-        const result = Papa.parse(text, {
-          delimiter,
-          header: true,
-          skipEmptyLines: true,
-        });
+        try {
+          const result = Papa.parse(text, {
+            delimiter,
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: (header: string) => {
+              // Clean and normalize headers
+              return header.trim()
+                .replace(/\s+/g, '_')
+                .replace(/[^\w]/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '')
+                .toLowerCase();
+            }
+          });
 
-        if (result?.meta?.fields?.length > 1) {
-          return resolve(result.data);
+          if (result?.meta?.fields && result.meta.fields.length > maxFields) {
+            maxFields = result.meta.fields.length;
+            bestResult = result.data;
+          }
+        } catch (error) {
+          console.warn(`Failed to parse with delimiter '${delimiter}':`, error);
         }
       }
 
-      reject(new Error("Unable to detect valid headers or delimiter."));
+      if (bestResult && maxFields > 1) {
+        resolve(bestResult);
+      } else {
+        reject(new Error("Unable to detect valid headers or delimiter."));
+      }
     };
 
     reader.onerror = () => reject(reader.error);
-    reader.readAsText(file, "ISO-8859-1"); // fallback for European Excel exports
+    
+    // Try UTF-8 first, then fallback to ISO-8859-1
+    try {
+      reader.readAsText(file, "UTF-8");
+    } catch {
+      reader.readAsText(file, "ISO-8859-1");
+    }
   });
+}
+
+// Fix common UTF-8 encoding issues
+function fixUtf8Encoding(text: string): string {
+  // Common encoding fixes for European characters
+  const encodingFixes: { [key: string]: string } = {
+    'Ã¤': 'ä', 'Ã¶': 'ö', 'Ã¼': 'ü', 'ÃŸ': 'ß',
+    'Ã„': 'Ä', 'Ã–': 'Ö', 'Ãœ': 'Ü',
+    'Ã¡': 'á', 'Ã©': 'é', 'Ã­': 'í', 'Ã³': 'ó', 'Ãº': 'ú',
+    'Ã ': 'à', 'Ã¨': 'è', 'Ã¬': 'ì', 'Ã²': 'ò', 'Ã¹': 'ù',
+    'Ã¢': 'â', 'Ãª': 'ê', 'Ã®': 'î', 'Ã´': 'ô', 'Ã»': 'û',
+    'Ã¥': 'å', 'Ã¦': 'æ', 'Ã¸': 'ø',
+    'Ã±': 'ñ', 'Ã§': 'ç'
+  };
+
+  let fixedText = text;
+  Object.entries(encodingFixes).forEach(([broken, fixed]) => {
+    fixedText = fixedText.replace(new RegExp(broken, 'g'), fixed);
+  });
+
+  return fixedText;
 }
 
 // Excel parser
@@ -225,13 +387,32 @@ async function parseExcel(file: File): Promise<any[]> {
   return XLSX.utils.sheet_to_json(sheet);
 }
 
-// Header validation
-const validateHeaders = (row: any): string[] => {
-  const actualHeaders = Object.keys(row || {}).map(h => h.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, ''));
-  const normalizedRequired = REQUIRED_HEADERS.map(h => h.toLowerCase());
-  return normalizedRequired.filter(h => !actualHeaders.some(ah => {
-    return ah === h || fieldMappings[ah] === h;
-  }));
+// Enhanced header validation with smart matching
+const validateHeaders = (row: any): { missing: string[], mappings: Record<string, string> } => {
+  const actualHeaders = Object.keys(row || {});
+  const detectedMappings: Record<string, string> = {};
+  const mappedRequiredFields = new Set<string>();
+
+  // Auto-detect mappings for each header
+  actualHeaders.forEach(header => {
+    const bestMatch = findBestHeaderMatch(header);
+    if (bestMatch) {
+      detectedMappings[header] = bestMatch;
+      if (REQUIRED_HEADERS.includes(bestMatch)) {
+        mappedRequiredFields.add(bestMatch);
+      }
+    }
+  });
+
+  // Find missing required headers
+  const missingHeaders = REQUIRED_HEADERS.filter(required => 
+    !mappedRequiredFields.has(required)
+  );
+
+  return {
+    missing: missingHeaders,
+    mappings: detectedMappings
+  };
 };
 
 export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalProps) => {
@@ -247,6 +428,9 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
   const [dragActive, setDragActive] = useState(false);
   const [mediaUploadProgress, setMediaUploadProgress] = useState<LocalMediaUploadProgress | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [showColumnMapper, setShowColumnMapper] = useState(false);
+  const [rawParsedData, setRawParsedData] = useState<any[]>([]);
+  const [partialImportAllowed, setPartialImportAllowed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -381,6 +565,58 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     }
   };
 
+  // Process file data with custom column mapping
+  const processFileDataWithMapping = async (rawRows: any[], mapping: Record<string, string>): Promise<PropertyRow[]> => {
+    const result = processRowsWithFallback(rawRows, mapping);
+    
+    // Update validation errors state
+    setValidationErrors([...result.errors, ...result.warnings]);
+    
+    // Allow partial import if some rows are valid
+    if (result.validRows.length > 0 && result.errors.length > 0) {
+      setPartialImportAllowed(true);
+      toast({
+        title: "⚠️ Partial Import Available",
+        description: `${result.validRows.length} valid rows found, ${result.errors.length} errors. You can proceed with partial import.`,
+        variant: "destructive"
+      });
+    }
+
+    return result.validRows;
+  };
+
+  // Handle column mapping completion
+  const handleMappingComplete = async (mapping: Record<string, string>) => {
+    setShowColumnMapper(false);
+    setIsProcessing(true);
+    
+    try {
+      // Process the data with the provided mapping
+      const processedData = await processFileDataWithMapping(rawParsedData, mapping);
+      
+      if (processedData.length === 0) {
+        throw new Error('No valid data found after mapping');
+      }
+
+      // Detect media and validate
+      const propertiesWithMedia = detectMediaUrls(processedData);
+      await validateAndCheckDuplicates(propertiesWithMedia);
+      
+      setUploadedData(propertiesWithMedia);
+      setActiveTab("review");
+      
+    } catch (error) {
+      logAsyncError('Mapping processing', error);
+      toast({
+        title: "❌ Processing Error",
+        description: error instanceof Error ? error.message : "Failed to process mapped data.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Unified upload handler
   const handleFileUpload = async (file: File) => {
     setCurrentFileName(file.name);
@@ -401,22 +637,28 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
         throw new Error("No valid rows found.");
       }
 
-      const missingHeaders = validateHeaders(rows[0]);
+      const headerValidation = validateHeaders(rows[0]);
       const actualHeaders = Object.keys(rows[0] || {});
+
+      // Store raw data for potential mapping
+      setRawParsedData(rows);
 
       // Set preview data
       setPreviewData({
         rows: rows.slice(0, 5),
         headers: actualHeaders,
-        missingHeaders
+        missingHeaders: headerValidation.missing,
+        detectedMappings: headerValidation.mappings,
+        needsMapping: headerValidation.missing.length > 0
       });
 
-      if (missingHeaders.length > 0) {
+      if (headerValidation.missing.length > 0) {
         toast({
-          title: "⚠️ Missing Required Columns",
-          description: `Missing: ${missingHeaders.join(", ")}. Please check the preview below.`,
+          title: "🔍 Column Mapping Required",
+          description: `Missing: ${headerValidation.missing.join(", ")}. Use smart mapping to continue.`,
           variant: "destructive"
         });
+        setShowColumnMapper(true);
         setActiveTab("preview");
         return;
       }
@@ -548,7 +790,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       
       Object.entries(row).forEach(([header, value]) => {
         const normalizedHeader = header.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '');
-        const dbField = fieldMappings[normalizedHeader] || normalizedHeader;
+        const dbField = findBestHeaderMatch(normalizedHeader) || normalizedHeader;
         
         // Skip empty values
         if (value === undefined || value === null || value === '') return;
@@ -588,7 +830,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
       
       rawHeaders.forEach((header, index) => {
         const normalizedHeader = header.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '');
-        const dbField = fieldMappings[normalizedHeader] || normalizedHeader;
+        const dbField = findBestHeaderMatch(normalizedHeader) || normalizedHeader;
         let value = row[index];
         
         // Skip empty values
@@ -1189,7 +1431,19 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
           </TabsList>
 
           <TabsContent value="preview" className="space-y-6">
-            {previewData && (
+            {/* Column Mapper Modal */}
+            {showColumnMapper && previewData && (
+              <ColumnMapper
+                csvHeaders={previewData.headers}
+                onMappingComplete={handleMappingComplete}
+                onCancel={() => {
+                  setShowColumnMapper(false);
+                  setActiveTab("upload");
+                }}
+              />
+            )}
+
+            {previewData && !showColumnMapper && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
