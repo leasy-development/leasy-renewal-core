@@ -514,6 +514,61 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
     }
   };
 
+  /**
+   * Extracts and saves all valid image URLs from a PropertyRow object.
+   * Downloads each image, uploads it to Supabase Storage, and links it in `property_media`.
+   */
+  const saveImagesForPropertyRow = async (property: PropertyRow, propertyId: string) => {
+    const urlRegex = /https?:\/\/[^\s<>"{}|\\^`$]*\.(?:jpg|jpeg|png|gif|webp|bmp|svg)(?:\?[^\s<>"{}|\\^`\[\]]*)?/gi;
+
+    const imageUrls: string[] = [];
+
+    Object.entries(property).forEach(([key, value]) => {
+      if (typeof value === "string" && key.toLowerCase().includes("image") && value.match(urlRegex)) {
+        imageUrls.push(...value.match(urlRegex)!);
+      }
+    });
+
+    for (const url of imageUrls) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+
+        const blob = await response.blob();
+        const contentType = response.headers.get('content-type');
+        if (!contentType?.startsWith('image/')) throw new Error("Not an image");
+
+        const extension = contentType.split('/')[1] || "jpg";
+        const filename = `${propertyId}/${Date.now()}-${Math.floor(Math.random() * 99999)}.${extension}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('property-photos')
+          .upload(filename, blob, {
+            contentType,
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('property-photos')
+          .getPublicUrl(filename);
+
+        await supabase.from('property_media').insert({
+          property_id: propertyId,
+          media_type: 'photo',
+          url: publicUrl,
+          title: `Auto-uploaded image from CSV`,
+          sort_order: 0,
+        });
+
+        console.info(`✅ Image saved: ${publicUrl}`);
+      } catch (err) {
+        console.warn(`❌ Failed to process image URL: ${url}`, err);
+      }
+    }
+  };
+
   // Media download functionality
   const downloadAndSaveMedia = async (propertyId: string, mediaItems: MediaItem[]): Promise<MediaDownloadResult> => {
     const result: MediaDownloadResult = { success: 0, failed: 0, errors: [] };
@@ -662,7 +717,10 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
           
           result.properties.success++;
           
-          // Download and save media if any
+          // Save images using the new helper function
+          await saveImagesForPropertyRow(property, insertedProperty.id);
+          
+          // Download and save media if any (for existing media URL detection)
           if (mediaItems.length > 0) {
             setUploadStep({
               step: 'media_download',
