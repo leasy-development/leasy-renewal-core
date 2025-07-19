@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EarlyAccessModalProps {
   open: boolean;
@@ -32,37 +33,46 @@ export const EarlyAccessModal = ({ open, onOpenChange }: EarlyAccessModalProps) 
     setIsSubmitting(true);
 
     try {
-      // For now, simulate success - this can be connected to a real endpoint later
-      console.log('Waitlist submission:', {
-        ...formData,
-        timestamp: new Date().toISOString(),
-        source: "Leasy Beta Waitlist"
+      console.log("Submitting waitlist form:", formData);
+
+      // Call the edge function to send email notification and store in database
+      const { error } = await supabase.functions.invoke('send-waitlist-notification', {
+        body: {
+          full_name: formData.fullName,
+          email: formData.email,
+          company: formData.company,
+          listings_count: formData.listings,
+          source: "Leasy Beta Waitlist"
+        }
       });
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to submit waitlist form");
+      }
 
+      console.log("Waitlist submission successful");
       setIsSubmitting(false);
       setIsSuccess(true);
       
       toast({
-        title: "Welcome to the waitlist!",
-        description: "We'll notify you as soon as your beta invite is ready.",
+        title: "🎉 Welcome to the waitlist!",
+        description: "We'll notify you as soon as your beta invite is ready. Email notification sent to Luca!",
       });
 
-      // Reset form after 2 seconds and close modal
+      // Reset form after 3 seconds and close modal
       setTimeout(() => {
         setIsSuccess(false);
         setFormData({ fullName: "", email: "", company: "", listings: "" });
         onOpenChange(false);
-      }, 2000);
+      }, 3000);
 
-    } catch (error) {
-      console.error("Error submitting form:", error);
+    } catch (error: any) {
+      console.error("Error submitting waitlist form:", error);
       setIsSubmitting(false);
       toast({
-        title: "Error",
-        description: "Failed to submit form. Please try again.",
+        title: "Submission Error",
+        description: error.message || "Failed to submit form. Please try again.",
         variant: "destructive",
       });
     }
