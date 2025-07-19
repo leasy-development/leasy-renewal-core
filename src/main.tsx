@@ -1,82 +1,66 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import App from "./App";
+import { Toaster } from "@/components/ui/toaster";
 import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
 
-// 🔐 CRITICAL: React validation before any other imports
-console.log("🔍 Initial React validation:", {
-  React: !!React,
-  useEffect: !!React?.useEffect,
-  useState: !!React?.useState,
-});
-
-if (!React) {
-  throw new Error("❌ React module is null or undefined");
+// 🔐 CRITICAL: React singleton safety check
+if (!React || typeof React !== 'object') {
+  throw new Error("❌ React is not properly imported as an object");
 }
 
 if (!React.useEffect || typeof React.useEffect !== 'function') {
-  throw new Error("❌ React.useEffect is not available or not a function");
+  throw new Error("❌ React.useEffect is not available - React may not be initialized correctly");
 }
 
-// Only import these AFTER React validation passes
-import App from "./App";
-import { ErrorBoundary } from "@/lib/errorBoundary";
-import { Toaster } from "sonner";
-import { AuthProvider } from "@/components/AuthProvider";
+if (!React.useState || typeof React.useState !== 'function') {
+  throw new Error("❌ React.useState is not available - React hooks are corrupted");
+}
 
-// Final verification before component initialization
-console.log("✅ Pre-component React verification passed");
+// Verify React singleton - prevent multiple React instances
+const reactVersion = React.version;
+if (!reactVersion) {
+  throw new Error("❌ React version is undefined - multiple React instances detected");
+}
+
+console.log("✅ React singleton verified:", {
+  version: reactVersion,
+  useEffect: typeof React.useEffect,
+  useState: typeof React.useState,
+  hasStrictMode: !!React.StrictMode,
+});
+
+// Create QueryClient AFTER React verification
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+    },
+    mutations: {
+      retry: 0,
+    }
+  },
+});
 
 const rootElement = document.getElementById("root");
-if (!rootElement) {
-  throw new Error("Root element not found");
-}
 
-console.log("🚀 Initializing React app without QueryClient...");
+if (!rootElement) throw new Error("Root element not found");
 
-// Create the root with error handling - NO QUERY CLIENT
-try {
-  const root = ReactDOM.createRoot(rootElement);
-  
-  root.render(
-    <React.StrictMode>
-      <ErrorBoundary>
-        <AuthProvider>
-          <Toaster richColors position="bottom-right" />
-          <App />
-        </AuthProvider>
-      </ErrorBoundary>
-    </React.StrictMode>
-  );
-  
-  console.log("✅ React app rendered successfully");
-} catch (error) {
-  console.error("❌ Failed to render React app:", error);
-  
-  // Fallback: try rendering with minimal setup
-  try {
-    console.log("🔄 Attempting minimal fallback render...");
-    const root = ReactDOM.createRoot(rootElement);
-    
-    root.render(
-      <React.StrictMode>
-        <ErrorBoundary>
-          <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <h1>Leasy</h1>
-            <p>Loading application...</p>
-            <button onClick={() => window.location.reload()}>Refresh</button>
-          </div>
-        </ErrorBoundary>
-      </React.StrictMode>
-    );
-  } catch (fallbackError) {
-    console.error("❌ Fallback render also failed:", fallbackError);
-    document.body.innerHTML = `
-      <div style="padding: 2rem; text-align: center; font-family: sans-serif;">
-        <h1>Critical Error</h1>
-        <p>Unable to start the React application.</p>
-        <button onclick="window.location.reload()">Reload Page</button>
-      </div>
-    `;
-  }
-}
+// 🚀 Render with GUARANTEED React availability
+console.log("🚀 Rendering with verified React singleton...");
+
+ReactDOM.createRoot(rootElement).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+      <Toaster />
+    </QueryClientProvider>
+  </React.StrictMode>
+);
+
+console.log("✅ React app rendered successfully with QueryClient");
