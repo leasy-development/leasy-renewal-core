@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface AuthModalProps {
   open: boolean;
@@ -17,6 +18,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +43,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       onOpenChange(false);
       setEmail("");
       setPassword("");
+      navigate("/dashboard");
     }
     setLoading(false);
   };
