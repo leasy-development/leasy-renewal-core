@@ -70,6 +70,37 @@ const useProperties = () => {
   });
 };
 
+// Hook to fetch property photos
+const usePropertyPhotos = () => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['property-photos', user?.id],
+    queryFn: async () => {
+      if (!user) return {};
+      
+      const { data, error } = await supabase
+        .from('property_media')
+        .select('property_id, url, sort_order')
+        .eq('media_type', 'photo')
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      
+      // Group photos by property_id and get the first photo for each property
+      const photosByProperty: Record<string, string> = {};
+      data?.forEach(photo => {
+        if (!photosByProperty[photo.property_id]) {
+          photosByProperty[photo.property_id] = photo.url;
+        }
+      });
+      
+      return photosByProperty;
+    },
+    enabled: !!user,
+  });
+};
+
 export const EnhancedPropertyList = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,6 +123,7 @@ export const EnhancedPropertyList = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: properties = [], isLoading, refetch } = useProperties();
+  const { data: propertyPhotos = {} } = usePropertyPhotos();
 
   // Filter and sort properties
   const filteredAndSortedProperties = useCallback(() => {
@@ -663,7 +695,19 @@ export const EnhancedPropertyList = () => {
                 <Card key={property.id} className="hover:shadow-md transition-shadow">
                   {/* Property Thumbnail */}
                   <div className="relative h-48 w-full overflow-hidden rounded-t-lg bg-muted">
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    {propertyPhotos[property.id] ? (
+                      <img 
+                        src={propertyPhotos[property.id]} 
+                        alt={property.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`absolute inset-0 flex items-center justify-center ${propertyPhotos[property.id] ? 'hidden' : ''}`}>
                       <Camera className="h-12 w-12 text-muted-foreground" />
                     </div>
                     <div className="absolute top-2 left-2">
@@ -799,11 +843,25 @@ export const EnhancedPropertyList = () => {
                                onCheckedChange={() => handleSelectProperty(property.id)}
                              />
                            </td>
-                           <td className="p-4">
-                             <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center">
-                               <Camera className="h-4 w-4 text-muted-foreground" />
-                             </div>
-                           </td>
+                            <td className="p-4">
+                              <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center overflow-hidden">
+                                {propertyPhotos[property.id] ? (
+                                  <img 
+                                    src={propertyPhotos[property.id]} 
+                                    alt={property.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null}
+                                <div className={`${propertyPhotos[property.id] ? 'hidden' : ''}`}>
+                                  <Camera className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              </div>
+                            </td>
                            <td className="p-4 font-medium">{property.title}</td>
                            <td className="p-4">{property.apartment_type}</td>
                            <td className="p-4">{property.city}</td>
