@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, AlertCircle, Wand2, RotateCcw, Database, Loader } from 'lucide-react';
+import { CheckCircle, AlertCircle, Wand2, RotateCcw, Database, Loader, Lightbulb, AlertTriangle } from 'lucide-react';
 import * as fuzzball from 'fuzzball';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -14,8 +14,8 @@ import { toast } from '@/hooks/use-toast';
 const STANDARD_FIELDS = [
   { key: 'title', label: 'Property Title', required: true, isLeasyField: true },
   { key: 'description', label: 'Description', required: false, isLeasyField: true },
-  { key: 'apartment_type', label: 'Apartment Type', required: false, isLeasyField: true }, // Made optional
-  { key: 'category', label: 'Category', required: false, isLeasyField: true }, // Made optional
+  { key: 'apartment_type', label: 'Apartment Type', required: false, isLeasyField: true }, // Made optional - can auto-categorize
+  { key: 'category', label: 'Category', required: false, isLeasyField: true }, // Made optional - can auto-categorize
   { key: 'street_name', label: 'Street Name', required: true, isLeasyField: true },
   { key: 'street_number', label: 'Street Number', required: false, isLeasyField: true },
   { key: 'city', label: 'City', required: false, isLeasyField: true }, // Made optional - can be inferred from ZIP
@@ -84,6 +84,7 @@ interface ColumnMapping {
   mappedField: string | null;
   confidence: number;
   isAutoMapped: boolean;
+  isSuggestion?: boolean;
 }
 
 interface ColumnMapperProps {
@@ -98,23 +99,25 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
   const [isLoading, setIsLoading] = useState(true);
 
   // Load saved mappings from database for the current user
-  const loadUserMappings = async (): Promise<Record<string, { field: string; confidence: number }>> => {
+  const loadUserMappings = async (): Promise<Record<string, { field: string; confidence: number; isSuggestion?: boolean }>> => {
     try {
       const { data, error } = await supabase
-        .from('field_mapping_memory')
-        .select('document_field_pattern, mapped_field_key, confidence_score')
-        .order('usage_count', { ascending: false });
+        .from('mapping_training_log')
+        .select('source_field, target_field, confidence')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.warn('Failed to load user mappings:', error);
         return {};
       }
 
-      const mappingDict: Record<string, { field: string; confidence: number }> = {};
+      const mappingDict: Record<string, { field: string; confidence: number; isSuggestion?: boolean }> = {};
       data?.forEach(row => {
-        mappingDict[row.document_field_pattern.toLowerCase()] = {
-          field: row.mapped_field_key,
-          confidence: row.confidence_score
+        const normalizedSource = row.source_field.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        mappingDict[normalizedSource] = {
+          field: row.target_field,
+          confidence: row.confidence,
+          isSuggestion: true
         };
       });
 
@@ -128,14 +131,16 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
   // Save mapping to database for future learning
   const saveMappingToDatabase = async (documentField: string, mappedField: string) => {
     try {
-      const pattern = documentField.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
       
       // Check if mapping already exists
       const { data: existing, error: checkError } = await supabase
-        .from('field_mapping_memory')
-        .select('id, usage_count')
-        .eq('document_field_pattern', pattern)
-        .eq('mapped_field_key', mappedField)
+        .from('mapping_training_log')
+        .select('id, confidence')
+        .eq('source_field', documentField)
+        .eq('target_field', mappedField)
+        .eq('user_id', user.id)
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -143,27 +148,23 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
       }
 
       if (existing) {
-        // Update existing mapping
+        // Update existing mapping confidence
         await supabase
-          .from('field_mapping_memory')
+          .from('mapping_training_log')
           .update({ 
-            usage_count: existing.usage_count + 1,
+            confidence: Math.min(existing.confidence + 0.1, 1.0),
             updated_at: new Date().toISOString()
           })
           .eq('id', existing.id);
       } else {
         // Create new mapping
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
-        
         await supabase
-          .from('field_mapping_memory')
+          .from('mapping_training_log')
           .insert({
             user_id: user.id,
-            document_field_name: documentField,
-            document_field_pattern: pattern,
-            mapped_field_key: mappedField,
-            confidence_score: 1.0
+            source_field: documentField,
+            target_field: mappedField,
+            confidence: 1.0
           });
       }
     } catch (error) {
@@ -187,7 +188,8 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
             csvHeader: header,
             mappedField: userMappings[normalizedHeader].field,
             confidence: userMappings[normalizedHeader].confidence,
-            isAutoMapped: true
+            isAutoMapped: true,
+            isSuggestion: userMappings[normalizedHeader].isSuggestion
           };
         }
 
@@ -386,6 +388,17 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
           </Alert>
         )}
 
+        {/* Optional Fields Warning - Non-blocking */}
+        {!mappings.some(m => m.mappedField === 'category') && !mappings.some(m => m.mappedField === 'apartment_type') && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Optional:</strong> No category or apartment type mapping detected. 
+              The system will attempt auto-categorization during import using AI analysis.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Mapping Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
           {mappings.map((mapping, index) => {
@@ -396,10 +409,12 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
               <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
                 <div className="flex-1">
                   <Label className="text-sm font-medium">{mapping.csvHeader}</Label>
-                  {mapping.confidence > 0 && mapping.confidence < 1 && (
-                    <div className="text-xs text-muted-foreground">
+                  {mapping.confidence > 0 && (
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      {mapping.isSuggestion && <Lightbulb className="h-3 w-3 text-amber-500" />}
                       {Math.round(mapping.confidence * 100)}% match
-                      {mapping.isAutoMapped && ' (auto)'}
+                      {mapping.isSuggestion && ' (💡 Suggested from past)'}
+                      {mapping.isAutoMapped && !mapping.isSuggestion && ' (auto)'}
                     </div>
                   )}
                 </div>
@@ -414,9 +429,9 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select field..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border shadow-md z-50">
                       <SelectItem value="unmapped">
-                        <span className="text-muted-foreground">Don't map</span>
+                        <span className="text-muted-foreground">🚫 Don't Map</span>
                       </SelectItem>
                       {availableFields.map(field => (
                         <SelectItem key={field.key} value={field.key}>
@@ -424,7 +439,9 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
                             <Database className="h-3 w-3 text-blue-500" />
                             <span>{field.label}</span>
                             {field.required && <span className="text-red-500">*</span>}
-                            <Badge variant="outline" className="text-xs">Leasy</Badge>
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              Leasy
+                            </Badge>
                           </div>
                         </SelectItem>
                       ))}
@@ -436,7 +453,9 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
                           <div className="flex items-center gap-2 opacity-50">
                             <Database className="h-3 w-3 text-gray-400" />
                             <span>{field.label}</span>
-                            <Badge variant="secondary" className="text-xs">Already selected</Badge>
+                            <Badge variant="outline" className="text-xs bg-gray-100 text-gray-500">
+                              Already selected
+                            </Badge>
                           </div>
                         </SelectItem>
                       ))}

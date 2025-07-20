@@ -846,6 +846,36 @@ export type Database = {
           },
         ]
       }
+      mapping_training_log: {
+        Row: {
+          confidence: number
+          created_at: string
+          id: string
+          source_field: string
+          target_field: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          source_field: string
+          target_field: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          source_field?: string
+          target_field?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       media_category_feedback_log: {
         Row: {
           corrected_by: string
