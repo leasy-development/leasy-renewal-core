@@ -44,8 +44,8 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     
     this.setState({ errorInfo });
     
-    // Attempt automatic recovery for cache-related errors
-    this.attemptAutomaticRecovery(error);
+    // Temporarily disable automatic recovery to prevent infinite reloads
+    // this.attemptAutomaticRecovery(error);
     
     // Log error details for debugging
     this.logErrorDetails(error, errorInfo);

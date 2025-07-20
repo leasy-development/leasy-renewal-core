@@ -188,13 +188,13 @@ class CacheManager {
   async initialize(): Promise<void> {
     console.log('🚀 Initializing Cache Manager');
     
-    // Check for version mismatch on startup
-    await this.checkVersionMismatch();
+    // Temporarily disable automatic version checking to prevent infinite reloads
+    // await this.checkVersionMismatch();
     
-    // Set up periodic cache validation
-    this.setupPeriodicValidation();
+    // Temporarily disable periodic validation
+    // this.setupPeriodicValidation();
     
-    // Set up error event listeners
+    // Set up error event listeners (but make them less aggressive)
     this.setupErrorHandlers();
   }
 
@@ -215,14 +215,19 @@ class CacheManager {
    * Set up global error handlers
    */
   private setupErrorHandlers(): void {
-    // Handle unhandled errors
+    // Handle unhandled errors (but be less aggressive with reloads)
     window.addEventListener('error', (event) => {
-      this.handleReactError(event.error).catch(console.error);
+      // Only handle critical React errors, not all errors
+      if (event.error?.message?.includes('QueryClientProvider') || 
+          event.error?.message?.includes('Invalid hook call')) {
+        this.handleReactError(event.error).catch(console.error);
+      }
     });
 
-    // Handle unhandled promise rejections
+    // Handle unhandled promise rejections (but be selective)
     window.addEventListener('unhandledrejection', (event) => {
-      if (event.reason instanceof Error) {
+      if (event.reason instanceof Error && 
+          event.reason.message?.includes('QueryClientProvider')) {
         this.handleReactError(event.reason).catch(console.error);
       }
     });
