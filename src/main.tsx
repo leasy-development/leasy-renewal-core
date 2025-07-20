@@ -1,5 +1,5 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
+import * as React from "react";
+import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,6 +7,11 @@ import { ThemeProvider } from "@/lib/theme";
 import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
 import './lib/i18n'; // Initialize i18n
+
+// Defensive React check
+if (!React || typeof React.createElement !== 'function') {
+  throw new Error("React is not properly loaded");
+}
 
 // Create QueryClient with React Query v5 configuration
 const queryClient = new QueryClient({
@@ -23,23 +28,21 @@ const queryClient = new QueryClient({
   },
 });
 
-
 const rootElement = document.getElementById("root");
 
 if (!rootElement) throw new Error("Root element not found");
 
-// 🚀 Render with GUARANTEED React 19 + React Query v5 compatibility
-console.log("🚀 Rendering with verified React 19 + React Query v5...");
+console.log("🚀 Initializing React app...");
 
-ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>
-    <ThemeProvider defaultTheme="system" storageKey="theme">
-      <QueryClientProvider client={queryClient}>
-        <App />
-        <Toaster />
-      </QueryClientProvider>
-    </ThemeProvider>
-  </React.StrictMode>
+const root = createRoot(rootElement);
+
+root.render(
+  <ThemeProvider defaultTheme="system" storageKey="theme">
+    <QueryClientProvider client={queryClient}>
+      <App />
+      <Toaster />
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
-console.log("✅ React app rendered successfully with React 19 + React Query v5");
+console.log("✅ React app rendered successfully");
