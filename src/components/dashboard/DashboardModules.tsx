@@ -55,45 +55,70 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   const getCategoryStyle = (category: string) => {
     switch (category) {
       case 'ai':
-        return 'border-blue-200 hover:border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50';
+        return 'ai-card hover-lift border-blue-200 hover:border-blue-400 hover:shadow-ai transition-all duration-300';
       case 'media':
-        return 'border-purple-200 hover:border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50';
+        return 'media-card hover-lift border-purple-200 hover:border-purple-400 hover:shadow-media transition-all duration-300';
       case 'admin':
-        return 'border-orange-200 hover:border-orange-400 bg-gradient-to-br from-orange-50 to-red-50';
+        return 'admin-card hover-lift border-orange-200 hover:border-orange-400 transition-all duration-300';
       default:
-        return 'border-border hover:border-primary/40 bg-gradient-to-br from-muted/50 to-background';
+        return 'hover-lift border-border hover:border-primary/40 bg-gradient-card transition-all duration-300';
     }
   };
 
   const cardContent = (
-    <Card className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${getCategoryStyle(category)}`}>
-      <CardHeader className="pb-3">
+    <Card className={`cursor-pointer group ${getCategoryStyle(category)}`}>
+      <CardHeader className="pb-3 relative overflow-hidden">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              {icon}
+            <div className={`p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+              category === 'ai' ? 'bg-blue-100 group-hover:bg-blue-200' :
+              category === 'media' ? 'bg-purple-100 group-hover:bg-purple-200' :
+              category === 'admin' ? 'bg-orange-100 group-hover:bg-orange-200' :
+              'bg-primary/10 group-hover:bg-primary/20'
+            }`}>
+              {React.cloneElement(icon as React.ReactElement, {
+                className: `h-5 w-5 transition-colors duration-300 ${
+                  category === 'ai' ? 'text-blue-600 group-hover:text-blue-700' :
+                  category === 'media' ? 'text-purple-600 group-hover:text-purple-700' :
+                  category === 'admin' ? 'text-orange-600 group-hover:text-orange-700' :
+                  'text-primary group-hover:text-primary/80'
+                }`
+              } as any)}
             </div>
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
+            <div className="flex-1">
+              <CardTitle className="text-base flex items-center gap-2 group-hover:text-foreground/90 transition-colors duration-300">
                 {title}
+                {category === 'ai' && <span className="text-blue-500">⚡</span>}
                 {status && (
-                  <Badge variant={status === 'new' ? 'default' : 'secondary'} className="text-xs">
+                  <Badge 
+                    variant={status === 'new' ? 'default' : 'secondary'} 
+                    className={`text-xs transition-all duration-300 ${
+                      status === 'new' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                      'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                    }`}
+                  >
                     {status}
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription className="text-sm">
+              <CardDescription className="text-sm group-hover:text-muted-foreground/80 transition-colors duration-300">
                 {description}
               </CardDescription>
             </div>
           </div>
         </div>
         {progress !== undefined && (
-          <div className="mt-3">
+          <div className="mt-3 space-y-2">
             <Progress value={progress} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-1">{progress}% vollständig</p>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{progress}% vollständig</span>
+              <span className="text-primary font-medium">{progress >= 80 ? '✓ Optimiert' : 'In Bearbeitung'}</span>
+            </div>
           </div>
         )}
+        
+        {/* Decorative gradient overlay for hover effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       </CardHeader>
     </Card>
   );
@@ -102,17 +127,26 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
     <Tooltip>
       <TooltipTrigger asChild>
         {onClick ? (
-          <div onClick={onClick}>
+          <div onClick={onClick} className="relative">
             {cardContent}
           </div>
         ) : (
-          <Link to={href}>
+          <Link to={href} className="relative block">
             {cardContent}
           </Link>
         )}
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-xs">
-        <p>{tooltip}</p>
+      <TooltipContent side="top" className="max-w-xs bg-background/95 backdrop-blur-sm border shadow-lg">
+        <div className="p-2">
+          <p className="font-medium text-sm mb-1">{title}</p>
+          <p className="text-xs text-muted-foreground">{tooltip}</p>
+          {category === 'ai' && (
+            <div className="flex items-center gap-1 mt-2 text-xs text-blue-600">
+              <span>⚡</span>
+              <span>KI-gestützt</span>
+            </div>
+          )}
+        </div>
       </TooltipContent>
     </Tooltip>
   );
@@ -311,16 +345,22 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     if (!showForRole) return null;
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center space-x-3">
-          {icon}
-          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            {icon}
+            <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+          </div>
+          <Badge variant="outline" className="text-xs">
+            {modules.length} {modules.length === 1 ? 'Tool' : 'Tools'}
+          </Badge>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {modules.map((module, index) => (
-            <div key={index} className="relative">
+            <div key={index} className="relative group">
               {isRecentlyUsed(module.href) && (
-                <Badge className="absolute -top-2 -right-2 z-10 bg-green-500 text-white">
+                <Badge className="absolute -top-2 -right-2 z-10 bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow-lg animate-pulse">
+                  <span className="mr-1">🕒</span>
                   Zuletzt genutzt
                 </Badge>
               )}
