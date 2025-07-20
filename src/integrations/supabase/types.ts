@@ -1404,6 +1404,14 @@ export type Database = {
           match_reasons: string[]
         }[]
       }
+      create_duplicate_group: {
+        Args: {
+          p_confidence_score: number
+          p_property_ids: string[]
+          p_similarity_reasons: Json[]
+        }
+        Returns: string
+      }
       generate_property_fingerprint: {
         Args: {
           p_title: string
