@@ -175,6 +175,48 @@ class EnhancedDeepSourceService {
     };
   }
 
+  // Parse repository ID to extract organization and repo
+  private parseRepositoryId(repositoryId: string): { organization: string; repo: string } {
+    if (!repositoryId) {
+      throw new Error('Repository ID cannot be empty');
+    }
+
+    // Handle different formats: "org/repo", "org-repo", or just "repo"
+    if (repositoryId.includes('/')) {
+      const parts = repositoryId.split('/');
+      if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        throw new Error('Invalid repository ID format. Expected "organization/repository"');
+      }
+      return { organization: parts[0], repo: parts[1] };
+    }
+    
+    // If no separator, assume it's a simple repo name and use it for both
+    debugLog('WARNING: Repository ID missing organization, using as both org and repo', { repositoryId });
+    return { organization: repositoryId, repo: repositoryId };
+  }
+
+  // Validate API response schema
+  private validateAnalyticsResponse(data: any): boolean {
+    try {
+      // Check for required fields that frontend expects
+      const requiredFields = ['repository_id', 'total_issues_processed'];
+      const hasRequiredFields = requiredFields.every(field => data.hasOwnProperty(field));
+      
+      if (!hasRequiredFields) {
+        debugLog('WARNING: API response missing required fields', { 
+          received: Object.keys(data), 
+          required: requiredFields 
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      debugLog('ERROR: Failed to validate response schema', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return false;
+    }
+  }
+
   // Real DeepSource API call for analytics
   private async fetchRealAnalytics(repositoryId: string, days: number): Promise<any> {
     if (!DEEPSOURCE_API_KEY) {
@@ -185,9 +227,9 @@ class EnhancedDeepSourceService {
     try {
       debugLog('Attempting real DeepSource API call', { repositoryId, days });
       
-      // Parse repository ID to extract org/repo if it's in format "org/repo"
-      const repoParts = repositoryId.includes('/') ? repositoryId.split('/') : [repositoryId, repositoryId];
-      const [organization, repo] = repoParts;
+      // Parse repository ID to extract org and repo
+      const { organization, repo } = this.parseRepositoryId(repositoryId);
+      debugLog('Parsed repository components', { organization, repo });
       
       // Construct the real DeepSource API endpoint
       const apiUrl = `${DEEPSOURCE_BASE_URL}/repos/${organization}/${repo}/issues/analytics/`;
@@ -209,23 +251,33 @@ class EnhancedDeepSourceService {
       });
 
       if (!response.ok) {
-        throw new Error(`DeepSource API request failed: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`DeepSource API request failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const analyticsData = await response.json();
-      debugLog('Successfully fetched real analytics from DeepSource API', { 
+      debugLog('Raw API response received', { 
         dataKeys: Object.keys(analyticsData),
         repositoryId 
       });
+
+      // Validate the response schema
+      if (!this.validateAnalyticsResponse(analyticsData)) {
+        debugLog('WARNING: API response failed validation, using mock data');
+        return this.generateMockAnalytics(repositoryId, days);
+      }
+
+      debugLog('Successfully fetched and validated real analytics from DeepSource API');
 
       // Add debug info to indicate this is real data
       return {
         ...analyticsData,
         debug_info: {
           generated_at: new Date().toISOString(),
-          request_params: { repositoryId, days },
+          request_params: { repositoryId, days, organization, repo },
           api_key_configured: true,
-          data_source: 'deepsource_api'
+          data_source: 'deepsource_api',
+          response_validated: true
         }
       };
 
