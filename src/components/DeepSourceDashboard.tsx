@@ -13,9 +13,12 @@ import {
   CheckCircle,
   FileText,
   BarChart3,
-  Settings
+  Settings,
+  Clock,
+  Download
 } from 'lucide-react';
-import { deepSourceService, DeepSourceIssue, DeepSourceRepository } from '@/services/deepSourceService';
+import { deepSourceService, DeepSourceIssue, DeepSourceRepository, RefreshStatus } from '@/services/deepSourceService';
+import { DeepSourceRefreshStatus } from './DeepSourceRefreshStatus';
 import { toast } from 'sonner';
 
 export function DeepSourceDashboard() {
@@ -25,9 +28,20 @@ export function DeepSourceDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoFixing, setIsAutoFixing] = useState(false);
   const [autoFixEnabled, setAutoFixEnabled] = useState(true);
+  const [refreshStatus, setRefreshStatus] = useState<RefreshStatus>({
+    isRefreshing: false,
+    progress: 0,
+    message: 'Ready'
+  });
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
     loadRepositories();
+    
+    // Subscribe to refresh status updates
+    const unsubscribe = deepSourceService.onRefreshStatusChange(setRefreshStatus);
+    
+    return unsubscribe;
   }, []);
 
   const loadRepositories = async () => {
@@ -35,9 +49,20 @@ export function DeepSourceDashboard() {
       setIsLoading(true);
       const repos = await deepSourceService.getRepositories();
       setRepositories(repos);
+      
+      // Test connection to determine demo mode
+      const connectionTest = await deepSourceService.testConnection();
+      setIsDemoMode(connectionTest.demo_mode);
+      
       if (repos.length > 0 && !selectedRepo) {
         setSelectedRepo(repos[0].id);
         await loadIssues(repos[0].id);
+      }
+      
+      if (connectionTest.demo_mode) {
+        toast.info("Using demo data - configure DeepSource API token for real analysis");
+      } else {
+        toast.success("Connected to DeepSource successfully");
       }
     } catch (error) {
       toast.error("Failed to load repositories from DeepSource");
@@ -54,11 +79,36 @@ export function DeepSourceDashboard() {
       setIsLoading(true);
       const repoIssues = await deepSourceService.getRepositoryIssues(repositoryId);
       setIssues(repoIssues);
-      toast.success(`Loaded ${repoIssues.length} issues from DeepSource`);
+      
+      const message = isDemoMode 
+        ? `Demo: Loaded ${repoIssues.length} sample issues`
+        : `Loaded ${repoIssues.length} issues from DeepSource`;
+      toast.success(message);
     } catch (error) {
       toast.error("Failed to load issues from DeepSource");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRefreshAll = async () => {
+    if (!selectedRepo) {
+      toast.error("Please select a repository first");
+      return;
+    }
+
+    try {
+      const { repositories: newRepos, issues: newIssues } = await deepSourceService.refreshRepository(selectedRepo);
+      
+      setRepositories(newRepos);
+      setIssues(newIssues);
+      
+      const message = isDemoMode
+        ? `Demo refresh complete: ${newIssues.length} issues loaded`
+        : `Refresh complete: ${newIssues.length} issues loaded from DeepSource`;
+      toast.success(message);
+    } catch (error) {
+      toast.error("Failed to refresh data from DeepSource");
     }
   };
 
@@ -80,7 +130,10 @@ export function DeepSourceDashboard() {
         }
       }
 
-      toast.success(`Successfully fixed ${fixedCount} out of ${autoFixableIssues.length} issues`);
+      const message = isDemoMode
+        ? `Demo: Successfully simulated fixing ${fixedCount} out of ${autoFixableIssues.length} issues`
+        : `Successfully fixed ${fixedCount} out of ${autoFixableIssues.length} issues`;
+      toast.success(message);
       
       // Reload issues to reflect fixes
       await loadIssues();
@@ -132,6 +185,19 @@ export function DeepSourceDashboard() {
             </label>
           </div>
           <Button
+            onClick={handleRefreshAll}
+            disabled={refreshStatus.isRefreshing || !selectedRepo}
+            variant="outline"
+            size="sm"
+          >
+            {refreshStatus.isRefreshing ? (
+              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Update Now
+          </Button>
+          <Button
             onClick={() => loadIssues()}
             disabled={isLoading}
             variant="outline"
@@ -147,12 +213,28 @@ export function DeepSourceDashboard() {
         </div>
       </div>
 
+      {/* Refresh Status */}
+      <DeepSourceRefreshStatus 
+        isRefreshing={refreshStatus.isRefreshing}
+        progress={refreshStatus.progress}
+        message={refreshStatus.message}
+        lastUpdated={refreshStatus.lastUpdated}
+        demoMode={isDemoMode}
+      />
+
       {/* Repository Selection */}
       {repositories.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Repository</CardTitle>
-            <CardDescription>Select repository to analyze</CardDescription>
+            <CardDescription>
+              Select repository to analyze
+              {isDemoMode && (
+                <Badge variant="outline" className="ml-2 text-amber-600 border-amber-200">
+                  Demo Data
+                </Badge>
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -168,7 +250,7 @@ export function DeepSourceDashboard() {
                 >
                   {repo.name}
                   <Badge variant="secondary" className="ml-2">
-                    {repo.issues_count}
+                    {repo.issues_count.toLocaleString()}
                   </Badge>
                 </Button>
               ))}
@@ -185,7 +267,10 @@ export function DeepSourceDashboard() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              {isDemoMode ? 'Demo data' : 'Live from DeepSource'}
+            </p>
           </CardContent>
         </Card>
 
@@ -195,7 +280,7 @@ export function DeepSourceDashboard() {
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.critical}</div>
+            <div className="text-2xl font-bold text-red-600">{stats.critical.toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -205,7 +290,7 @@ export function DeepSourceDashboard() {
             <AlertTriangle className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.major}</div>
+            <div className="text-2xl font-bold text-orange-600">{stats.major.toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -215,7 +300,7 @@ export function DeepSourceDashboard() {
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.minor}</div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.minor.toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -225,7 +310,7 @@ export function DeepSourceDashboard() {
             <Settings className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.autoFixable}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.autoFixable.toLocaleString()}</div>
             {stats.autoFixable > 0 && autoFixEnabled && (
               <Button
                 size="sm"
@@ -250,7 +335,10 @@ export function DeepSourceDashboard() {
         <CardHeader>
           <CardTitle>Code Quality Issues</CardTitle>
           <CardDescription>
-            Issues detected by DeepSource analysis
+            {isDemoMode 
+              ? 'Sample issues for demonstration - configure DeepSource API for real data'
+              : 'Issues detected by DeepSource analysis'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -325,8 +413,12 @@ export function DeepSourceDashboard() {
               {issues.length > 20 && (
                 <div className="text-center py-4">
                   <p className="text-sm text-muted-foreground">
-                    Showing 20 of {issues.length} issues
+                    Showing 20 of {issues.length.toLocaleString()} issues
                   </p>
+                  <Button variant="outline" size="sm" className="mt-2">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Load More
+                  </Button>
                 </div>
               )}
             </div>

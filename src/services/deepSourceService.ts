@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DeepSourceIssue {
@@ -24,40 +23,178 @@ export interface DeepSourceRepository {
   last_analysis: string;
 }
 
+export interface RefreshStatus {
+  isRefreshing: boolean;
+  progress: number;
+  message: string;
+  lastUpdated?: Date;
+}
+
 class DeepSourceService {
   private baseUrl = 'https://deepsource.io/api/v1';
+  private refreshCallbacks: ((status: RefreshStatus) => void)[] = [];
+
+  /**
+   * Subscribe to refresh status updates
+   */
+  onRefreshStatusChange(callback: (status: RefreshStatus) => void) {
+    this.refreshCallbacks.push(callback);
+    return () => {
+      this.refreshCallbacks = this.refreshCallbacks.filter(cb => cb !== callback);
+    };
+  }
+
+  private notifyRefreshStatus(status: RefreshStatus) {
+    this.refreshCallbacks.forEach(callback => callback(status));
+  }
+
+  /**
+   * Test connection to DeepSource API
+   */
+  async testConnection(): Promise<{ success: boolean; demo_mode: boolean; error?: string }> {
+    try {
+      const { data } = await supabase.functions.invoke('deepsource-api', {
+        body: { action: 'test_connection' }
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to test DeepSource connection:', error);
+      return { success: false, demo_mode: true, error: 'Connection test failed' };
+    }
+  }
 
   /**
    * Fetch all repositories from DeepSource
    */
   async getRepositories(): Promise<DeepSourceRepository[]> {
     try {
+      this.notifyRefreshStatus({
+        isRefreshing: true,
+        progress: 10,
+        message: 'Fetching repositories...'
+      });
+
       const { data } = await supabase.functions.invoke('deepsource-api', {
         body: { action: 'get_repositories' }
       });
       
+      this.notifyRefreshStatus({
+        isRefreshing: false,
+        progress: 100,
+        message: 'Repositories loaded',
+        lastUpdated: new Date()
+      });
+
       return data?.repositories || [];
     } catch (error) {
       console.error('Failed to fetch DeepSource repositories:', error);
+      this.notifyRefreshStatus({
+        isRefreshing: false,
+        progress: 0,
+        message: 'Failed to load repositories'
+      });
       throw error;
     }
   }
 
   /**
-   * Fetch issues for a specific repository
+   * Fetch all issues for a specific repository
    */
-  async getRepositoryIssues(repositoryId: string): Promise<DeepSourceIssue[]> {
+  async getRepositoryIssues(repositoryId: string, forceRefresh: boolean = false): Promise<DeepSourceIssue[]> {
     try {
+      this.notifyRefreshStatus({
+        isRefreshing: true,
+        progress: 20,
+        message: 'Fetching issues...'
+      });
+
+      // Fetch all issues at once (API handles pagination internally)
       const { data } = await supabase.functions.invoke('deepsource-api', {
         body: { 
           action: 'get_issues',
-          repository_id: repositoryId
+          repository_id: repositoryId,
+          page: 1,
+          per_page: 10000 // Large number to get all issues
         }
       });
+
+      this.notifyRefreshStatus({
+        isRefreshing: true,
+        progress: 60,
+        message: `Processing ${data?.total_count || data?.issues?.length || 0} issues...`
+      });
       
-      return this.transformIssues(data?.issues || []);
+      const transformedIssues = this.transformIssues(data?.issues || []);
+
+      this.notifyRefreshStatus({
+        isRefreshing: false,
+        progress: 100,
+        message: `Loaded ${transformedIssues.length} issues`,
+        lastUpdated: new Date()
+      });
+
+      return transformedIssues;
     } catch (error) {
       console.error('Failed to fetch DeepSource issues:', error);
+      this.notifyRefreshStatus({
+        isRefreshing: false,
+        progress: 0,
+        message: 'Failed to load issues'
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh all data for a repository
+   */
+  async refreshRepository(repositoryId: string): Promise<{
+    repositories: DeepSourceRepository[];
+    issues: DeepSourceIssue[];
+  }> {
+    try {
+      this.notifyRefreshStatus({
+        isRefreshing: true,
+        progress: 0,
+        message: 'Starting refresh...'
+      });
+
+      // Test connection first
+      const connectionTest = await this.testConnection();
+      
+      this.notifyRefreshStatus({
+        isRefreshing: true,
+        progress: 10,
+        message: connectionTest.demo_mode ? 'Using demo data' : 'Connected to DeepSource'
+      });
+
+      // Fetch repositories
+      const repositories = await this.getRepositories();
+      
+      this.notifyRefreshStatus({
+        isRefreshing: true,
+        progress: 40,
+        message: 'Fetching latest issues...'
+      });
+
+      // Fetch issues
+      const issues = await this.getRepositoryIssues(repositoryId, true);
+
+      this.notifyRefreshStatus({
+        isRefreshing: false,
+        progress: 100,
+        message: `Refresh complete - ${issues.length} issues loaded`,
+        lastUpdated: new Date()
+      });
+
+      return { repositories, issues };
+    } catch (error) {
+      this.notifyRefreshStatus({
+        isRefreshing: false,
+        progress: 0,
+        message: 'Refresh failed'
+      });
       throw error;
     }
   }
@@ -82,9 +219,6 @@ class DeepSourceService {
     }));
   }
 
-  /**
-   * Map DeepSource categories to our categories
-   */
   private mapCategory(issueCode: string): DeepSourceIssue['category'] {
     const categoryMap: Record<string, DeepSourceIssue['category']> = {
       'JS-': 'bug-risk',
@@ -100,9 +234,6 @@ class DeepSourceService {
     return prefix ? categoryMap[prefix] : 'antipattern';
   }
 
-  /**
-   * Map DeepSource severity to our severity levels
-   */
   private mapSeverity(severity: string): DeepSourceIssue['severity'] {
     switch (severity?.toLowerCase()) {
       case 'critical': return 'critical';
@@ -112,19 +243,10 @@ class DeepSourceService {
     }
   }
 
-  /**
-   * Check if an issue can be automatically fixed
-   */
   private isAutoFixable(issueCode: string): boolean {
     const autoFixableCodes = [
-      'JS-0002', // Unused imports
-      'JS-0125', // Missing semicolons
-      'JS-0128', // Prefer const over let
-      'JS-0240', // Missing React keys
-      'JS-0241', // Unnecessary React fragments
-      'TS-0024', // Unused variables
-      'STY-001', // Code formatting
-      'STY-002', // Spacing issues
+      'JS-0002', 'JS-0125', 'JS-0128', 'JS-0240', 'JS-0241',
+      'TS-0024', 'STY-001', 'STY-002',
     ];
     
     return autoFixableCodes.includes(issueCode);
