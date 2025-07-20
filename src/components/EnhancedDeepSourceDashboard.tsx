@@ -90,12 +90,23 @@ export const EnhancedDeepSourceDashboard: React.FC = () => {
       try {
         const analyticsData = await enhancedDeepSourceClient.getAnalytics(selectedRepo);
         setAnalytics(analyticsData);
+        
+        toast({
+          title: "Dashboard Loaded",
+          description: "Repository data and analytics loaded successfully",
+        });
       } catch (analyticsError) {
         console.warn('Enhanced analytics not available, using fallback:', analyticsError);
         // Record telemetry for fallback usage
         await recordFallbackTelemetry(analyticsError, selectedRepo);
         // Use the mock analytics generator with actual issues data
         setAnalytics(generateMockAnalytics(selectedRepo, issuesData));
+        
+        toast({
+          title: "Dashboard Loaded",
+          description: "Repository data loaded. Using fallback analytics due to service unavailability.",
+          variant: "default",
+        });
       }
     } catch (error) {
       console.error('Failed to load data:', error);
