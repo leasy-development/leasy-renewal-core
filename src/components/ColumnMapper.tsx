@@ -5,35 +5,50 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, AlertCircle, Wand2, RotateCcw } from 'lucide-react';
+import { CheckCircle, AlertCircle, Wand2, RotateCcw, Database, Loader } from 'lucide-react';
 import * as fuzzball from 'fuzzball';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 // Standard field mappings for property data
 const STANDARD_FIELDS = [
-  { key: 'title', label: 'Property Title', required: true },
-  { key: 'description', label: 'Description', required: false },
-  { key: 'apartment_type', label: 'Apartment Type', required: true },
-  { key: 'category', label: 'Category', required: true },
-  { key: 'street_name', label: 'Street Name', required: true },
-  { key: 'street_number', label: 'Street Number', required: false },
-  { key: 'city', label: 'City', required: true },
-  { key: 'zip_code', label: 'ZIP Code', required: false },
-  { key: 'region', label: 'Region/State', required: false },
-  { key: 'country', label: 'Country', required: false },
-  { key: 'monthly_rent', label: 'Monthly Rent', required: false },
-  { key: 'weekly_rate', label: 'Weekly Rate', required: false },
-  { key: 'daily_rate', label: 'Daily Rate', required: false },
-  { key: 'bedrooms', label: 'Bedrooms', required: false },
-  { key: 'bathrooms', label: 'Bathrooms', required: false },
-  { key: 'max_guests', label: 'Max Guests', required: false },
-  { key: 'square_meters', label: 'Square Meters', required: false },
-  { key: 'checkin_time', label: 'Check-in Time', required: false },
-  { key: 'checkout_time', label: 'Check-out Time', required: false },
-  { key: 'provides_wgsb', label: 'Provides WGSB', required: false },
-  { key: 'house_rules', label: 'House Rules', required: false },
-  { key: 'image_urls', label: 'Image URLs', required: false },
-  { key: 'floorplan_urls', label: 'Floorplan URLs', required: false }
+  { key: 'title', label: 'Property Title', required: true, isLeasyField: true },
+  { key: 'description', label: 'Description', required: false, isLeasyField: true },
+  { key: 'apartment_type', label: 'Apartment Type', required: false, isLeasyField: true }, // Made optional
+  { key: 'category', label: 'Category', required: false, isLeasyField: true }, // Made optional
+  { key: 'street_name', label: 'Street Name', required: true, isLeasyField: true },
+  { key: 'street_number', label: 'Street Number', required: false, isLeasyField: true },
+  { key: 'city', label: 'City', required: false, isLeasyField: true }, // Made optional - can be inferred from ZIP
+  { key: 'city_district', label: 'City District', required: false, isLeasyField: true }, // Renamed from address_city_part
+  { key: 'zip_code', label: 'ZIP Code', required: false, isLeasyField: true },
+  { key: 'region', label: 'Region/State', required: false, isLeasyField: true },
+  { key: 'country', label: 'Country', required: false, isLeasyField: true },
+  { key: 'monthly_rent', label: 'Monthly Rent', required: false, isLeasyField: true },
+  { key: 'weekly_rate', label: 'Weekly Rate', required: false, isLeasyField: true },
+  { key: 'daily_rate', label: 'Daily Rate', required: false, isLeasyField: true },
+  { key: 'bedrooms', label: 'Bedrooms', required: false, isLeasyField: true },
+  { key: 'bathrooms', label: 'Bathrooms', required: false, isLeasyField: true },
+  { key: 'total_rooms', label: 'Total Rooms', required: false, isLeasyField: true }, // New field
+  { key: 'max_guests', label: 'Max Guests', required: false, isLeasyField: true },
+  { key: 'square_meters', label: 'Square Meters', required: false, isLeasyField: true },
+  { key: 'checkin_time', label: 'Check-in Time', required: false, isLeasyField: true },
+  { key: 'checkout_time', label: 'Check-out Time', required: false, isLeasyField: true },
+  { key: 'provides_wgsb', label: 'Provides WGSB', required: false, isLeasyField: true },
+  { key: 'house_rules', label: 'House Rules', required: false, isLeasyField: true },
+  { key: 'image_urls', label: 'Image URLs', required: false, isLeasyField: true },
+  { key: 'floorplan_urls', label: 'Floorplan URLs', required: false, isLeasyField: true }
 ];
+
+// Standardized category values
+export const STANDARD_CATEGORIES = [
+  'Furnished apartment',
+  'Furnished house', 
+  'Serviced apartment',
+  'Apartment for rent',
+  'House for rent',
+  'Apartment for sale',
+  'House for sale'
+] as const;
 
 // Common header variations for automatic detection
 const HEADER_PATTERNS: Record<string, string[]> = {
@@ -44,14 +59,16 @@ const HEADER_PATTERNS: Record<string, string[]> = {
   street_name: ['street_name', 'street', 'address', 'street_address'],
   street_number: ['street_number', 'house_number', 'number'],
   city: ['city', 'location', 'town'],
+  city_district: ['city_district', 'district', 'neighborhood', 'quarter', 'bezirk', 'stadtteil'], // Added city_district patterns
   zip_code: ['zip_code', 'postal_code', 'zipcode', 'zip', 'postcode'],
   region: ['region', 'state', 'province'],
   country: ['country', 'nation'],
   monthly_rent: ['monthly_rent', 'rent', 'price', 'monthly_price'],
   weekly_rate: ['weekly_rate', 'weekly_rent', 'weekly_price'],
   daily_rate: ['daily_rate', 'daily_rent', 'daily_price', 'nightly_rate'],
-  bedrooms: ['bedrooms', 'beds', 'rooms', 'bedroom_count'],
+  bedrooms: ['bedrooms', 'beds', 'bedroom_count'],
   bathrooms: ['bathrooms', 'baths', 'bathroom_count'],
+  total_rooms: ['total_rooms', 'rooms', 'room_count', 'anzahl_zimmer'], // Added total_rooms patterns
   max_guests: ['max_guests', 'capacity', 'guests', 'occupancy'],
   square_meters: ['square_meters', 'area', 'size', 'sqm', 'square_feet'],
   checkin_time: ['checkin_time', 'check_in', 'checkin', 'arrival_time'],
@@ -66,6 +83,7 @@ interface ColumnMapping {
   csvHeader: string;
   mappedField: string | null;
   confidence: number;
+  isAutoMapped: boolean;
 }
 
 interface ColumnMapperProps {
@@ -77,84 +95,161 @@ interface ColumnMapperProps {
 export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: ColumnMapperProps) {
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [autoMapped, setAutoMapped] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load saved mappings from database for the current user
+  const loadUserMappings = async (): Promise<Record<string, { field: string; confidence: number }>> => {
+    try {
+      const { data, error } = await supabase
+        .from('field_mapping_memory')
+        .select('document_field_pattern, mapped_field_key, confidence_score')
+        .order('usage_count', { ascending: false });
+
+      if (error) {
+        console.warn('Failed to load user mappings:', error);
+        return {};
+      }
+
+      const mappingDict: Record<string, { field: string; confidence: number }> = {};
+      data?.forEach(row => {
+        mappingDict[row.document_field_pattern.toLowerCase()] = {
+          field: row.mapped_field_key,
+          confidence: row.confidence_score
+        };
+      });
+
+      return mappingDict;
+    } catch (error) {
+      console.warn('Error loading user mappings:', error);
+      return {};
+    }
+  };
+
+  // Save mapping to database for future learning
+  const saveMappingToDatabase = async (documentField: string, mappedField: string) => {
+    try {
+      const pattern = documentField.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      
+      // Check if mapping already exists
+      const { data: existing, error: checkError } = await supabase
+        .from('field_mapping_memory')
+        .select('id, usage_count')
+        .eq('document_field_pattern', pattern)
+        .eq('mapped_field_key', mappedField)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existing) {
+        // Update existing mapping
+        await supabase
+          .from('field_mapping_memory')
+          .update({ 
+            usage_count: existing.usage_count + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+      } else {
+        // Create new mapping
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+        
+        await supabase
+          .from('field_mapping_memory')
+          .insert({
+            user_id: user.id,
+            document_field_name: documentField,
+            document_field_pattern: pattern,
+            mapped_field_key: mappedField,
+            confidence_score: 1.0
+          });
+      }
+    } catch (error) {
+      console.warn('Failed to save mapping to database:', error);
+    }
+  };
+
+  // Auto-detect mappings using database learning + patterns
+  const autoDetectMappings = async (headers: string[]): Promise<ColumnMapping[]> => {
+    setIsLoading(true);
+    
+    try {
+      const userMappings = await loadUserMappings();
+      
+      return headers.map(header => {
+        const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        
+        // Check user's learned mappings first (highest priority)
+        if (userMappings[normalizedHeader]) {
+          return {
+            csvHeader: header,
+            mappedField: userMappings[normalizedHeader].field,
+            confidence: userMappings[normalizedHeader].confidence,
+            isAutoMapped: true
+          };
+        }
+
+        // Check localStorage as fallback
+        const localStorageKey = csvHeaders.slice(0, 5).join(',');
+        const savedMappings = localStorage.getItem(`csv_mapping_${localStorageKey}`);
+        if (savedMappings) {
+          const parsed = JSON.parse(savedMappings);
+          if (parsed[header]) {
+            return {
+              csvHeader: header,
+              mappedField: parsed[header],
+              confidence: 0.9,
+              isAutoMapped: true
+            };
+          }
+        }
+
+        // Find best match using fuzzy string matching against patterns
+        let bestMatch = '';
+        let bestScore = 0;
+
+        Object.entries(HEADER_PATTERNS).forEach(([fieldKey, patterns]) => {
+          patterns.forEach(pattern => {
+            const score = fuzzball.ratio(normalizedHeader, pattern) / 100;
+            if (score > bestScore && score > 0.7) { // 70% similarity threshold
+              bestMatch = fieldKey;
+              bestScore = score;
+            }
+          });
+        });
+
+        return {
+          csvHeader: header,
+          mappedField: bestMatch || null,
+          confidence: bestScore,
+          isAutoMapped: bestScore > 0
+        };
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Auto-detect mappings on component mount
   useEffect(() => {
-    const autoDetectedMappings = autoDetectMappings(csvHeaders);
-    setMappings(autoDetectedMappings);
-    setAutoMapped(true);
-  }, [csvHeaders]);
-
-  // Save mappings to localStorage for future use
-  const saveMappingsToStorage = (finalMappings: Record<string, string>) => {
-    try {
-      const mappingKey = csvHeaders.slice(0, 5).join(','); // Use first 5 headers as key
-      localStorage.setItem(`csv_mapping_${mappingKey}`, JSON.stringify(finalMappings));
-    } catch (error) {
-      console.warn('Failed to save mappings to localStorage:', error);
-    }
-  };
-
-  // Load previous mappings from localStorage
-  const loadMappingsFromStorage = (): Record<string, string> | null => {
-    try {
-      const mappingKey = csvHeaders.slice(0, 5).join(',');
-      const saved = localStorage.getItem(`csv_mapping_${mappingKey}`);
-      return saved ? JSON.parse(saved) : null;
-    } catch (error) {
-      console.warn('Failed to load mappings from localStorage:', error);
-      return null;
-    }
-  };
-
-  // Auto-detect mappings based on header similarity
-  function autoDetectMappings(headers: string[]): ColumnMapping[] {
-    const savedMappings = loadMappingsFromStorage();
-    
-    return headers.map(header => {
-      const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      
-      // Check saved mappings first
-      if (savedMappings && savedMappings[header]) {
-        return {
-          csvHeader: header,
-          mappedField: savedMappings[header],
-          confidence: 1.0
-        };
-      }
-
-      // Find best match using fuzzy string matching
-      let bestMatch = '';
-      let bestScore = 0;
-
-      Object.entries(HEADER_PATTERNS).forEach(([fieldKey, patterns]) => {
-        patterns.forEach(pattern => {
-          const score = fuzzball.ratio(normalizedHeader, pattern) / 100;
-          if (score > bestScore && score > 0.7) { // 70% similarity threshold
-            bestMatch = fieldKey;
-            bestScore = score;
-          }
-        });
-      });
-
-      return {
-        csvHeader: header,
-        mappedField: bestMatch || null,
-        confidence: bestScore
-      };
+    autoDetectMappings(csvHeaders).then(detectedMappings => {
+      setMappings(detectedMappings);
+      setAutoMapped(true);
     });
-  }
+  }, [csvHeaders]);
 
   const handleMappingChange = (csvHeader: string, mappedField: string | null) => {
     setMappings(prev => prev.map(mapping => 
       mapping.csvHeader === csvHeader 
-        ? { ...mapping, mappedField, confidence: mappedField ? 1.0 : 0 }
+        ? { ...mapping, mappedField, confidence: mappedField ? 1.0 : 0, isAutoMapped: false }
         : mapping
     ));
   };
 
-  const handleAutoMap = () => {
-    const autoDetectedMappings = autoDetectMappings(csvHeaders);
+  const handleAutoMap = async () => {
+    const autoDetectedMappings = await autoDetectMappings(csvHeaders);
     setMappings(autoDetectedMappings);
     setAutoMapped(true);
   };
@@ -163,21 +258,59 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
     setMappings(csvHeaders.map(header => ({
       csvHeader: header,
       mappedField: null,
-      confidence: 0
+      confidence: 0,
+      isAutoMapped: false
     })));
     setAutoMapped(false);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const finalMapping: Record<string, string> = {};
+    const userMappings: Array<{ docField: string; mappedField: string }> = [];
+
     mappings.forEach(mapping => {
       if (mapping.mappedField) {
         finalMapping[mapping.csvHeader] = mapping.mappedField;
+        
+        // Track manual mappings for learning
+        if (!mapping.isAutoMapped) {
+          userMappings.push({
+            docField: mapping.csvHeader,
+            mappedField: mapping.mappedField
+          });
+        }
       }
     });
 
-    saveMappingsToStorage(finalMapping);
+    // Save manual mappings to database for learning
+    for (const userMapping of userMappings) {
+      await saveMappingToDatabase(userMapping.docField, userMapping.mappedField);
+    }
+
+    // Save to localStorage as backup
+    const mappingKey = csvHeaders.slice(0, 5).join(',');
+    localStorage.setItem(`csv_mapping_${mappingKey}`, JSON.stringify(finalMapping));
+
+    // Show success message for learning
+    if (userMappings.length > 0) {
+      toast({
+        title: "Mapping Learned",
+        description: `Saved ${userMappings.length} manual mapping(s) for future use.`,
+      });
+    }
+
     onMappingComplete(finalMapping);
+  };
+
+  // Helper functions for dropdown state
+  const isFieldAlreadyMapped = (fieldKey: string, currentMapping: ColumnMapping) => {
+    return mappings.some(m => m.mappedField === fieldKey && m.csvHeader !== currentMapping.csvHeader);
+  };
+
+  const getAvailableFields = (currentMapping: ColumnMapping) => {
+    return STANDARD_FIELDS.filter(field => 
+      !isFieldAlreadyMapped(field.key, currentMapping)
+    );
   };
 
   // Validation
@@ -192,15 +325,29 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
   const canProceed = missingRequiredFields.length === 0;
   const mappedCount = mappings.filter(m => m.mappedField).length;
 
+  if (isLoading) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="flex items-center gap-2">
+            <Loader className="h-4 w-4 animate-spin" />
+            <span>Loading intelligent mappings...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wand2 className="h-5 w-5" />
-          Column Mapping
+          Smart Column Mapping
         </CardTitle>
         <CardDescription>
-          Map your CSV columns to the expected property fields. Required fields are marked with *.
+          Map your CSV columns to Leasy database fields. The system learns from your mappings to improve future suggestions.
+          Required fields are marked with *.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -212,7 +359,7 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
             </Badge>
             {autoMapped && (
               <Badge variant="secondary">
-                Auto-detected with {Math.round(mappings.reduce((sum, m) => sum + m.confidence, 0) / mappings.length * 100)}% confidence
+                AI-detected with {Math.round(mappings.reduce((sum, m) => sum + m.confidence, 0) / mappings.length * 100)}% confidence
               </Badge>
             )}
           </div>
@@ -220,7 +367,7 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleAutoMap}>
               <Wand2 className="h-3 w-3 mr-1" />
-              Auto-Map
+              Smart Auto-Map
             </Button>
             <Button variant="outline" size="sm" onClick={handleReset}>
               <RotateCcw className="h-3 w-3 mr-1" />
@@ -241,48 +388,68 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
 
         {/* Mapping Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-          {mappings.map((mapping, index) => (
-            <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
-              <div className="flex-1">
-                <Label className="text-sm font-medium">{mapping.csvHeader}</Label>
-                {mapping.confidence > 0 && mapping.confidence < 1 && (
-                  <div className="text-xs text-muted-foreground">
-                    {Math.round(mapping.confidence * 100)}% match
-                  </div>
+          {mappings.map((mapping, index) => {
+            const availableFields = getAvailableFields(mapping);
+            const isCurrentlyMapped = mapping.mappedField !== null;
+            
+            return (
+              <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
+                <div className="flex-1">
+                  <Label className="text-sm font-medium">{mapping.csvHeader}</Label>
+                  {mapping.confidence > 0 && mapping.confidence < 1 && (
+                    <div className="text-xs text-muted-foreground">
+                      {Math.round(mapping.confidence * 100)}% match
+                      {mapping.isAutoMapped && ' (auto)'}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1">
+                  <Select
+                    value={mapping.mappedField || 'unmapped'}
+                    onValueChange={(value) => 
+                      handleMappingChange(mapping.csvHeader, value === 'unmapped' ? null : value)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select field..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unmapped">
+                        <span className="text-muted-foreground">Don't map</span>
+                      </SelectItem>
+                      {availableFields.map(field => (
+                        <SelectItem key={field.key} value={field.key}>
+                          <div className="flex items-center gap-2">
+                            <Database className="h-3 w-3 text-blue-500" />
+                            <span>{field.label}</span>
+                            {field.required && <span className="text-red-500">*</span>}
+                            <Badge variant="outline" className="text-xs">Leasy</Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      {/* Show already mapped fields as disabled */}
+                      {STANDARD_FIELDS.filter(field => 
+                        isFieldAlreadyMapped(field.key, mapping) && field.key !== mapping.mappedField
+                      ).map(field => (
+                        <SelectItem key={`disabled-${field.key}`} value={field.key} disabled>
+                          <div className="flex items-center gap-2 opacity-50">
+                            <Database className="h-3 w-3 text-gray-400" />
+                            <span>{field.label}</span>
+                            <Badge variant="secondary" className="text-xs">Already selected</Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {isCurrentlyMapped && (
+                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                 )}
               </div>
-              
-              <div className="flex-1">
-                <Select
-                  value={mapping.mappedField || 'unmapped'}
-                  onValueChange={(value) => 
-                    handleMappingChange(mapping.csvHeader, value === 'unmapped' ? null : value)
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select field..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unmapped">
-                      <span className="text-muted-foreground">Don't map</span>
-                    </SelectItem>
-                    {STANDARD_FIELDS.map(field => (
-                      <SelectItem key={field.key} value={field.key}>
-                        <div className="flex items-center gap-2">
-                          <span>{field.label}</span>
-                          {field.required && <span className="text-red-500">*</span>}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {mapping.mappedField && (
-                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Required Fields Summary */}

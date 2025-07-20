@@ -568,7 +568,7 @@ export const BulkUploadModal = ({ isOpen, onClose, onSuccess }: BulkUploadModalP
 
   // Process file data with custom column mapping
   const processFileDataWithMapping = async (rawRows: any[], mapping: Record<string, string>): Promise<PropertyRow[]> => {
-    const result = processRowsWithFallback(rawRows, mapping);
+    const result = await processRowsWithFallback(rawRows, mapping);
     
     // Update validation errors state
     setValidationErrors([...result.errors, ...result.warnings]);

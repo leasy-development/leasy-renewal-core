@@ -215,6 +215,30 @@ export type Database = {
           },
         ]
       }
+      city_districts: {
+        Row: {
+          city: string
+          created_at: string
+          district: string
+          id: string
+          zip_code: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          district: string
+          id?: string
+          zip_code: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          district?: string
+          id?: string
+          zip_code?: string
+        }
+        Relationships: []
+      }
       dashboard_widgets: {
         Row: {
           config: Json
@@ -391,6 +415,42 @@ export type Database = {
         }
         Relationships: []
       }
+      field_mapping_memory: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          document_field_name: string
+          document_field_pattern: string
+          id: string
+          mapped_field_key: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number
+          created_at?: string
+          document_field_name: string
+          document_field_pattern: string
+          id?: string
+          mapped_field_key: string
+          updated_at?: string
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          document_field_name?: string
+          document_field_pattern?: string
+          id?: string
+          mapped_field_key?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       global_duplicate_groups: {
         Row: {
           confidence_score: number
@@ -553,6 +613,7 @@ export type Database = {
           title: string
           title_de: string | null
           title_en: string | null
+          total_rooms: number | null
           translation_verified: boolean | null
           updated_at: string
           user_id: string
@@ -596,6 +657,7 @@ export type Database = {
           title: string
           title_de?: string | null
           title_en?: string | null
+          total_rooms?: number | null
           translation_verified?: boolean | null
           updated_at?: string
           user_id: string
@@ -639,6 +701,7 @@ export type Database = {
           title?: string
           title_de?: string | null
           title_en?: string | null
+          total_rooms?: number | null
           translation_verified?: boolean | null
           updated_at?: string
           user_id?: string

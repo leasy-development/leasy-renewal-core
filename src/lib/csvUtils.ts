@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import DOMPurify from 'dompurify';
 import Joi from 'joi';
 import { detectLanguage } from './languageDetection';
+import { autoInferPropertyData, type PropertyData } from '@/services/autoInferenceService';
 
 interface PropertyRow {
   title: string;
@@ -15,6 +16,7 @@ interface PropertyRow {
   street_number?: string;
   street_name: string;
   city: string;
+  city_district?: string; // Added city_district
   region?: string;
   zip_code?: string;
   country?: string;
@@ -23,6 +25,7 @@ interface PropertyRow {
   daily_rate?: number;
   bedrooms?: number;
   bathrooms?: number;
+  total_rooms?: number; // Added total_rooms
   max_guests?: number;
   square_meters?: number;
   checkin_time?: string;
@@ -47,17 +50,18 @@ interface ProcessingResult {
   skippedRows: number[];
 }
 
-// Enhanced data processing with graceful fallback
-export function processRowsWithFallback(
+// Enhanced data processing with graceful fallback and auto-inference
+export async function processRowsWithFallback(
   rawRows: any[], 
   columnMapping: Record<string, string>
-): ProcessingResult {
+): Promise<ProcessingResult> {
   const validRows: PropertyRow[] = [];
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
   const skippedRows: number[] = [];
 
-  rawRows.forEach((rawRow, index) => {
+  for (let index = 0; index < rawRows.length; index++) {
+    const rawRow = rawRows[index];
     const rowNumber = index + 1;
     const rowErrors: ValidationError[] = [];
     const rowWarnings: ValidationError[] = [];
@@ -65,12 +69,48 @@ export function processRowsWithFallback(
     try {
       // Apply column mapping and convert data
       const mappedRow = applyColumnMapping(rawRow, columnMapping);
-      const processedRow = validateAndConvertRow(mappedRow, rowNumber, rowErrors, rowWarnings);
+      let processedRow = validateAndConvertRow(mappedRow, rowNumber, rowErrors, rowWarnings);
 
       // Decide whether to include this row
       const criticalErrors = rowErrors.filter(e => e.severity === 'error');
       
       if (criticalErrors.length === 0) {
+        // Apply auto-inference for missing data
+        try {
+          const enhancedRow = await autoInferPropertyData(processedRow as PropertyData);
+          processedRow = { ...processedRow, ...enhancedRow };
+          
+          // Track auto-inferences as warnings for transparency
+          if (enhancedRow.city && !mappedRow.city) {
+            rowWarnings.push({
+              row: rowNumber,
+              field: 'city',
+              message: `Auto-inferred city "${enhancedRow.city}" from ZIP code "${enhancedRow.zip_code}"`,
+              severity: 'warning'
+            });
+          }
+          
+          if (enhancedRow.city_district && !mappedRow.city_district) {
+            rowWarnings.push({
+              row: rowNumber,
+              field: 'city_district',
+              message: `Auto-inferred district "${enhancedRow.city_district}" from location`,
+              severity: 'warning'
+            });
+          }
+          
+          if (enhancedRow.category !== mappedRow.category && enhancedRow.category) {
+            rowWarnings.push({
+              row: rowNumber,
+              field: 'category',
+              message: `Normalized category from "${mappedRow.category}" to "${enhancedRow.category}"`,
+              severity: 'warning'
+            });
+          }
+        } catch (inferenceError) {
+          console.warn('Auto-inference failed for row', rowNumber, inferenceError);
+        }
+
         // Add language detection for valid rows
         const languageDetection = detectLanguage([
           processedRow.title,
@@ -99,7 +139,7 @@ export function processRowsWithFallback(
       });
       skippedRows.push(rowNumber);
     }
-  });
+  }
 
   return {
     validRows,
@@ -135,8 +175,8 @@ function validateAndConvertRow(
 ): PropertyRow {
   const processedRow: Partial<PropertyRow> = {};
 
-  // Required fields validation
-  const requiredFields = ['title', 'apartment_type', 'category', 'street_name', 'city'];
+  // Required fields validation (updated based on new requirements)
+  const requiredFields = ['title', 'street_name']; // Only title and street_name are truly required now
   
   requiredFields.forEach(field => {
     const value = row[field];
@@ -153,8 +193,8 @@ function validateAndConvertRow(
     }
   });
 
-  // Optional string fields
-  const stringFields = ['description', 'street_number', 'region', 'zip_code', 'country', 'house_rules'];
+  // Optional string fields (added city_district and made city optional)
+  const stringFields = ['description', 'apartment_type', 'category', 'city', 'city_district', 'street_number', 'region', 'zip_code', 'country', 'house_rules'];
   stringFields.forEach(field => {
     const value = row[field];
     if (value !== undefined && value !== null && value !== '') {
@@ -162,13 +202,14 @@ function validateAndConvertRow(
     }
   });
 
-  // Numeric fields with validation and conversion
+  // Numeric fields with validation and conversion (added total_rooms)
   const numericFields = [
     { field: 'monthly_rent', min: 0, max: 50000 },
     { field: 'weekly_rate', min: 0, max: 15000 },
     { field: 'daily_rate', min: 0, max: 2000 },
     { field: 'bedrooms', min: 0, max: 20, integer: true },
     { field: 'bathrooms', min: 0, max: 10, integer: true },
+    { field: 'total_rooms', min: 1, max: 50, integer: true }, // Added total_rooms
     { field: 'max_guests', min: 1, max: 50, integer: true },
     { field: 'square_meters', min: 1, max: 2000 }
   ];
