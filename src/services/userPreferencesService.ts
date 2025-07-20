@@ -50,24 +50,23 @@ export interface FeatureUsageStats {
 }
 
 class UserPreferencesService {
+  // In-memory storage for fallback (TODO: Remove once migration is executed)
+  private fallbackStorage = new Map<string, UserPreferences>();
+
   /**
    * Get user preferences, create default if not exists
    */
   async getUserPreferences(userId: string): Promise<UserPreferences | null> {
     try {
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Create default preferences if none exist
-        return await this.createDefaultPreferences(userId);
+      // TODO: Remove fallback once migration is executed
+      console.log('Getting user preferences (fallback):', userId);
+      
+      let preferences = this.fallbackStorage.get(userId);
+      if (!preferences) {
+        preferences = await this.createDefaultPreferences(userId);
       }
-
-      if (error) throw error;
-      return data;
+      
+      return preferences;
     } catch (error) {
       console.error('Error getting user preferences:', error);
       return null;
@@ -79,7 +78,8 @@ class UserPreferencesService {
    */
   async createDefaultPreferences(userId: string): Promise<UserPreferences | null> {
     try {
-      const defaultPreferences = {
+      const defaultPreferences: UserPreferences = {
+        id: crypto.randomUUID(),
         user_id: userId,
         dashboard_layout: {
           widgetOrder: ['stats', 'quickActions', 'recentActivity', 'modules'],
@@ -104,17 +104,16 @@ class UserPreferencesService {
           showTooltips: true,
           animationsEnabled: true,
           sidebarCollapsed: false
-        }
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .insert(defaultPreferences)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      // TODO: Remove fallback once migration is executed
+      this.fallbackStorage.set(userId, defaultPreferences);
+      console.log('Created default preferences (fallback):', defaultPreferences);
+      
+      return defaultPreferences;
     } catch (error) {
       console.error('Error creating default preferences:', error);
       return null;
@@ -129,12 +128,18 @@ class UserPreferencesService {
     updates: Partial<Omit<UserPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
   ): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .update(updates)
-        .eq('user_id', userId);
-
-      if (error) throw error;
+      // TODO: Remove fallback once migration is executed
+      const existing = this.fallbackStorage.get(userId);
+      if (existing) {
+        const updated = {
+          ...existing,
+          ...updates,
+          updated_at: new Date().toISOString()
+        };
+        this.fallbackStorage.set(userId, updated);
+        console.log('Updated user preferences (fallback):', updates);
+      }
+      
       return true;
     } catch (error) {
       console.error('Error updating user preferences:', error);
@@ -372,15 +377,11 @@ class UserPreferencesService {
    */
   async resetToDefaults(userId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .delete()
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      // Create fresh default preferences
+      // TODO: Remove fallback once migration is executed
+      this.fallbackStorage.delete(userId);
       await this.createDefaultPreferences(userId);
+      console.log('Reset user preferences to defaults (fallback)');
+      
       return true;
     } catch (error) {
       console.error('Error resetting user preferences:', error);
