@@ -584,6 +584,41 @@ export type Database = {
           },
         ]
       }
+      floorplan_files: {
+        Row: {
+          created_at: string
+          file_url: string
+          id: string
+          parsed_dimensions: Json | null
+          parsed_rooms: Json | null
+          property_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_url: string
+          id?: string
+          parsed_dimensions?: Json | null
+          parsed_rooms?: Json | null
+          property_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_url?: string
+          id?: string
+          parsed_dimensions?: Json | null
+          parsed_rooms?: Json | null
+          property_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floorplan_files_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_duplicate_groups: {
         Row: {
           confidence_score: number
@@ -810,6 +845,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      media_category_feedback_log: {
+        Row: {
+          corrected_by: string
+          corrected_category: string
+          created_at: string
+          id: string
+          image_hash: string | null
+          original_prediction: string | null
+        }
+        Insert: {
+          corrected_by: string
+          corrected_category: string
+          created_at?: string
+          id?: string
+          image_hash?: string | null
+          original_prediction?: string | null
+        }
+        Update: {
+          corrected_by?: string
+          corrected_category?: string
+          created_at?: string
+          id?: string
+          image_hash?: string | null
+          original_prediction?: string | null
+        }
+        Relationships: []
       }
       merged_properties_tracking: {
         Row: {
@@ -1396,6 +1458,7 @@ export type Database = {
         | "storage"
         | "other"
       image_source: "manual_upload" | "bulk_import" | "scraper" | "ai_generated"
+      media_source: "manual_upload" | "bulk_import" | "scraper"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1542,6 +1605,7 @@ export const Constants = {
         "other",
       ],
       image_source: ["manual_upload", "bulk_import", "scraper", "ai_generated"],
+      media_source: ["manual_upload", "bulk_import", "scraper"],
     },
   },
 } as const
