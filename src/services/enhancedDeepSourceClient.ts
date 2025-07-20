@@ -162,7 +162,7 @@ class EnhancedDeepSourceClient {
    * Register webhook endpoint (for documentation purposes)
    */
   getWebhookUrl(): string {
-    return `${supabase.supabaseUrl}/functions/v1/enhanced-deepsource/webhook`;
+    return `https://xmaafgjtzupdndcavjiq.supabase.co/functions/v1/enhanced-deepsource/webhook`;
   }
 }
 
