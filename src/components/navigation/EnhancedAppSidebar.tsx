@@ -527,38 +527,6 @@ export function EnhancedAppSidebar() {
 
       {/* Enhanced Footer */}
       <SidebarFooter className="border-t bg-muted/20 p-4">
-        {!isCollapsed && (
-          <div className="space-y-3">
-            {/* User Info */}
-            <div className="flex items-center space-x-3 px-2 py-2 bg-background/50 rounded-lg">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
-                <span className="text-sm font-medium text-primary">
-                  {user?.email?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-foreground truncate">
-                  {user?.email?.split('@')[0]}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Premium Account
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-background/50 rounded-lg p-2 text-center">
-                <div className="font-medium text-foreground">12</div>
-                <div className="text-muted-foreground">Properties</div>
-              </div>
-              <div className="bg-background/50 rounded-lg p-2 text-center">
-                <div className="font-medium text-green-600">98%</div>
-                <div className="text-muted-foreground">AI Score</div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Sign Out Button */}
         <Tooltip>
