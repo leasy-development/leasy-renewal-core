@@ -43,6 +43,14 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    /* AI/Feature colors */
+    --ai-purple: 270 91% 65%;
+    --ai-purple-foreground: 0 0% 100%;
+    --ai-orange: 25 95% 53%;
+    --ai-orange-foreground: 0 0% 100%;
+    --ai-purple-bg: 270 100% 97%;
+    --ai-orange-bg: 25 100% 97%;
+
     --radius: 0.75rem;
 
     /* Enhanced spacing system */
@@ -108,8 +116,9 @@ All colors MUST be HSL.
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --primary-glow: 213 100% 75%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -126,6 +135,30 @@ All colors MUST be HSL.
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    --success: 142 71% 55%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 60%;
+    --warning-foreground: 0 0% 100%;
+
+    /* AI/Feature colors - dark mode */
+    --ai-purple: 270 91% 75%;
+    --ai-purple-foreground: 0 0% 100%;
+    --ai-orange: 25 95% 65%;
+    --ai-orange-foreground: 0 0% 100%;
+    --ai-purple-bg: 270 100% 8%;
+    --ai-orange-bg: 25 100% 8%;
+
+    /* Dark mode gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-hero: linear-gradient(135deg, hsl(217.2 91.2% 59.8%) 0%, hsl(213 100% 75%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(222.2 84% 4.9%) 0%, hsl(217.2 32.6% 17.5%) 100%);
+    --gradient-ai: linear-gradient(135deg, hsl(217.2 32.6% 17.5%) 0%, hsl(214 100% 15%) 100%);
+    --gradient-media: linear-gradient(135deg, hsl(217.2 32.6% 17.5%) 0%, hsl(270 100% 15%) 100%);
+    --gradient-admin: linear-gradient(135deg, hsl(217.2 32.6% 17.5%) 0%, hsl(25 100% 15%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.02));
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

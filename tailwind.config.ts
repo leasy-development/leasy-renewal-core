@@ -70,6 +70,16 @@ export default {
 				warning: {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
+				},
+				'ai-purple': {
+					DEFAULT: 'hsl(var(--ai-purple))',
+					foreground: 'hsl(var(--ai-purple-foreground))',
+					bg: 'hsl(var(--ai-purple-bg))'
+				},
+				'ai-orange': {
+					DEFAULT: 'hsl(var(--ai-orange))',
+					foreground: 'hsl(var(--ai-orange-foreground))',
+					bg: 'hsl(var(--ai-orange-bg))'
 				}
 			},
 			backgroundImage: {

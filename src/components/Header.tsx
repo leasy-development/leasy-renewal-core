@@ -3,6 +3,7 @@ import { Menu, X, User } from "lucide-react";
 import { useState } from "react";
 import { EarlyAccessModal } from "@/components/EarlyAccessModal";
 import { AuthModal } from "@/components/AuthModal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/components/AuthProvider";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -55,6 +56,7 @@ export const Header = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
+            <ThemeToggle />
             {user ? (
               <Button 
                 variant="ghost" 
@@ -105,6 +107,9 @@ export const Header = () => {
                 FAQ
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border">
+                <div className="flex justify-start pb-2">
+                  <ThemeToggle />
+                </div>
                 {user ? (
                   <Button 
                     variant="ghost" 

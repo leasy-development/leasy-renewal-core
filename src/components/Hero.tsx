@@ -61,10 +61,10 @@ export const Hero = () => {
               <div className="inline-flex items-center gap-2 bg-accent/40 text-foreground px-4 py-2 rounded-full text-sm font-medium border border-border/30 shadow-soft">
                 🔁 1-Click Sync
               </div>
-              <div className="inline-flex items-center gap-2 bg-purple-500/10 text-purple-600 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 shadow-soft">
+              <div className="inline-flex items-center gap-2 bg-ai-purple-bg text-ai-purple px-4 py-2 rounded-full text-sm font-medium border border-ai-purple/20 shadow-soft">
                 🧠 AI Description in 30 sec
               </div>
-              <div className="inline-flex items-center gap-2 bg-orange-500/10 text-orange-600 px-4 py-2 rounded-full text-sm font-medium border border-orange-200 shadow-soft">
+              <div className="inline-flex items-center gap-2 bg-ai-orange-bg text-ai-orange px-4 py-2 rounded-full text-sm font-medium border border-ai-orange/20 shadow-soft">
                 📸 Auto-Optimized Images
               </div>
             </div>
