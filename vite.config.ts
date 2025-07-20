@@ -47,23 +47,20 @@ export default defineConfig(({ mode }) => ({
   build: {
     // Production optimizations
     target: 'esnext',
-    minify: 'terser',
+    minify: 'esbuild', // Use esbuild instead of terser (faster and included by default)
     sourcemap: mode === 'development',
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          utils: ['date-fns', 'lodash'],
           charts: ['recharts'],
         },
       },
     },
-    terserOptions: {
-      compress: {
-        drop_console: mode === 'production',
-        drop_debugger: true,
-      },
+    // esbuild options for production optimization
+    esbuild: {
+      drop: mode === 'production' ? ['console', 'debugger'] : [],
     },
   },
   // PWA optimizations
