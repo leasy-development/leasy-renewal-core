@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { ErrorBoundary } from "@/lib/errorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { errorMonitoringService } from "@/services/errorMonitoringService";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import AddProperty from "./pages/AddProperty";
@@ -28,9 +30,19 @@ import MediaExtractor from "./pages/MediaExtractor";
 import AdminPromptManager from "./components/AdminPromptManager";
 import ImportCSV from "./pages/ImportCSV";
 import Duplicates from "./pages/Duplicates";
+import ErrorMonitoring from "./pages/ErrorMonitoring";
 
 const AppContent = () => {
   const { isUpdateAvailable, refreshCountdown } = useAutoRefresh();
+
+  // Start error monitoring when app loads
+  useEffect(() => {
+    errorMonitoringService.startMonitoring();
+    
+    return () => {
+      errorMonitoringService.stopMonitoring();
+    };
+  }, []);
 
   const handleRefreshNow = () => {
     window.location.reload();
@@ -127,6 +139,16 @@ const AppContent = () => {
           } 
         />
         <Route 
+          path="/error-monitoring" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ErrorMonitoring />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/media" 
           element={
             <ProtectedRoute>
@@ -215,6 +237,7 @@ const AppContent = () => {
     </>
   );
 };
+
 const App = () => {
   return (
     <ErrorBoundary>

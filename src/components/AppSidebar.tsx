@@ -13,7 +13,8 @@ import {
   Download,
   Image,
   Brain,
-  MessageSquare
+  MessageSquare,
+  Activity
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
@@ -56,6 +57,7 @@ const settingsItems = [
 ];
 
 const adminItems = [
+  { title: "Error Monitor", url: "/error-monitoring", icon: Activity },
   { title: "Duplicate Detection", url: "/admin/duplicates", icon: Shield },
   { title: "AI Settings", url: "/admin/ai-settings", icon: Brain },
   { title: "AI Prompts", url: "/admin/prompts", icon: MessageSquare },
