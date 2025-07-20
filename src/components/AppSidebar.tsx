@@ -14,7 +14,10 @@ import {
   Image,
   Brain,
   MessageSquare,
-  Activity
+  Activity,
+  Code2,
+  TestTube,
+  Map
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
@@ -58,9 +61,15 @@ const settingsItems = [
 
 const adminItems = [
   { title: "Error Monitor", url: "/error-monitoring", icon: Activity },
+  { title: "DeepSource", url: "/deepsource", icon: Code2 },
   { title: "Duplicate Detection", url: "/admin/duplicates", icon: Shield },
   { title: "AI Settings", url: "/admin/ai-settings", icon: Brain },
   { title: "AI Prompts", url: "/admin/prompts", icon: MessageSquare },
+];
+
+const devItems = [
+  { title: "Robustness Demo", url: "/demo/robustness", icon: TestTube },
+  { title: "Mapping Test", url: "/demo/mapping", icon: Map },
 ];
 
 export function AppSidebar() {
@@ -169,6 +178,27 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Developer Tools Section - Show only in development */}
+        {import.meta.env.DEV && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Developer</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {devItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavCls}>
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Settings Section */}
         <SidebarGroup>

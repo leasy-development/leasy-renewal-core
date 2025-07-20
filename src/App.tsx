@@ -41,6 +41,9 @@ import {
   AdminDuplicates,
   AdminAISettings,
   UpdatePassword,
+  DeepSourceDashboard,
+  RobustnessDemo,
+  MappingTest,
 } from "@/components/LazyRoutes";
 
 const AppContent = () => {
@@ -291,6 +294,47 @@ const AppContent = () => {
          />
          <Route path="/update-password" element={<Suspense fallback={<LoadingFallback />}><UpdatePassword /></Suspense>} />
          
+         {/* DeepSource Dashboard Route */}
+         <Route 
+           path="/deepsource" 
+           element={
+             <ProtectedRoute>
+               <DashboardLayout>
+                 <Suspense fallback={<LoadingFallback />}>
+                   <DeepSourceDashboard />
+                 </Suspense>
+               </DashboardLayout>
+             </ProtectedRoute>
+           } 
+         />
+         
+         {/* Demo and Testing Routes */}
+         <Route 
+           path="/demo/robustness" 
+           element={
+             <ProtectedRoute>
+               <DashboardLayout>
+                 <Suspense fallback={<LoadingFallback />}>
+                   <RobustnessDemo />
+                 </Suspense>
+               </DashboardLayout>
+             </ProtectedRoute>
+           } 
+         />
+         
+         <Route 
+           path="/demo/mapping" 
+           element={
+             <ProtectedRoute>
+               <DashboardLayout>
+                 <Suspense fallback={<LoadingFallback />}>
+                   <MappingTest />
+                 </Suspense>
+               </DashboardLayout>
+             </ProtectedRoute>
+           } 
+         />
+          
          {/* Debug routes (development only) */}
          {import.meta.env.DEV && (
            <Route 
