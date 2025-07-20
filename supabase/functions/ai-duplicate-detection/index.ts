@@ -183,9 +183,15 @@ serve(async (req) => {
     const { action, ...params } = await req.json();
 
     if (action === 'detect_duplicates') {
-      console.log('Starting AI-powered duplicate detection...');
+      const { user_id } = params;
       
-      // Get all properties
+      if (!user_id) {
+        throw new Error('user_id is required for duplicate detection');
+      }
+      
+      console.log(`Starting AI-powered duplicate detection for user: ${user_id}`);
+      
+      // Get properties for specific user only
       const { data: properties, error } = await supabase
         .from('properties')
         .select(`
@@ -193,6 +199,7 @@ serve(async (req) => {
           city, zip_code, monthly_rent, bedrooms, bathrooms, 
           square_meters, user_id
         `)
+        .eq('user_id', user_id)
         .neq('status', 'inactive');
 
       if (error) throw error;
@@ -216,7 +223,7 @@ serve(async (req) => {
           const prop1 = properties[i];
           const prop2 = properties[j];
           
-          // Allow detecting duplicates across all users including same user
+          // Compare properties within the same user's portfolio
 
           const pairKey = `${prop1.id}-${prop2.id}`;
           if (processedPairs.has(pairKey)) continue;

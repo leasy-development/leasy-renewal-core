@@ -117,10 +117,10 @@ function calculateTextSimilarity(text1?: string, text2?: string): number {
 }
 
 // Main duplicate detection function
-export async function detectGlobalDuplicates(): Promise<DuplicateMatch[]> {
+export async function detectGlobalDuplicates(userId?: string): Promise<DuplicateMatch[]> {
   try {
-    // Get all properties across all users
-    const { data: properties, error } = await supabase
+    // Get properties for specific user only
+    let query = supabase
       .from('properties')
       .select(`
         *,
@@ -131,6 +131,17 @@ export async function detectGlobalDuplicates(): Promise<DuplicateMatch[]> {
           title
         )
       `);
+
+    // Filter by user if provided, otherwise get current user's properties
+    if (userId) {
+      query = query.eq('user_id', userId);
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      query = query.eq('user_id', user.id);
+    }
+
+    const { data: properties, error } = await query;
 
     if (error) throw error;
     if (!properties || properties.length < 2) return [];
@@ -143,7 +154,7 @@ export async function detectGlobalDuplicates(): Promise<DuplicateMatch[]> {
         const prop1 = properties[i];
         const prop2 = properties[j];
 
-        // Allow detecting duplicates across all users including same user
+        // Compare properties within the same user's portfolio
 
         const reasons: string[] = [];
         let totalScore = 0;

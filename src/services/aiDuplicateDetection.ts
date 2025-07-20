@@ -20,9 +20,14 @@ export interface AIDetectionResponse {
 // AI-powered duplicate detection
 export async function detectDuplicatesWithAI(): Promise<AIDetectionResponse> {
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase.functions.invoke('ai-duplicate-detection', {
       body: { 
-        action: 'detect_duplicates'
+        action: 'detect_duplicates',
+        user_id: user.id
       },
     });
 
