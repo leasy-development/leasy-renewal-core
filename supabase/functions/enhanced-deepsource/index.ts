@@ -145,6 +145,100 @@ class EnhancedDeepSourceService {
     return response;
   }
 
+  // Generate mock analytics data (fallback)
+  private generateMockAnalytics(repositoryId: string, days: number): any {
+    debugLog('WARNING: Using mock analytics data - real API call failed or token not configured');
+    
+    return {
+      repository_id: repositoryId,
+      period_days: days,
+      total_issues_processed: 1247,
+      fix_success_rate: 0.78,
+      avg_processing_time_ms: 2340,
+      issues_by_category: {
+        'style': { count: 450, success_rate: 0.95 },
+        'bug-risk': { count: 380, success_rate: 0.72 },
+        'security': { count: 120, success_rate: 0.60 },
+        'performance': { count: 297, success_rate: 0.68 },
+      },
+      daily_stats: Array.from({ length: days }, (_, i) => ({
+        date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        issues_processed: Math.floor(Math.random() * 50) + 10,
+        fixes_applied: Math.floor(Math.random() * 35) + 5,
+      })),
+      debug_info: {
+        generated_at: new Date().toISOString(),
+        request_params: { repositoryId, days },
+        api_key_configured: !!DEEPSOURCE_API_KEY,
+        data_source: 'mock_fallback'
+      }
+    };
+  }
+
+  // Real DeepSource API call for analytics
+  private async fetchRealAnalytics(repositoryId: string, days: number): Promise<any> {
+    if (!DEEPSOURCE_API_KEY) {
+      debugLog('DEEPSOURCE_API_TOKEN not configured, using mock data');
+      return this.generateMockAnalytics(repositoryId, days);
+    }
+
+    try {
+      debugLog('Attempting real DeepSource API call', { repositoryId, days });
+      
+      // Parse repository ID to extract org/repo if it's in format "org/repo"
+      const repoParts = repositoryId.includes('/') ? repositoryId.split('/') : [repositoryId, repositoryId];
+      const [organization, repo] = repoParts;
+      
+      // Construct the real DeepSource API endpoint
+      const apiUrl = `${DEEPSOURCE_BASE_URL}/repos/${organization}/${repo}/issues/analytics/`;
+      debugLog('Making request to DeepSource API', { url: apiUrl });
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${DEEPSOURCE_API_KEY}`,
+          'Accept': 'application/json',
+          'User-Agent': 'Enhanced-DeepSource-Client/1.0'
+        }
+      });
+
+      debugLog('DeepSource API response status', { 
+        status: response.status, 
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (!response.ok) {
+        throw new Error(`DeepSource API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const analyticsData = await response.json();
+      debugLog('Successfully fetched real analytics from DeepSource API', { 
+        dataKeys: Object.keys(analyticsData),
+        repositoryId 
+      });
+
+      // Add debug info to indicate this is real data
+      return {
+        ...analyticsData,
+        debug_info: {
+          generated_at: new Date().toISOString(),
+          request_params: { repositoryId, days },
+          api_key_configured: true,
+          data_source: 'deepsource_api'
+        }
+      };
+
+    } catch (error) {
+      debugLog('DeepSource API call failed, falling back to mock data', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        repositoryId
+      });
+      
+      return this.generateMockAnalytics(repositoryId, days);
+    }
+  }
+
   async createBatchOperation(repositoryId: string, issues: any[]): Promise<string> {
     const batchId = crypto.randomUUID();
     const batch: BatchOperation = {
@@ -370,6 +464,7 @@ class EnhancedDeepSourceService {
     return this.batchOperations.get(batchId);
   }
 
+  // Updated getAnalytics method with real API integration
   async getAnalytics(repositoryId: string, days = 30): Promise<any> {
     debugLog('Analytics request received', { repositoryId, days });
     
@@ -378,40 +473,8 @@ class EnhancedDeepSourceService {
       throw new Error('Repository ID is required for analytics');
     }
 
-    // Check if DeepSource API token is available
-    if (!DEEPSOURCE_API_KEY) {
-      debugLog('WARNING: DEEPSOURCE_API_TOKEN not configured, using mock data');
-    }
-
-    debugLog('Generating mock analytics data');
-
-    // Return comprehensive mock analytics data
-    const analyticsData = {
-      repository_id: repositoryId,
-      period_days: days,
-      total_issues_processed: 1247,
-      fix_success_rate: 0.78,
-      avg_processing_time_ms: 2340,
-      issues_by_category: {
-        'style': { count: 450, success_rate: 0.95 },
-        'bug-risk': { count: 380, success_rate: 0.72 },
-        'security': { count: 120, success_rate: 0.60 },
-        'performance': { count: 297, success_rate: 0.68 },
-      },
-      daily_stats: Array.from({ length: days }, (_, i) => ({
-        date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        issues_processed: Math.floor(Math.random() * 50) + 10,
-        fixes_applied: Math.floor(Math.random() * 35) + 5,
-      })),
-      debug_info: {
-        generated_at: new Date().toISOString(),
-        request_params: { repositoryId, days },
-        api_key_configured: !!DEEPSOURCE_API_KEY
-      }
-    };
-
-    debugLog('Analytics data generated successfully', { dataKeys: Object.keys(analyticsData) });
-    return analyticsData;
+    // Try to fetch real analytics data from DeepSource API
+    return await this.fetchRealAnalytics(repositoryId, days);
   }
 
   // New debug/test methods
