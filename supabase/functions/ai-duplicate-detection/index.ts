@@ -216,8 +216,7 @@ serve(async (req) => {
           const prop1 = properties[i];
           const prop2 = properties[j];
           
-          // Skip same user properties for global detection
-          if (prop1.user_id === prop2.user_id) continue;
+          // Allow detecting duplicates across all users including same user
 
           const pairKey = `${prop1.id}-${prop2.id}`;
           if (processedPairs.has(pairKey)) continue;

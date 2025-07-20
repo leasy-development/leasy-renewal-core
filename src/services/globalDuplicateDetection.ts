@@ -143,8 +143,7 @@ export async function detectGlobalDuplicates(): Promise<DuplicateMatch[]> {
         const prop1 = properties[i];
         const prop2 = properties[j];
 
-        // Skip if same user (handled by user-scoped detection)
-        if (prop1.user_id === prop2.user_id) continue;
+        // Allow detecting duplicates across all users including same user
 
         const reasons: string[] = [];
         let totalScore = 0;
