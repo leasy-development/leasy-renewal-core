@@ -85,38 +85,62 @@ cp .env.local.example .env.local
 # Edit .env.local with your API keys
 ```
 
-### 2. Database Setup
-```bash
-# Option A: Use hosted Supabase (recommended)
-# Already configured in .env.local.example
+## 🚀 Quick Start
 
-# Option B: Local Supabase (development)
-npx supabase start
-npx supabase db reset --db-url "postgresql://localhost:54322/postgres"
+### Automated Setup (Recommended)
+```bash
+# Clone and setup everything automatically
+git clone https://github.com/leasy-development/leasy-renewal-core.git
+cd leasy-renewal-core
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 ```
 
-### 3. Development Server
+### Manual Setup
+1. Clone the repository:
 ```bash
-# Start development server
-pnpm dev
-
-# Run with type checking
-pnpm dev:check
-
-# Start with database monitoring
-pnpm dev:full
+git clone https://github.com/leasy-development/leasy-renewal-core.git
+cd leasy-renewal-core
 ```
 
-### 4. Production Build
+2. Install dependencies:
 ```bash
-# Run quality checks
-pnpm run build:check
+npm install
+```
 
+3. Copy and configure environment:
+```bash
+cp .env.local.example .env.local
+# Edit .env.local with your actual Supabase credentials
+```
+
+4. Run health checks:
+```bash
+chmod +x scripts/ai-healthcheck.sh
+./scripts/ai-healthcheck.sh
+```
+
+5. Start development server:
+```bash
+npm run dev
+```
+
+### 🔧 Production Build
+```bash
 # Build for production
-pnpm run build
+npm run build
 
-# Preview production build
-pnpm run preview
+# Preview production build locally
+npm run preview
+
+# Run deployment checks
+node scripts/ai-deployment-check.js
+```
+
+### 🛠️ System Repair
+```bash
+# Run automated system repair if issues occur
+node scripts/system-repair.js
 ```
 
 ## 📁 Project Structure
