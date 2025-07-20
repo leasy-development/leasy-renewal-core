@@ -848,31 +848,31 @@ export type Database = {
       }
       mapping_training_log: {
         Row: {
-          confidence: number
-          created_at: string
+          created_at: string | null
           id: string
+          mapping_type: string | null
+          match_confidence: number | null
           source_field: string
           target_field: string
-          updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
-          confidence?: number
-          created_at?: string
+          created_at?: string | null
           id?: string
+          mapping_type?: string | null
+          match_confidence?: number | null
           source_field: string
           target_field: string
-          updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
-          confidence?: number
-          created_at?: string
+          created_at?: string | null
           id?: string
+          mapping_type?: string | null
+          match_confidence?: number | null
           source_field?: string
           target_field?: string
-          updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
