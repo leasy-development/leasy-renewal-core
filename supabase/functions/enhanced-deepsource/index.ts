@@ -7,6 +7,9 @@ const WEBHOOK_SECRET = Deno.env.get('DEEPSOURCE_WEBHOOK_SECRET');
 const DEEPSOURCE_BASE_URL = 'https://deepsource.io/api/v1';
 const GITHUB_BASE_URL = 'https://api.github.com';
 
+// Default repository - can be overridden by request
+const DEFAULT_REPOSITORY = 'demo-repo-1';
+
 // Debug logging helper
 const debugLog = (message: string, data?: any) => {
   const timestamp = new Date().toISOString();
@@ -190,9 +193,9 @@ class EnhancedDeepSourceService {
       return { organization: parts[0], repo: parts[1] };
     }
     
-    // If no separator, assume it's a simple repo name and use it for both
-    debugLog('WARNING: Repository ID missing organization, using as both org and repo', { repositoryId });
-    return { organization: repositoryId, repo: repositoryId };
+    // If no separator, treat as demo repo and use fallback
+    debugLog('WARNING: Repository ID appears to be a demo identifier, using mock data');
+    return { organization: 'demo', repo: repositoryId };
   }
 
   // Validate API response schema
@@ -217,6 +220,57 @@ class EnhancedDeepSourceService {
     }
   }
 
+  // Test DeepSource API connectivity
+  private async testDeepSourceConnection(repositoryId: string): Promise<{ success: boolean; message: string; statusCode?: number }> {
+    if (!DEEPSOURCE_API_KEY) {
+      return { success: false, message: 'DEEPSOURCE_API_TOKEN not configured' };
+    }
+
+    try {
+      const { organization, repo } = this.parseRepositoryId(repositoryId);
+      
+      // Handle demo repositories differently
+      if (organization === 'demo') {
+        return { success: false, message: 'Demo repository - using mock data' };
+      }
+
+      // Test with repository info endpoint first (lighter than analytics)
+      const repoInfoUrl = `${DEEPSOURCE_BASE_URL}/repos/${organization}/${repo}/`;
+      debugLog('Testing DeepSource API connectivity', { url: repoInfoUrl });
+      
+      const response = await fetch(repoInfoUrl, {
+        method: 'GET',
+        headers: {
+          Authorization: `token ${DEEPSOURCE_API_KEY}`,
+          Accept: 'application/json',
+          'User-Agent': 'Enhanced-DeepSource-Client/1.0'
+        }
+      });
+
+      debugLog('DeepSource connectivity test response', { 
+        status: response.status, 
+        statusText: response.statusText,
+        url: repoInfoUrl
+      });
+
+      if (response.ok) {
+        return { success: true, message: 'DeepSource API connection successful' };
+      } else {
+        const errorText = await response.text();
+        return { 
+          success: false, 
+          message: `DeepSource API error: ${response.status} ${response.statusText} - ${errorText}`,
+          statusCode: response.status
+        };
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: `DeepSource connection failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      };
+    }
+  }
+
   // Real DeepSource API call for analytics
   private async fetchRealAnalytics(repositoryId: string, days: number): Promise<any> {
     if (!DEEPSOURCE_API_KEY) {
@@ -231,11 +285,24 @@ class EnhancedDeepSourceService {
       const { organization, repo } = this.parseRepositoryId(repositoryId);
       debugLog('Parsed repository components', { organization, repo });
       
-      // Use hardcoded DeepSource API endpoint for Luca2489/leasy repository
-      const apiUrl = 'https://deepsource.io/api/v1/repos/Luca2489/leasy/issues/analytics/';
-      debugLog('Making request to DeepSource API', { url: apiUrl });
+      // Handle demo repositories
+      if (organization === 'demo') {
+        debugLog('Demo repository detected, using mock data');
+        return this.generateMockAnalytics(repositoryId, days);
+      }
+
+      // First test the connection
+      const connectionTest = await this.testDeepSourceConnection(repositoryId);
+      if (!connectionTest.success) {
+        debugLog('Connection test failed', connectionTest);
+        return this.generateMockAnalytics(repositoryId, days);
+      }
+
+      // Try to get analytics data
+      const analyticsUrl = `${DEEPSOURCE_BASE_URL}/repos/${organization}/${repo}/issues/analytics/`;
+      debugLog('Making request to DeepSource Analytics API', { url: analyticsUrl });
       
-      const response = await fetch(apiUrl, {
+      const response = await fetch(analyticsUrl, {
         method: 'GET',
         headers: {
           Authorization: `token ${DEEPSOURCE_API_KEY}`,
@@ -244,7 +311,7 @@ class EnhancedDeepSourceService {
         }
       });
 
-      debugLog('DeepSource API response status', { 
+      debugLog('DeepSource Analytics API response status', { 
         status: response.status, 
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries())
@@ -252,18 +319,18 @@ class EnhancedDeepSourceService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`DeepSource API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`DeepSource Analytics API request failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const analyticsData = await response.json();
-      debugLog('Raw API response received', { 
+      debugLog('Raw Analytics API response received', { 
         dataKeys: Object.keys(analyticsData),
         repositoryId 
       });
 
       // Validate the response schema
       if (!this.validateAnalyticsResponse(analyticsData)) {
-        debugLog('WARNING: API response failed validation, using mock data');
+        debugLog('WARNING: Analytics API response failed validation, using mock data');
         return this.generateMockAnalytics(repositoryId, days);
       }
 
@@ -516,13 +583,13 @@ class EnhancedDeepSourceService {
     return this.batchOperations.get(batchId);
   }
 
-  // Updated getAnalytics method with real API integration
+  // Updated getAnalytics method with configurable repository
   async getAnalytics(repositoryId: string, days = 30): Promise<any> {
     debugLog('Analytics request received', { repositoryId, days });
     
     if (!repositoryId) {
-      debugLog('ERROR: Repository ID is missing');
-      throw new Error('Repository ID is required for analytics');
+      debugLog('ERROR: Repository ID is missing, using default');
+      repositoryId = DEFAULT_REPOSITORY;
     }
 
     // Try to fetch real analytics data from DeepSource API
@@ -599,20 +666,11 @@ const handler = async (req: Request): Promise<Response> => {
         debugLog('Processing analytics request');
         const { repository_id, days } = requestBody;
         
-        if (!repository_id) {
-          debugLog('ERROR: Missing repository_id for analytics');
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: 'Missing repository_id parameter',
-            debug: 'Analytics requires a repository_id'
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        debugLog('Calling service.getAnalytics', { repository_id, days });
-        const analytics = await service.getAnalytics(repository_id, days || 30);
+        // Use default repository if none provided
+        const repositoryId = repository_id || DEFAULT_REPOSITORY;
+        
+        debugLog('Calling service.getAnalytics', { repository_id: repositoryId, days });
+        const analytics = await service.getAnalytics(repositoryId, days || 30);
         debugLog('Analytics retrieved successfully');
 
         return new Response(JSON.stringify(analytics), {

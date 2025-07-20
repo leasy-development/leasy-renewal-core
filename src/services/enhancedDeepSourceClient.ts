@@ -46,6 +46,7 @@ export interface AnalyticsData {
     generated_at: string;
     request_params: any;
     api_key_configured: boolean;
+    data_source: string;
   };
 }
 
@@ -253,8 +254,10 @@ class EnhancedDeepSourceClient {
 
   /**
    * Get analytics data for a repository
+   * @param repositoryId - Repository identifier (e.g., "owner/repo" or "demo-repo-1")
+   * @param days - Number of days to include in analytics (default: 30)
    */
-  async getAnalytics(repositoryId: string, days = 30): Promise<AnalyticsData> {
+  async getAnalytics(repositoryId: string = 'demo-repo-1', days = 30): Promise<AnalyticsData> {
     console.log('Getting analytics data:', { repositoryId, days });
     
     const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {

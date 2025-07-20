@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { enhancedDeepSourceClient, ConnectivityTestResult, AnalyticsData } from '@/services/enhancedDeepSourceClient';
@@ -12,7 +14,9 @@ import {
   AlertCircle, 
   Clock, 
   Zap,
-  RefreshCw 
+  RefreshCw,
+  Settings,
+  Github
 } from 'lucide-react';
 
 export function DeepSourceDebugPanel() {
@@ -20,6 +24,7 @@ export function DeepSourceDebugPanel() {
   const [analyticsResult, setAnalyticsResult] = useState<AnalyticsData | null>(null);
   const [isTestingConnectivity, setIsTestingConnectivity] = useState(false);
   const [isTestingAnalytics, setIsTestingAnalytics] = useState(false);
+  const [repositoryId, setRepositoryId] = useState('demo-repo-1');
 
   const testConnectivity = async () => {
     setIsTestingConnectivity(true);
@@ -38,7 +43,7 @@ export function DeepSourceDebugPanel() {
   const testAnalytics = async () => {
     setIsTestingAnalytics(true);
     try {
-      const result = await enhancedDeepSourceClient.getAnalytics('demo-repo-1', 30);
+      const result = await enhancedDeepSourceClient.getAnalytics(repositoryId, 30);
       setAnalyticsResult(result);
       toast.success('Analytics test successful!');
     } catch (error) {
@@ -67,6 +72,34 @@ export function DeepSourceDebugPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <Label htmlFor="repository">Repository Configuration</Label>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                id="repository"
+                placeholder="e.g., owner/repo or demo-repo-1"
+                value={repositoryId}
+                onChange={(e) => setRepositoryId(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                onClick={() => setRepositoryId('demo-repo-1')}
+                variant="outline"
+                size="sm"
+              >
+                Demo
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Use format "owner/repository" for real GitHub repositories or "demo-repo-1" for mock data
+            </p>
+          </div>
+
+          <Separator />
+
           <div className="flex flex-wrap gap-3">
             <Button
               onClick={testConnectivity}
@@ -187,8 +220,19 @@ export function DeepSourceDebugPanel() {
               <CheckCircle className="h-5 w-5 text-blue-600" />
               Analytics Test Results
             </CardTitle>
-            <CardDescription>
-              Analytics data retrieval test for repository: {analyticsResult.repository_id}
+            <CardDescription className="flex items-center gap-2">
+              <span>Analytics data for repository: {analyticsResult.repository_id}</span>
+              {analyticsResult.debug_info?.data_source === 'deepsource_api' && (
+                <Badge variant="default" className="ml-2">
+                  <Github className="h-3 w-3 mr-1" />
+                  Real Data
+                </Badge>
+              )}
+              {analyticsResult.debug_info?.data_source === 'mock_fallback' && (
+                <Badge variant="secondary" className="ml-2">
+                  Mock Data
+                </Badge>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -236,9 +280,10 @@ export function DeepSourceDebugPanel() {
               <div>
                 <Separator />
                 <h4 className="font-semibold mb-2">Debug Information</h4>
-                <div className="bg-muted p-3 rounded text-sm font-mono">
+                <div className="bg-muted p-3 rounded text-sm font-mono space-y-1">
                   <div>Generated: {new Date(analyticsResult.debug_info.generated_at).toLocaleString()}</div>
                   <div>API Key Configured: {analyticsResult.debug_info.api_key_configured ? 'Yes' : 'No'}</div>
+                  <div>Data Source: <Badge variant="outline" className="ml-1">{analyticsResult.debug_info.data_source}</Badge></div>
                   <div>Request Params: {JSON.stringify(analyticsResult.debug_info.request_params)}</div>
                 </div>
               </div>
