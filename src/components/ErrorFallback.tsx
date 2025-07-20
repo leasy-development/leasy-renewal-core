@@ -1,13 +1,9 @@
 
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { FallbackProps } from 'react-error-boundary';
 
-interface ErrorFallbackProps {
-  error: Error;
-  resetError: () => void;
-}
-
-export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
+export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
     <div className="min-h-[400px] flex items-center justify-center">
       <div className="text-center space-y-4 max-w-md">
@@ -16,7 +12,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
         <p className="text-muted-foreground">
           {error.message || 'An unexpected error occurred'}
         </p>
-        <Button onClick={resetError} className="mt-4">
+        <Button onClick={resetErrorBoundary} className="mt-4">
           <RefreshCw className="mr-2 h-4 w-4" />
           Try again
         </Button>
