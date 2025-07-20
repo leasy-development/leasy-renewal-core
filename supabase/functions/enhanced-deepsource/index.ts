@@ -238,8 +238,8 @@ class EnhancedDeepSourceService {
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Token ${DEEPSOURCE_API_KEY}`,
-          'Accept': 'application/json',
+          Authorization: `token ${DEEPSOURCE_API_KEY}`,
+          Accept: 'application/json',
           'User-Agent': 'Enhanced-DeepSource-Client/1.0'
         }
       });
