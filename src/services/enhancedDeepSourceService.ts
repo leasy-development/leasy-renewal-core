@@ -21,6 +21,24 @@ export class EnhancedDeepSourceService {
     return EnhancedDeepSourceService.instance;
   }
 
+  private async logCodeFix(issue: DeepSourceIssue, status: string, fixSummary?: string, errorDetails?: string) {
+    try {
+      await supabase.from('code_fix_log').insert({
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        issue_code: issue.code,
+        file_path: issue.file_path,
+        line_number: issue.line_number,
+        status,
+        fix_summary: fixSummary,
+        error_details: errorDetails,
+        deepsource_issue_id: issue.id,
+        fix_method: 'auto'
+      });
+    } catch (error) {
+      console.warn('Failed to log code fix:', error);
+    }
+  }
+
   /**
    * Comprehensive bulk fix for all DeepSource issues
    */
@@ -65,11 +83,14 @@ export class EnhancedDeepSourceService {
           if (result.success) {
             autoFixCount++;
             autoFixedFiles.add(issue.file_path);
+            await this.logCodeFix(issue, 'fixed', result.message);
           } else {
             errors.push(`Auto-fix failed for issue ${issue.id}: ${result.message}`);
+            await this.logCodeFix(issue, 'error', undefined, result.message);
           }
         } catch (error) {
           errors.push(`Auto-fix failed for issue ${issue.id}: ${error}`);
+          await this.logCodeFix(issue, 'error', undefined, String(error));
         }
       }
 

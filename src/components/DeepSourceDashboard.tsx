@@ -16,12 +16,16 @@ import {
   Settings,
   Clock,
   Download,
-  Loader2
+  Loader2,
+  X,
+  Eye,
+  Wrench
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { deepSourceService, DeepSourceIssue, DeepSourceRepository, RefreshStatus, AutoFixResult } from '@/services/deepSourceService';
 import { DeepSourceRefreshStatus } from './DeepSourceRefreshStatus';
 import { toast } from 'sonner';
+import { supabase } from "@/integrations/supabase/client";
 
 export function DeepSourceDashboard() {
   const [repositories, setRepositories] = useState<DeepSourceRepository[]>([]);
@@ -38,6 +42,24 @@ export function DeepSourceDashboard() {
     message: 'Ready'
   });
   const [isDemoMode, setIsDemoMode] = useState(false);
+
+  const logCodeFix = async (issue: DeepSourceIssue, status: string, fixSummary?: string, errorDetails?: string) => {
+    try {
+      await supabase.from('code_fix_log').insert({
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        issue_code: issue.code,
+        file_path: issue.file_path,
+        line_number: issue.line_number,
+        status,
+        fix_summary: fixSummary,
+        error_details: errorDetails,
+        deepsource_issue_id: issue.id,
+        fix_method: status === 'ignored' ? 'ignored' : (status === 'manual_fix' ? 'manual' : 'auto')
+      });
+    } catch (error) {
+      console.warn('Failed to log code fix:', error);
+    }
+  };
 
   useEffect(() => {
     loadRepositories();
@@ -138,13 +160,17 @@ export function DeepSourceDashboard() {
         setAutoFixProgress(Math.round(((i + 1) / autoFixableIssues.length) * 100));
         
         try {
-          const result = await deepSourceService.applyAutoFix(issue);
+          const result: AutoFixResult = await deepSourceService.applyAutoFix(issue);
           if (result.success) {
             fixedCount++;
             totalFilesModified += result.files_modified || 1;
+            await logCodeFix(issue, 'fixed', result.message);
+          } else {
+            await logCodeFix(issue, 'error', undefined, result.message);
           }
         } catch (error) {
           console.warn(`Failed to fix issue ${issue.id}:`, error);
+          await logCodeFix(issue, 'error', undefined, String(error));
         }
       }
 
@@ -181,17 +207,45 @@ export function DeepSourceDashboard() {
           ? `Demo: Successfully simulated fixing "${issue.title}"`
           : `Fixed: ${issue.title}`;
         toast.success(message);
+        await logCodeFix(issue, 'fixed', result.message);
         
         // Reload issues to reflect the fix
         await loadIssues();
       } else {
         toast.error(`Failed to fix: ${issue.title}`);
+        await logCodeFix(issue, 'error', undefined, result.message);
       }
     } catch (error) {
       toast.error(`Error fixing: ${issue.title}`);
       console.error('Single auto-fix error:', error);
+      await logCodeFix(issue, 'error', undefined, String(error));
     } finally {
       setAutoFixingMessage('');
+    }
+  };
+  const handleIgnoreIssue = async (issue: DeepSourceIssue) => {
+    try {
+      await logCodeFix(issue, 'ignored', 'Issue ignored by user');
+      toast.success(`Ignored issue: ${issue.title}`);
+      
+      // Remove from current issues list
+      setIssues(issues.filter(i => i.id !== issue.id));
+    } catch (error) {
+      toast.error('Failed to ignore issue');
+      console.error('Error ignoring issue:', error);
+    }
+  };
+
+  const handleManualFix = async (issue: DeepSourceIssue) => {
+    try {
+      await logCodeFix(issue, 'manual_fix', 'Issue marked for manual fixing');
+      toast.info(`Issue marked for manual fix: ${issue.title}`);
+      
+      // Optionally remove from list or mark as in progress
+      setIssues(issues.map(i => i.id === issue.id ? { ...i, status: 'manual_fixing' } : i));
+    } catch (error) {
+      toast.error('Failed to mark issue for manual fix');
+      console.error('Error marking manual fix:', error);
     }
   };
 
@@ -469,21 +523,43 @@ export function DeepSourceDashboard() {
                     )}
                   </div>
 
-                  {issue.autoFixable && autoFixEnabled && (
+                  <div className="flex items-center space-x-2">
+                    {issue.autoFixable && autoFixEnabled && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSingleAutoFix(issue)}
+                        disabled={isAutoFixing || autoFixingMessage !== ''}
+                      >
+                        {autoFixingMessage && autoFixingMessage.includes(issue.title) ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <Zap className="h-3 w-3 mr-1" />
+                        )}
+                        Auto Fix
+                      </Button>
+                    )}
+                    
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleSingleAutoFix(issue)}
-                      disabled={isAutoFixing || autoFixingMessage !== ''}
+                      onClick={() => handleManualFix(issue)}
+                      disabled={isAutoFixing}
                     >
-                      {autoFixingMessage && autoFixingMessage.includes(issue.title) ? (
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      ) : (
-                        <Zap className="h-3 w-3 mr-1" />
-                      )}
-                      Fix
+                      <Wrench className="h-3 w-3 mr-1" />
+                      Manual Fix
                     </Button>
-                  )}
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleIgnoreIssue(issue)}
+                      disabled={isAutoFixing}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Ignore
+                    </Button>
+                  </div>
                 </div>
               ))}
               

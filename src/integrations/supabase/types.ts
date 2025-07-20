@@ -328,6 +328,51 @@ export type Database = {
         }
         Relationships: []
       }
+      code_fix_log: {
+        Row: {
+          created_at: string
+          deepsource_issue_id: string | null
+          error_details: string | null
+          file_path: string
+          fix_method: string | null
+          fix_summary: string | null
+          id: string
+          issue_code: string
+          line_number: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deepsource_issue_id?: string | null
+          error_details?: string | null
+          file_path: string
+          fix_method?: string | null
+          fix_summary?: string | null
+          id?: string
+          issue_code: string
+          line_number?: number | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deepsource_issue_id?: string | null
+          error_details?: string | null
+          file_path?: string
+          fix_method?: string | null
+          fix_summary?: string | null
+          id?: string
+          issue_code?: string
+          line_number?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       dashboard_widgets: {
         Row: {
           config: Json

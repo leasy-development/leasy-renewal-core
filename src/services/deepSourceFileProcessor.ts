@@ -284,7 +284,7 @@ export class DeepSourceFileProcessor {
     const seen = new Set<string>();
     const duplicates: string[] = [];
 
-    rules.forEach(rule => {
+    rules.forEach((rule: string) => {
       const normalized = rule.replace(/\s+/g, ' ').trim();
       if (seen.has(normalized)) {
         duplicates.push(rule);
