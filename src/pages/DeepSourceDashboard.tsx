@@ -118,8 +118,66 @@ const DeepSourceDashboard = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await loadData();
+    await checkDeepSourceStatus();
     setIsRefreshing(false);
     toast.success('Code quality data refreshed');
+  };
+
+  const checkDeepSourceStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('deepsource-integration', {
+        method: 'GET',
+        body: new URLSearchParams({ action: 'status' })
+      });
+
+      if (error) throw error;
+
+      console.log('DeepSource status:', data);
+    } catch (error) {
+      console.error('Failed to check DeepSource status:', error);
+    }
+  };
+
+  const triggerScan = async () => {
+    try {
+      setIsRefreshing(true);
+      const { data, error } = await supabase.functions.invoke('deepsource-integration', {
+        method: 'GET',
+        body: new URLSearchParams({ action: 'scan' })
+      });
+
+      if (error) throw error;
+
+      toast.success('Code quality scan initiated');
+      await loadData();
+    } catch (error) {
+      console.error('Failed to trigger scan:', error);
+      toast.error('Failed to trigger code quality scan');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const fixIssue = async (issueId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('deepsource-integration', {
+        method: 'POST',
+        body: { action: 'fix_issue', issue_id: issueId }
+      });
+
+      if (error) throw error;
+
+      if (data.fixed) {
+        toast.success('Issue fixed successfully');
+      } else {
+        toast.warning('Issue requires manual intervention');
+      }
+      
+      await loadData();
+    } catch (error) {
+      console.error('Failed to fix issue:', error);
+      toast.error('Failed to fix issue');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -173,10 +231,16 @@ const DeepSourceDashboard = () => {
             <p className="text-muted-foreground">Code quality monitoring and automated fixes</p>
           </div>
         </div>
-        <Button onClick={handleRefresh} disabled={isRefreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh Data
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={triggerScan} disabled={isRefreshing} variant="outline">
+            <Zap className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Trigger Scan
+          </Button>
+          <Button onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -294,15 +358,28 @@ const DeepSourceDashboard = () => {
                                 {log.error_details}
                               </AlertDescription>
                             </Alert>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
+                           )}
+                           {(log.status === 'pending' || log.status === 'error') && (
+                             <div className="mt-2">
+                               <Button 
+                                 size="sm" 
+                                 variant="outline"
+                                 onClick={() => fixIssue(log.id)}
+                                 className="text-xs"
+                               >
+                                 <Settings className="h-3 w-3 mr-1" />
+                                 Try Auto-Fix
+                               </Button>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </ScrollArea>
+               )}
+             </CardContent>
+           </Card>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
