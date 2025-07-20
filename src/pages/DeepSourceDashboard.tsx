@@ -125,10 +125,7 @@ const DeepSourceDashboard = () => {
 
   const checkDeepSourceStatus = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('deepsource-integration', {
-        method: 'GET',
-        body: new URLSearchParams({ action: 'status' })
-      });
+      const { data, error } = await supabase.functions.invoke('deepsource-integration?action=status');
 
       if (error) throw error;
 
@@ -141,10 +138,7 @@ const DeepSourceDashboard = () => {
   const triggerScan = async () => {
     try {
       setIsRefreshing(true);
-      const { data, error } = await supabase.functions.invoke('deepsource-integration', {
-        method: 'GET',
-        body: new URLSearchParams({ action: 'scan' })
-      });
+      const { data, error } = await supabase.functions.invoke('deepsource-integration?action=scan');
 
       if (error) throw error;
 
