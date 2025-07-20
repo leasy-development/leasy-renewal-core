@@ -1,19 +1,38 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import App from "./App";
+import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/lib/theme";
+import "./index.css";
+import "@/lib/pwa";
+import './lib/i18n';
 
-// Absolutely minimal test - no external dependencies
+// Create QueryClient with React Query v5 configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    },
+    mutations: {
+      retry: 0,
+    }
+  },
+});
+
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Root element not found");
 
 ReactDOM.createRoot(rootElement).render(
-  React.createElement('div', { 
-    style: { 
-      padding: '20px',
-      backgroundColor: '#f0f0f0',
-      minHeight: '100vh'
-    }
-  }, 
-    React.createElement('h1', null, 'Basic React Test'),
-    React.createElement('p', null, 'If you see this, React is working.'),
-    React.createElement('p', null, 'No external dependencies loaded.'))
+  <React.StrictMode>
+    <ThemeProvider defaultTheme="system" storageKey="theme">
+      <QueryClientProvider client={queryClient}>
+        <App />
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
+  </React.StrictMode>
 );
