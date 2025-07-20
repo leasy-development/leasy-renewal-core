@@ -23,9 +23,9 @@ import {
 } from 'lucide-react';
 
 // Import the enhanced components
-import { EnhancedDashboardStats } from '@/components/dashboard/EnhancedDashboardStats';
+import { DashboardStats } from '@/components/dashboard/EnhancedDashboardStats';
 import { DashboardModules } from '@/components/dashboard/DashboardModules';
-import { EnhancedQuickActions } from '@/components/dashboard/EnhancedQuickActions';
+import { QuickActions } from '@/components/dashboard/EnhancedQuickActions';
 
 const OptimizedDashboard = () => {
   const { user } = useAuth();
@@ -192,7 +192,7 @@ const OptimizedDashboard = () => {
           <Separator />
 
           {/* Enhanced Dashboard Stats */}
-          <EnhancedDashboardStats
+          <DashboardStats
             propertyStats={propertyStats}
             aiStats={aiStats}
             syncStats={syncStats}
@@ -202,7 +202,7 @@ const OptimizedDashboard = () => {
           <Separator />
 
           {/* Enhanced Quick Actions */}
-          <EnhancedQuickActions />
+          <QuickActions />
 
           <Separator />
 
