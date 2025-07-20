@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/lib/theme";
 import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
 
@@ -37,10 +38,12 @@ console.log("🚀 Rendering with verified React 19 + React Query v5...");
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-      <Toaster />
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="system" storageKey="theme">
+      <QueryClientProvider client={queryClient}>
+        <App />
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );
 
