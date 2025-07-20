@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Home, 
   BarChart3, 
@@ -95,16 +96,16 @@ interface NavSection {
 }
 
 // Enhanced Navigation Structure
-const navigationSections: NavSection[] = [
+const getNavigationSections = (t: any): NavSection[] => [
   {
-    label: "Übersicht",
-    description: "Hauptfunktionen und Dashboard",
+    label: t('nav.dashboard'),
+    description: "Main functions and dashboard",
     items: [
       { 
-        title: "Dashboard", 
+        title: t('nav.dashboard'), 
         url: "/dashboard", 
         icon: Home,
-        description: "Zentrale Übersicht und Statistiken",
+        description: "Central overview and statistics",
         shortcut: "⌘D"
       },
       { 
@@ -256,12 +257,15 @@ export function EnhancedAppSidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   const currentPath = location.pathname;
   
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    "Übersicht": true,
-    "AI-Powered Tools": true
+    [t('nav.dashboard')]: true,
+    [t('ai.tools')]: true
   });
+  
+  const navigationSections = getNavigationSections(t);
   
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   
