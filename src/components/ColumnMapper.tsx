@@ -9,6 +9,7 @@ import { CheckCircle, AlertCircle, Wand2, RotateCcw, Database, Loader, Lightbulb
 import * as fuzzball from 'fuzzball';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { MappingTrainingLog, ColumnMapping, MappingSuggestion } from '@/types/mapping';
 
 // Standard field mappings for property data
 const STANDARD_FIELDS = [
@@ -79,13 +80,7 @@ const HEADER_PATTERNS: Record<string, string[]> = {
   floorplan_urls: ['floorplan_urls', 'floorplan', 'layout', 'plan']
 };
 
-interface ColumnMapping {
-  csvHeader: string;
-  mappedField: string | null;
-  confidence: number;
-  isAutoMapped: boolean;
-  isSuggestion?: boolean;
-}
+// Interface moved to types/mapping.ts
 
 interface ColumnMapperProps {
   csvHeaders: string[];
@@ -99,11 +94,11 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
   const [isLoading, setIsLoading] = useState(true);
 
   // Load saved mappings from database for the current user
-  const loadUserMappings = async (): Promise<Record<string, { field: string; confidence: number; isSuggestion?: boolean }>> => {
+  const loadUserMappings = async (): Promise<Record<string, MappingSuggestion>> => {
     try {
       const { data, error } = await supabase
         .from('mapping_training_log')
-        .select('source_field, target_field, confidence')
+        .select('source_field, target_field, match_confidence, mapping_type')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -111,13 +106,14 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
         return {};
       }
 
-      const mappingDict: Record<string, { field: string; confidence: number; isSuggestion?: boolean }> = {};
+      const mappingDict: Record<string, MappingSuggestion> = {};
       data?.forEach(row => {
         const normalizedSource = row.source_field.toLowerCase().replace(/[^a-z0-9]/g, '_');
         mappingDict[normalizedSource] = {
           field: row.target_field,
-          confidence: row.confidence,
-          isSuggestion: true
+          confidence: row.match_confidence / 100, // Convert to decimal
+          isSuggestion: true,
+          mappingType: row.mapping_type as any
         };
       });
 
@@ -137,7 +133,7 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
       // Check if mapping already exists
       const { data: existing, error: checkError } = await supabase
         .from('mapping_training_log')
-        .select('id, confidence')
+        .select('id, match_confidence')
         .eq('source_field', documentField)
         .eq('target_field', mappedField)
         .eq('user_id', user.id)
@@ -152,8 +148,7 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
         await supabase
           .from('mapping_training_log')
           .update({ 
-            confidence: Math.min(existing.confidence + 0.1, 1.0),
-            updated_at: new Date().toISOString()
+            match_confidence: Math.min(existing.match_confidence + 10, 100) // Increment by 10%
           })
           .eq('id', existing.id);
       } else {
@@ -164,7 +159,8 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
             user_id: user.id,
             source_field: documentField,
             target_field: mappedField,
-            confidence: 1.0
+            match_confidence: 100,
+            mapping_type: 'manual'
           });
       }
     } catch (error) {
