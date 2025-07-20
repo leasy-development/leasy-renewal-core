@@ -311,12 +311,12 @@ export function ComprehensiveDeepSourceDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {Object.entries(enhancedStats.processing.fileTypes).map(([type, count]) => (
-                      <div key={type} className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold">{count}</div>
-                        <div className="text-sm text-muted-foreground">.{type} files</div>
-                      </div>
-                    ))}
+                     {Object.entries(enhancedStats.processing.fileTypes).map(([type, count]) => (
+                       <div key={type} className="text-center p-4 border rounded-lg">
+                         <div className="text-2xl font-bold">{Number(count)}</div>
+                         <div className="text-sm text-muted-foreground">.{type} files</div>
+                       </div>
+                     ))}
                   </div>
                 </CardContent>
               </Card>
@@ -367,20 +367,20 @@ export function ComprehensiveDeepSourceDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {Object.entries(enhancedStats.byCategory).map(([category, count]) => (
-                      <div key={category} className="flex items-center justify-between">
-                        <span className="capitalize">{category.replace('-', ' ')}</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-32 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${(count / enhancedStats.total) * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium">{count}</span>
-                        </div>
-                      </div>
-                    ))}
+                     {Object.entries(enhancedStats.byCategory).map(([category, count]) => (
+                       <div key={category} className="flex items-center justify-between">
+                         <span className="capitalize">{category.replace('-', ' ')}</span>
+                         <div className="flex items-center space-x-2">
+                           <div className="w-32 bg-gray-200 rounded-full h-2">
+                             <div 
+                               className="bg-blue-600 h-2 rounded-full" 
+                               style={{ width: `${(Number(count) / enhancedStats.total) * 100}%` }}
+                             />
+                           </div>
+                           <span className="text-sm font-medium">{Number(count)}</span>
+                         </div>
+                       </div>
+                     ))}
                   </div>
                 </CardContent>
               </Card>
