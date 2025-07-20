@@ -7,5 +7,3 @@ verify_jwt = false
 [functions.process-bulk-media]
 verify_jwt = false
 
-[functions.enhanced-deepsource]
-verify_jwt = false
