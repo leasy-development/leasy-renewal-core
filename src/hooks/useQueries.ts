@@ -211,7 +211,7 @@ export function useDeleteProperty() {
 }
 
 // Analytics data query
-export function useAnalytics(timeRange: string = '7d') {
+export function useAnalytics(timeRange = '7d') {
   const { user } = useAuth();
   
   return useQuery({

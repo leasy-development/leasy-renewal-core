@@ -51,7 +51,7 @@ const CATEGORY_PATTERNS: CategoryMapping[] = [
  * @param description Property description
  * @returns Predicted category with confidence score
  */
-export function autoCategorizeProperty(title: string = '', description: string = ''): {
+export function autoCategorizeProperty(title = '', description = ''): {
   category: string | null;
   confidence: number;
   reasoning: string;
@@ -112,7 +112,7 @@ export function autoCategorizeProperty(title: string = '', description: string =
  * @param description Property description
  * @returns Predicted apartment type
  */
-export function autoDetectApartmentType(title: string = '', description: string = ''): {
+export function autoDetectApartmentType(title = '', description = ''): {
   type: string | null;
   confidence: number;
   reasoning: string;

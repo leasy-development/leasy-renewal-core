@@ -72,7 +72,7 @@ const AIOptimizationDashboard = () => {
     }
   };
 
-  const handleBulkOptimization = async (onlyMissing: boolean = true) => {
+  const handleBulkOptimization = async (onlyMissing = true) => {
     if (!user) return;
     
     const propertiesToProcess = selectedProperties.length > 0 

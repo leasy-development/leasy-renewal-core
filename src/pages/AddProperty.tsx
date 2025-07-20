@@ -202,7 +202,7 @@ const AddProperty = () => {
     }
   }, [isEditing, id, user, toast]);
 
-  const handleSave = async (status: string = 'draft') => {
+  const handleSave = async (status = 'draft') => {
     if (!user) {
       toast({
         title: "Authentication Error",

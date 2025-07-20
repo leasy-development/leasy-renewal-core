@@ -131,7 +131,7 @@ export class AIBulkOptimizationService {
     userId: string,
     types: string[],
     targetLanguage?: 'en' | 'de',
-    priority: number = 0
+    priority = 0
   ): Promise<void> {
     const queueItems = types.map(type => ({
       property_id: propertyId,
@@ -156,7 +156,7 @@ export class AIBulkOptimizationService {
     propertyIds: string[],
     userId: string,
     types: string[],
-    onlyMissing: boolean = true
+    onlyMissing = true
   ): Promise<{ queued: number; skipped: number }> {
     let queued = 0;
     let skipped = 0;
@@ -213,7 +213,7 @@ export class AIBulkOptimizationService {
   /**
    * Process queued AI generation tasks using the new bulk optimization endpoint
    */
-  static async processQueue(userId: string, maxItems: number = 10): Promise<void> {
+  static async processQueue(userId: string, maxItems = 10): Promise<void> {
     // Get queued items for the user
     const { data: queueItems, error } = await supabase
       .from('ai_generation_queue')

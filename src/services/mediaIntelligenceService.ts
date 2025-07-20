@@ -87,7 +87,7 @@ export const IMAGE_CATEGORIES: { value: ImageCategory; label: string; priority: 
 
 class MediaIntelligenceService {
   // Check for duplicate images based on hash
-  async checkDuplicate(propertyId: string, hashValue: string, hashType: string = 'phash'): Promise<ImageHash | null> {
+  async checkDuplicate(propertyId: string, hashValue: string, hashType = 'phash'): Promise<ImageHash | null> {
     try {
       const { data, error } = await supabase
         .from('image_hashes')
@@ -155,7 +155,7 @@ class MediaIntelligenceService {
     imageUrl: string,
     predictedCategory: ImageCategory,
     confidenceScore: number,
-    isAutoAssigned: boolean = true
+    isAutoAssigned = true
   ): Promise<ImageCategorization | null> {
     try {
       const { data, error } = await supabase

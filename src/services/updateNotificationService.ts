@@ -11,8 +11,8 @@ export interface UpdateNotificationPayload {
 
 // Function to broadcast update notification to all connected users
 export const broadcastUpdateNotification = async (
-  message: string = 'Neue App-Version verfügbar',
-  delay: number = 5,
+  message = 'Neue App-Version verfügbar',
+  delay = 5,
   version?: string
 ): Promise<void> => {
   try {
