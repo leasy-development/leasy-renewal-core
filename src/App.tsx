@@ -28,10 +28,11 @@ import AdminAISettings from "./pages/AdminAISettings";
 import TranslationDashboard from "./pages/TranslationDashboard";
 import AIOptimizationDashboard from "./pages/AIOptimizationDashboard";
 import MediaExtractor from "./pages/MediaExtractor";
-import AdminPromptManager from "./components/AdminPromptManager";
+import AdminPromptManager from "@/components/AdminPromptManager";
 import ImportCSV from "./pages/ImportCSV";
 import Duplicates from "./pages/Duplicates";
 import ErrorMonitoring from "./pages/ErrorMonitoring";
+import DeepSource from "./pages/DeepSource";
 import { CacheStatusDebugger } from "./components/CacheStatusDebugger";
 
 const AppContent = () => {
@@ -146,6 +147,16 @@ const AppContent = () => {
             <ProtectedRoute>
               <DashboardLayout>
                 <ErrorMonitoring />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/deepsource" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <DeepSource />
               </DashboardLayout>
             </ProtectedRoute>
           } 
