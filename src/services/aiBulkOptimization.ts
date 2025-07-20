@@ -211,9 +211,9 @@ export class AIBulkOptimizationService {
   }
 
   /**
-   * Process queued AI generation tasks
+   * Process queued AI generation tasks using the new bulk optimization endpoint
    */
-  static async processQueue(userId: string, maxItems: number = 5): Promise<void> {
+  static async processQueue(userId: string, maxItems: number = 10): Promise<void> {
     // Get queued items for the user
     const { data: queueItems, error } = await supabase
       .from('ai_generation_queue')
@@ -226,46 +226,80 @@ export class AIBulkOptimizationService {
 
     if (error) throw error;
 
-    if (!queueItems || queueItems.length === 0) return;
+    if (!queueItems || queueItems.length === 0) {
+      console.log('No queued items to process');
+      return;
+    }
 
-    // Process each item
-    for (const item of queueItems) {
+    console.log(`Processing ${queueItems.length} queued items...`);
+
+    // Group items by property and type for efficient processing
+    const groupedItems = queueItems.reduce((acc, item) => {
+      const key = item.property_id;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(item);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Process each property's queue items
+    for (const [propertyId, items] of Object.entries(groupedItems)) {
       try {
-        // Mark as in progress
+        // Mark items as in progress
+        const itemIds = items.map(item => item.id);
         await supabase
           .from('ai_generation_queue')
           .update({ status: 'in_progress', updated_at: new Date().toISOString() })
-          .eq('id', item.id);
+          .in('id', itemIds);
 
-        // Call the AI generation service
-        const result = await this.generateContent(item as AIGenerationQueueItem);
+        // Extract types and languages from queue items
+        const types = [...new Set(items.map(item => item.type))];
+        const targetLanguages = [...new Set(items.map(item => item.target_language).filter(Boolean))];
 
-        // Mark as completed and store result
+        // Call the bulk optimization function
+        const { data: result, error: processError } = await supabase.functions.invoke('process-bulk-optimization', {
+          body: {
+            user_id: userId,
+            property_ids: [propertyId],
+            types,
+            only_missing: false, // Process all requested types
+            target_language: targetLanguages.length === 1 ? targetLanguages[0] : undefined,
+            batch_size: 1
+          }
+        });
+
+        if (processError) {
+          throw processError;
+        }
+
+        // Mark items as completed
         await supabase
           .from('ai_generation_queue')
           .update({ 
             status: 'completed', 
-            result,
+            result: result,
             updated_at: new Date().toISOString() 
           })
-          .eq('id', item.id);
+          .in('id', itemIds);
 
-        // Update the property with the generated content
-        await this.updatePropertyWithResult(item as AIGenerationQueueItem, result);
+        console.log(`✅ Processed ${items.length} queue items for property ${propertyId}`);
 
       } catch (error) {
-        console.error(`Failed to process queue item ${item.id}:`, error);
+        console.error(`Failed to process queue items for property ${propertyId}:`, error);
         
-        // Mark as failed and increment attempts
-        await supabase
-          .from('ai_generation_queue')
-          .update({ 
-            status: item.attempts + 1 >= item.max_attempts ? 'failed' : 'queued',
-            attempts: item.attempts + 1,
-            error_message: error instanceof Error ? error.message : 'Unknown error',
-            updated_at: new Date().toISOString() 
-          })
-          .eq('id', item.id);
+        // Mark items as failed and increment attempts
+        for (const item of items) {
+          await supabase
+            .from('ai_generation_queue')
+            .update({ 
+              status: item.attempts + 1 >= item.max_attempts ? 'failed' : 'queued',
+              attempts: item.attempts + 1,
+              error_message: error instanceof Error ? error.message : 'Unknown error',
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', item.id);
+        }
       }
     }
   }
