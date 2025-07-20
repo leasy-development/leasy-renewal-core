@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 import { ErrorBoundary } from "@/lib/errorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -31,6 +32,7 @@ import AdminPromptManager from "./components/AdminPromptManager";
 import ImportCSV from "./pages/ImportCSV";
 import Duplicates from "./pages/Duplicates";
 import ErrorMonitoring from "./pages/ErrorMonitoring";
+import { CacheStatusDebugger } from "./components/CacheStatusDebugger";
 
 const AppContent = () => {
   const { isUpdateAvailable, refreshCountdown } = useAutoRefresh();
@@ -231,8 +233,23 @@ const AppContent = () => {
            } 
          />
          <Route path="/update-password" element={<UpdatePassword />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
+         
+         {/* Debug routes (development only) */}
+         {import.meta.env.DEV && (
+           <Route 
+             path="/debug/cache" 
+             element={
+               <ProtectedRoute>
+                 <DashboardLayout>
+                   <CacheStatusDebugger />
+                 </DashboardLayout>
+               </ProtectedRoute>
+             } 
+           />
+         )}
+         
+         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
@@ -240,17 +257,19 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+    <EnhancedErrorBoundary>
+      <ErrorBoundary>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </EnhancedErrorBoundary>
   );
 };
 
