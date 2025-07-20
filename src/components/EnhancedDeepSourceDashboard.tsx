@@ -21,6 +21,7 @@ import {
 import { enhancedDeepSourceClient, BatchStatusResponse, AnalyticsData } from "@/services/enhancedDeepSourceClient";
 import { deepSourceService, DeepSourceIssue } from "@/services/deepSourceService";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const EnhancedDeepSourceDashboard: React.FC = () => {
   const [issues, setIssues] = useState<DeepSourceIssue[]>([]);
@@ -29,6 +30,26 @@ export const EnhancedDeepSourceDashboard: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [selectedRepo, setSelectedRepo] = useState('demo-repo-1');
   const { toast } = useToast();
+
+  // Record telemetry for fallback usage
+  const recordFallbackTelemetry = async (error: any, repositoryId: string) => {
+    try {
+      await supabase.from('system_telemetry').insert({
+        event_type: 'deepsource_analytics_fallback',
+        event_data: {
+          repository_id: repositoryId,
+          error_type: error?.name || 'Unknown',
+          error_message: error?.message || 'Enhanced analytics unavailable',
+          fallback_triggered: true,
+          timestamp: new Date().toISOString()
+        },
+        user_id: null // Anonymous telemetry
+      });
+    } catch (telemetryError) {
+      // Silent fail for telemetry - don't disrupt user experience
+      console.debug('Telemetry recording failed:', telemetryError);
+    }
+  };
 
   // Generate mock analytics data based on actual issues
   const generateMockAnalytics = (repositoryId: string, issuesData: DeepSourceIssue[]): AnalyticsData => {
@@ -71,6 +92,8 @@ export const EnhancedDeepSourceDashboard: React.FC = () => {
         setAnalytics(analyticsData);
       } catch (analyticsError) {
         console.warn('Enhanced analytics not available, using fallback:', analyticsError);
+        // Record telemetry for fallback usage
+        await recordFallbackTelemetry(analyticsError, selectedRepo);
         // Use the mock analytics generator with actual issues data
         setAnalytics(generateMockAnalytics(selectedRepo, issuesData));
       }
