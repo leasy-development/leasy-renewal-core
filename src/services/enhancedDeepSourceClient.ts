@@ -58,8 +58,9 @@ class EnhancedDeepSourceClient {
    * Start a batch fix operation for multiple issues
    */
   async startBatchFix(repositoryId: string, issues: any[]): Promise<BatchFixResponse> {
-    const { data, error } = await supabase.functions.invoke('enhanced-deepsource/batch-fix', {
+    const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
       body: {
+        action: 'batch-fix',
         repository_id: repositoryId,
         issues: issues,
       },
@@ -73,8 +74,11 @@ class EnhancedDeepSourceClient {
    * Get the status of a batch operation
    */
   async getBatchStatus(batchId: string): Promise<BatchStatusResponse> {
-    const { data, error } = await supabase.functions.invoke('enhanced-deepsource/batch-status', {
-      body: { batch_id: batchId },
+    const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
+      body: { 
+        action: 'batch-status',
+        batch_id: batchId 
+      },
     });
 
     if (error) throw error;
@@ -118,8 +122,14 @@ class EnhancedDeepSourceClient {
   get github(): GitHubIntegration {
     return {
       createBranch: async (owner: string, repo: string, branchName: string, baseBranch = 'main') => {
-        const { data, error } = await supabase.functions.invoke('enhanced-deepsource/create-branch', {
-          body: { owner, repo, branch_name: branchName, base_branch: baseBranch },
+        const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
+          body: { 
+            action: 'create-branch',
+            owner, 
+            repo, 
+            branch_name: branchName, 
+            base_branch: baseBranch 
+          },
         });
 
         if (error) throw error;
@@ -127,8 +137,16 @@ class EnhancedDeepSourceClient {
       },
 
       commitFix: async (owner: string, repo: string, branch: string, filePath: string, content: string, message: string) => {
-        const { data, error } = await supabase.functions.invoke('enhanced-deepsource/commit-fix', {
-          body: { owner, repo, branch, file_path: filePath, content, message },
+        const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
+          body: { 
+            action: 'commit-fix',
+            owner, 
+            repo, 
+            branch, 
+            file_path: filePath, 
+            content, 
+            message 
+          },
         });
 
         if (error) throw error;
@@ -136,8 +154,16 @@ class EnhancedDeepSourceClient {
       },
 
       createPullRequest: async (owner: string, repo: string, head: string, base: string, title: string, body: string) => {
-        const { data, error } = await supabase.functions.invoke('enhanced-deepsource/create-pr', {
-          body: { owner, repo, head, base, title, body },
+        const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
+          body: { 
+            action: 'create-pr',
+            owner, 
+            repo, 
+            head, 
+            base, 
+            title, 
+            body 
+          },
         });
 
         if (error) throw error;
@@ -150,8 +176,12 @@ class EnhancedDeepSourceClient {
    * Get analytics data for a repository
    */
   async getAnalytics(repositoryId: string, days = 30): Promise<AnalyticsData> {
-    const { data, error } = await supabase.functions.invoke('enhanced-deepsource/analytics', {
-      body: { repository_id: repositoryId, days },
+    const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
+      body: { 
+        action: 'analytics',
+        repository_id: repositoryId, 
+        days 
+      },
     });
 
     if (error) throw error;

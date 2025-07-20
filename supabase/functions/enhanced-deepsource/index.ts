@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -358,8 +357,18 @@ class EnhancedDeepSourceService {
   }
 
   async getAnalytics(repositoryId: string, days = 30): Promise<any> {
-    // In a real implementation, this would query the database
-    // For now, return mock analytics data
+    console.log(`Getting analytics for repository: ${repositoryId}, days: ${days}`);
+    
+    if (!repositoryId) {
+      throw new Error('Repository ID is required for analytics');
+    }
+
+    // Check if DeepSource API token is available
+    if (!DEEPSOURCE_API_KEY) {
+      console.warn('DEEPSOURCE_API_TOKEN not configured, using mock data');
+    }
+
+    // Return comprehensive mock analytics data
     return {
       repository_id: repositoryId,
       period_days: days,
@@ -388,11 +397,23 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const url = new URL(req.url);
-  const path = url.pathname.split('/').pop();
-
   try {
-    switch (path) {
+    const requestBody = await req.json();
+    console.log('Enhanced DeepSource request:', requestBody);
+    
+    const { action } = requestBody;
+
+    if (!action) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Action parameter is required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    switch (action) {
       case 'webhook': {
         if (req.method !== 'POST') {
           return new Response('Method not allowed', { status: 405 });
@@ -421,14 +442,16 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case 'batch-fix': {
-        if (req.method !== 'POST') {
-          return new Response('Method not allowed', { status: 405 });
-        }
-
-        const { repository_id, issues } = await req.json();
+        const { repository_id, issues } = requestBody;
         
         if (!repository_id || !issues?.length) {
-          return new Response('Missing repository_id or issues', { status: 400 });
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Missing repository_id or issues' 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
         const batchId = await service.createBatchOperation(repository_id, issues);
@@ -444,14 +467,27 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case 'batch-status': {
-        const batchId = url.searchParams.get('batch_id');
-        if (!batchId) {
-          return new Response('Missing batch_id parameter', { status: 400 });
+        const { batch_id } = requestBody;
+        
+        if (!batch_id) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Missing batch_id parameter' 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
-        const status = service.getBatchStatus(batchId);
+        const status = service.getBatchStatus(batch_id);
         if (!status) {
-          return new Response('Batch not found', { status: 404 });
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Batch not found' 
+          }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
         return new Response(JSON.stringify(status), {
@@ -461,11 +497,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case 'create-branch': {
-        if (req.method !== 'POST') {
-          return new Response('Method not allowed', { status: 405 });
+        const { owner, repo, branch_name, base_branch } = requestBody;
+        
+        if (!owner || !repo || !branch_name) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Missing required parameters: owner, repo, branch_name' 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
-
-        const { owner, repo, branch_name, base_branch } = await req.json();
         
         await service.createGitHubBranch(owner, repo, branch_name, base_branch);
 
@@ -479,11 +521,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case 'commit-fix': {
-        if (req.method !== 'POST') {
-          return new Response('Method not allowed', { status: 405 });
+        const { owner, repo, branch, file_path, content, message } = requestBody;
+        
+        if (!owner || !repo || !branch || !file_path || !content || !message) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Missing required parameters for commit-fix' 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
-
-        const { owner, repo, branch, file_path, content, message } = await req.json();
         
         await service.commitFix(owner, repo, branch, file_path, content, message);
 
@@ -497,13 +545,19 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case 'create-pr': {
-        if (req.method !== 'POST') {
-          return new Response('Method not allowed', { status: 405 });
-        }
-
-        const { owner, repo, head, base, title, body } = await req.json();
+        const { owner, repo, head, base, title, body } = requestBody;
         
-        const prUrl = await service.createPullRequest(owner, repo, head, base, title, body);
+        if (!owner || !repo || !head || !base || !title) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Missing required parameters for create-pr' 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+        const prUrl = await service.createPullRequest(owner, repo, head, base, title, body || '');
 
         return new Response(JSON.stringify({
           success: true,
@@ -515,14 +569,19 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case 'analytics': {
-        const repositoryId = url.searchParams.get('repository_id');
-        const days = parseInt(url.searchParams.get('days') || '30');
+        const { repository_id, days } = requestBody;
         
-        if (!repositoryId) {
-          return new Response('Missing repository_id parameter', { status: 400 });
+        if (!repository_id) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Missing repository_id parameter' 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
 
-        const analytics = await service.getAnalytics(repositoryId, days);
+        const analytics = await service.getAnalytics(repository_id, days || 30);
 
         return new Response(JSON.stringify(analytics), {
           status: 200,
@@ -531,7 +590,13 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       default: {
-        return new Response('Not found', { status: 404 });
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Unknown action: ${action}` 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
   } catch (error) {

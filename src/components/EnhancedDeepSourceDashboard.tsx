@@ -82,14 +82,19 @@ export const EnhancedDeepSourceDashboard: React.FC = () => {
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
+      console.log('Loading data for repository:', selectedRepo);
+      
       // Load basic issues first
       const issuesData = await deepSourceService.getRepositoryIssues(selectedRepo);
       setIssues(issuesData);
+      console.log('Issues loaded:', issuesData.length);
       
-      // Try to load analytics, but don't fail if it doesn't work
+      // Try to load analytics
       try {
+        console.log('Attempting to load enhanced analytics...');
         const analyticsData = await enhancedDeepSourceClient.getAnalytics(selectedRepo);
         setAnalytics(analyticsData);
+        console.log('Enhanced analytics loaded successfully');
         
         toast({
           title: "Dashboard Loaded",
@@ -102,9 +107,10 @@ export const EnhancedDeepSourceDashboard: React.FC = () => {
         // Use the mock analytics generator with actual issues data
         setAnalytics(generateMockAnalytics(selectedRepo, issuesData));
         
+        // Show a single, informative toast about the fallback
         toast({
-          title: "Dashboard Loaded",
-          description: "Repository data loaded. Using fallback analytics due to service unavailability.",
+          title: "Dashboard Loaded with Fallback",
+          description: "Repository data loaded. Enhanced analytics unavailable, using local data.",
           variant: "default",
         });
       }
@@ -125,6 +131,7 @@ export const EnhancedDeepSourceDashboard: React.FC = () => {
 
     setIsLoading(true);
     try {
+      console.log('Starting batch fix for', issues.length, 'issues');
       // Start batch operation
       const response = await enhancedDeepSourceClient.startBatchFix(selectedRepo, issues);
       
@@ -136,7 +143,10 @@ export const EnhancedDeepSourceDashboard: React.FC = () => {
       // Monitor progress
       const finalStatus = await enhancedDeepSourceClient.waitForBatchCompletion(
         response.batch_id,
-        (status) => setBatchStatus(status)
+        (status) => {
+          console.log('Batch status update:', status);
+          setBatchStatus(status);
+        }
       );
 
       setBatchStatus(finalStatus);
