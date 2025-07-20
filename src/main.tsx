@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/lib/theme";
 import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
+import './lib/i18n'; // Initialize i18n
 
 // Simple React validation
 if (!React) {

@@ -9,6 +9,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 interface EnhancedDashboardLayoutProps {
   children: React.ReactNode;
@@ -82,8 +83,11 @@ export function EnhancedDashboardLayout({
                   <span className="sr-only">Einstellungen</span>
                 </Button>
 
-                {/* Theme Toggle */}
-                <ThemeToggle />
+                {/* Language & Theme Toggle */}
+                <div className="flex items-center space-x-2">
+                  <LanguageToggle />
+                  <ThemeToggle />
+                </div>
 
                 {/* User Info */}
                 <div className="hidden md:flex items-center space-x-3 pl-3 border-l">
@@ -197,7 +201,10 @@ export function CompactDashboardLayout({
                 <SidebarTrigger className="h-7 w-7" />
                 <QuickActionMenu />
               </div>
-              <ThemeToggle />
+              <div className="flex items-center space-x-2">
+                <LanguageToggle />
+                <ThemeToggle />
+              </div>
             </div>
           </header>
           
