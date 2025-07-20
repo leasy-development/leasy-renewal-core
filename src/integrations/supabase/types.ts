@@ -103,6 +103,48 @@ export type Database = {
           },
         ]
       }
+      ai_model_versions: {
+        Row: {
+          accuracy_score: number | null
+          created_at: string
+          deployment_date: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          model_type: string
+          precision_score: number | null
+          recall_score: number | null
+          training_samples_count: number | null
+          version_name: string
+        }
+        Insert: {
+          accuracy_score?: number | null
+          created_at?: string
+          deployment_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          model_type?: string
+          precision_score?: number | null
+          recall_score?: number | null
+          training_samples_count?: number | null
+          version_name: string
+        }
+        Update: {
+          accuracy_score?: number | null
+          created_at?: string
+          deployment_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          model_type?: string
+          precision_score?: number | null
+          recall_score?: number | null
+          training_samples_count?: number | null
+          version_name?: string
+        }
+        Relationships: []
+      }
       ai_prompt_versions: {
         Row: {
           created_at: string
@@ -211,6 +253,53 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categorization_feedback: {
+        Row: {
+          confidence_before: number | null
+          corrected_category: Database["public"]["Enums"]["image_category"]
+          created_at: string
+          feedback_type: string | null
+          id: string
+          image_categorization_id: string | null
+          original_prediction:
+            | Database["public"]["Enums"]["image_category"]
+            | null
+          user_id: string
+        }
+        Insert: {
+          confidence_before?: number | null
+          corrected_category: Database["public"]["Enums"]["image_category"]
+          created_at?: string
+          feedback_type?: string | null
+          id?: string
+          image_categorization_id?: string | null
+          original_prediction?:
+            | Database["public"]["Enums"]["image_category"]
+            | null
+          user_id: string
+        }
+        Update: {
+          confidence_before?: number | null
+          corrected_category?: Database["public"]["Enums"]["image_category"]
+          created_at?: string
+          feedback_type?: string | null
+          id?: string
+          image_categorization_id?: string | null
+          original_prediction?:
+            | Database["public"]["Enums"]["image_category"]
+            | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categorization_feedback_image_categorization_id_fkey"
+            columns: ["image_categorization_id"]
+            isOneToOne: false
+            referencedRelation: "image_categorization"
             referencedColumns: ["id"]
           },
         ]
@@ -451,6 +540,50 @@ export type Database = {
         }
         Relationships: []
       }
+      floorplan_analysis: {
+        Row: {
+          analysis_version: string | null
+          confidence_score: number | null
+          created_at: string
+          dimensions_data: Json | null
+          extracted_text: string | null
+          floorplan_url: string
+          id: string
+          property_id: string | null
+          room_data: Json | null
+        }
+        Insert: {
+          analysis_version?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          dimensions_data?: Json | null
+          extracted_text?: string | null
+          floorplan_url: string
+          id?: string
+          property_id?: string | null
+          room_data?: Json | null
+        }
+        Update: {
+          analysis_version?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          dimensions_data?: Json | null
+          extracted_text?: string | null
+          floorplan_url?: string
+          id?: string
+          property_id?: string | null
+          room_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "floorplan_analysis_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_duplicate_groups: {
         Row: {
           confidence_score: number
@@ -527,6 +660,150 @@ export type Database = {
           },
           {
             foreignKeyName: "global_duplicate_properties_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      image_audit_trail: {
+        Row: {
+          created_at: string
+          health_check_results: Json | null
+          id: string
+          image_url: string
+          metadata: Json | null
+          original_filename: string | null
+          property_id: string | null
+          source_type: Database["public"]["Enums"]["image_source"]
+          source_url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          health_check_results?: Json | null
+          id?: string
+          image_url: string
+          metadata?: Json | null
+          original_filename?: string | null
+          property_id?: string | null
+          source_type: Database["public"]["Enums"]["image_source"]
+          source_url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          health_check_results?: Json | null
+          id?: string
+          image_url?: string
+          metadata?: Json | null
+          original_filename?: string | null
+          property_id?: string | null
+          source_type?: Database["public"]["Enums"]["image_source"]
+          source_url?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_audit_trail_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      image_categorization: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          final_category: Database["public"]["Enums"]["image_category"] | null
+          id: string
+          image_url: string
+          is_auto_assigned: boolean | null
+          model_version: string | null
+          predicted_category:
+            | Database["public"]["Enums"]["image_category"]
+            | null
+          property_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          final_category?: Database["public"]["Enums"]["image_category"] | null
+          id?: string
+          image_url: string
+          is_auto_assigned?: boolean | null
+          model_version?: string | null
+          predicted_category?:
+            | Database["public"]["Enums"]["image_category"]
+            | null
+          property_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          final_category?: Database["public"]["Enums"]["image_category"] | null
+          id?: string
+          image_url?: string
+          is_auto_assigned?: boolean | null
+          model_version?: string | null
+          predicted_category?:
+            | Database["public"]["Enums"]["image_category"]
+            | null
+          property_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_categorization_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      image_hashes: {
+        Row: {
+          created_at: string
+          file_size: number | null
+          hash_type: string
+          hash_value: string
+          height: number | null
+          id: string
+          image_url: string
+          property_id: string | null
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          file_size?: number | null
+          hash_type?: string
+          hash_value: string
+          height?: number | null
+          id?: string
+          image_url: string
+          property_id?: string | null
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          file_size?: number | null
+          hash_type?: string
+          hash_value?: string
+          height?: number | null
+          id?: string
+          image_url?: string
+          property_id?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_hashes_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -747,7 +1024,9 @@ export type Database = {
       }
       property_media: {
         Row: {
+          ai_category: Database["public"]["Enums"]["image_category"] | null
           category: string | null
+          confidence_score: number | null
           created_at: string
           id: string
           media_type: string
@@ -757,7 +1036,9 @@ export type Database = {
           url: string
         }
         Insert: {
+          ai_category?: Database["public"]["Enums"]["image_category"] | null
           category?: string | null
+          confidence_score?: number | null
           created_at?: string
           id?: string
           media_type: string
@@ -767,7 +1048,9 @@ export type Database = {
           url: string
         }
         Update: {
+          ai_category?: Database["public"]["Enums"]["image_category"] | null
           category?: string | null
+          confidence_score?: number | null
           created_at?: string
           id?: string
           media_type?: string
@@ -1096,6 +1379,23 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      image_category:
+        | "main_bedroom"
+        | "second_bedroom"
+        | "third_bedroom"
+        | "main_bathroom"
+        | "second_bathroom"
+        | "kitchen"
+        | "living_room"
+        | "dining_room"
+        | "balcony"
+        | "terrace"
+        | "outside"
+        | "entrance"
+        | "hallway"
+        | "storage"
+        | "other"
+      image_source: "manual_upload" | "bulk_import" | "scraper" | "ai_generated"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1224,6 +1524,24 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      image_category: [
+        "main_bedroom",
+        "second_bedroom",
+        "third_bedroom",
+        "main_bathroom",
+        "second_bathroom",
+        "kitchen",
+        "living_room",
+        "dining_room",
+        "balcony",
+        "terrace",
+        "outside",
+        "entrance",
+        "hallway",
+        "storage",
+        "other",
+      ],
+      image_source: ["manual_upload", "bulk_import", "scraper", "ai_generated"],
     },
   },
 } as const
