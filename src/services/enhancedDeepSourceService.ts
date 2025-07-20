@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { deepSourceFileProcessor, FileModification } from "./deepSourceFileProcessor";
-import { deepSourceService, DeepSourceIssue, DeepSourceRepository } from "./deepSourceService";
+import { deepSourceService, DeepSourceIssue, DeepSourceRepository, AutoFixResult } from "./deepSourceService";
 
 export interface BulkFixResult {
   success: boolean;
@@ -54,10 +54,20 @@ export class EnhancedDeepSourceService {
 
       // Step 4: Apply automatic fixes for remaining issues
       let autoFixCount = 0;
-      for (const issue of issues.filter(i => i.autoFixable)) {
+      let autoFixedFiles = new Set<string>();
+      
+      const autoFixableIssues = issues.filter(i => i.autoFixable);
+      console.log(`🔧 Applying auto-fixes for ${autoFixableIssues.length} auto-fixable issues...`);
+      
+      for (const issue of autoFixableIssues) {
         try {
-          const success = await deepSourceService.applyAutoFix(issue);
-          if (success) autoFixCount++;
+          const result: AutoFixResult = await deepSourceService.applyAutoFix(issue);
+          if (result.success) {
+            autoFixCount++;
+            autoFixedFiles.add(issue.file_path);
+          } else {
+            errors.push(`Auto-fix failed for issue ${issue.id}: ${result.message}`);
+          }
         } catch (error) {
           errors.push(`Auto-fix failed for issue ${issue.id}: ${error}`);
         }
@@ -71,7 +81,7 @@ export class EnhancedDeepSourceService {
 =====================================
 
 📊 Summary:
-- Files Processed: ${modifications.length}
+- Files Processed: ${Math.max(modifications.length, autoFixedFiles.size)}
 - Total Issues Fixed: ${report.totalChanges + autoFixCount}
 - Auto-fixes Applied: ${autoFixCount}
 - Errors Encountered: ${errors.length}
@@ -88,7 +98,7 @@ ${errors.length > 0 ? `\n⚠️ Errors:\n${errors.map(e => `  • ${e}`).join('\
       
       return {
         success: true,
-        filesProcessed: modifications.length,
+        filesProcessed: Math.max(modifications.length, autoFixedFiles.size),
         totalFixes: report.totalChanges + autoFixCount,
         errors,
         report: finalReport
@@ -271,8 +281,8 @@ ${errors.length > 0 ? `\n⚠️ Errors:\n${errors.map(e => `  • ${e}`).join('\
     for (const issue of targetIssues) {
       try {
         if (issue.autoFixable) {
-          const success = await deepSourceService.applyAutoFix(issue);
-          if (success) fixedCount++;
+          const result: AutoFixResult = await deepSourceService.applyAutoFix(issue);
+          if (result.success) fixedCount++;
         }
       } catch (error) {
         errors.push(`Phase ${phase} fix failed for ${issue.id}: ${error}`);
