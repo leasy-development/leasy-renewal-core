@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -19,7 +20,7 @@ import { ErrorFallback } from "@/components/ErrorFallback";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { CacheStatusDebugger } from "./components/CacheStatusDebugger";
-import { AdminPromptManager } from "@/components/AdminPromptManager";
+import AdminPromptManager from "@/components/AdminPromptManager";
 
 // Import lazy loaded components
 import {

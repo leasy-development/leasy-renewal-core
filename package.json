@@ -73,6 +73,7 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
+    "react-error-boundary": "^6.0.0",
     "react-google-maps-api": "^1.0.8",
     "react-hook-form": "^7.53.0",
     "react-i18next": "^15.6.0",
