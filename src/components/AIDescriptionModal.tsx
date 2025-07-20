@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useUserStore } from '@/lib/stores/userStore';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AILanguageSelector } from '@/components/AILanguageSelector';
 import { 
   Wand2, 
   RefreshCw, 
@@ -20,7 +23,8 @@ import {
   Copy,
   Sparkles,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Globe
 } from 'lucide-react';
 
 interface PropertyData {
@@ -55,19 +59,14 @@ const TONE_PRESETS = [
   { value: 'cozy and intimate', label: '🕯️ Cozy & Intimate', description: 'Comfortable and personal' }
 ];
 
-const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'fr', label: 'Français' },
-  { value: 'es', label: 'Español' }
-];
+// Remove the LANGUAGE_OPTIONS since we're using AILanguageSelector now
 
 export function AIDescriptionModal({ isOpen, onClose, property, onSave }: AIDescriptionModalProps) {
   const [generatedDescription, setGeneratedDescription] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
   const [customTone, setCustomTone] = useState('');
   const [selectedTone, setSelectedTone] = useState('professional and premium');
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'de' | 'auto'>('auto');
   const [format, setFormat] = useState<'html' | 'markdown'>('html');
   const [maxLength, setMaxLength] = useState(500);
   const [includeFeatures, setIncludeFeatures] = useState(true);
@@ -75,6 +74,8 @@ export function AIDescriptionModal({ isOpen, onClose, property, onSave }: AIDesc
   const [isPreviewMode, setIsPreviewMode] = useState(true);
   const [generationMetadata, setGenerationMetadata] = useState<any>(null);
   const { toast } = useToast();
+  const { t } = useTranslation('common');
+  const { profile } = useUserStore();
 
   useEffect(() => {
     if (isOpen && property.description) {
@@ -88,6 +89,12 @@ export function AIDescriptionModal({ isOpen, onClose, property, onSave }: AIDesc
     
     try {
       const tone = customTone.trim() || selectedTone;
+      
+      // Determine the actual language to use
+      let targetLanguage = selectedLanguage;
+      if (selectedLanguage === 'auto') {
+        targetLanguage = profile?.preferred_language || 'en';
+      }
       
       const { data, error } = await supabase.functions.invoke('generate-property-description', {
         body: {
@@ -107,7 +114,7 @@ export function AIDescriptionModal({ isOpen, onClose, property, onSave }: AIDesc
           },
           tone,
           format,
-          language: selectedLanguage,
+          language: targetLanguage,
           maxLength,
           includeFeatures
         }
@@ -267,19 +274,13 @@ export function AIDescriptionModal({ isOpen, onClose, property, onSave }: AIDesc
             <div className="space-y-4">
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <Label>Language</Label>
-                  <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGE_OPTIONS.map(lang => (
-                        <SelectItem key={lang.value} value={lang.value}>
-                          {lang.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <AILanguageSelector
+                    value={selectedLanguage}
+                    onChange={(lang) => setSelectedLanguage(lang as 'en' | 'de' | 'auto')}
+                    label={t('ai.generation_language')}
+                    description="Choose the language for AI-generated content"
+                    showAutoOption={true}
+                  />
                 </div>
 
                 <div className="flex-1">

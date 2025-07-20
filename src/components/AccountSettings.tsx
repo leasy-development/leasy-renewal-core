@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import PhotoUploader from "@/components/PhotoUploader";
+import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 
 interface UserProfile {
   displayName: string;
@@ -49,6 +51,7 @@ interface PasswordChangeForm {
 const AccountSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('common');
   
   const [profile, setProfile] = useState<UserProfile>({
     displayName: user?.email?.split('@')[0] || '',
@@ -81,7 +84,7 @@ const AccountSettings = () => {
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'billing'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'language' | 'notifications' | 'security' | 'billing'>('profile');
 
   const handleProfileUpdate = async () => {
     try {
@@ -238,7 +241,7 @@ const AccountSettings = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Account Settings</h1>
+        <h1 className="text-3xl font-bold">{t('account.settings')}</h1>
         <p className="text-muted-foreground mt-2">
           Manage your account preferences and settings
         </p>
@@ -250,10 +253,11 @@ const AccountSettings = () => {
           <Card>
             <CardContent className="p-6">
               <div className="space-y-2">
-                <TabButton tab="profile" icon={User} label="Profile" />
-                <TabButton tab="notifications" icon={Bell} label="Notifications" />
-                <TabButton tab="security" icon={Shield} label="Security" />
-                <TabButton tab="billing" icon={CreditCard} label="Billing" />
+                <TabButton tab="profile" icon={User} label={t('account.profile')} />
+                <TabButton tab="language" icon={Globe} label={t('account.language')} />
+                <TabButton tab="notifications" icon={Bell} label={t('account.notifications')} />
+                <TabButton tab="security" icon={Shield} label={t('account.security')} />
+                <TabButton tab="billing" icon={CreditCard} label={t('account.billing')} />
               </div>
             </CardContent>
           </Card>
@@ -608,6 +612,12 @@ const AccountSettings = () => {
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {activeTab === 'language' && (
+            <div className="space-y-6">
+              <LanguageSettingsCard />
             </div>
           )}
 

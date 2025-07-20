@@ -9,11 +9,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
-import { Globe } from 'lucide-react';
+import { Globe, Check } from 'lucide-react';
 
 export function LanguageToggle() {
   const { profile, updateLanguage, loadProfile } = useUserStore();
-  const { i18n, t } = useTranslation();
+  const { i18n, t } = useTranslation('common');
 
   // Load profile on mount
   useEffect(() => {
@@ -38,12 +38,13 @@ export function LanguageToggle() {
       await i18n.changeLanguage(language);
       
       toast(t('language.changed'), {
-        description: language === 'en' ? '🇬🇧 English' : '🇩🇪 Deutsch'
+        description: language === 'en' ? '🇬🇧 English' : '🇩🇪 Deutsch',
+        icon: <Check className="h-4 w-4" />
       });
     } catch (error) {
       console.error('Error changing language:', error);
-      toast('Error changing language', {
-        description: 'Please try again later'
+      toast.error(t('messages.error_occurred'), {
+        description: t('messages.network_error')
       });
     }
   };
