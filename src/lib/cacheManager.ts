@@ -7,14 +7,82 @@ interface CacheConfig {
   version: string;
   maxRetries: number;
   retryDelay: number;
+  cooldownPeriod: number; // Minimum time between recovery attempts
+  userConsentRequired: boolean;
+}
+
+interface RecoveryAttempt {
+  timestamp: number;
+  reason: string;
+  success: boolean;
 }
 
 class CacheManager {
   private config: CacheConfig;
   private retryCount = 0;
+  private lastRecoveryAttempt = 0;
+  private recoveryHistory: RecoveryAttempt[] = [];
+  private userNotificationShown = false;
 
   constructor(config: CacheConfig) {
     this.config = config;
+    this.loadRecoveryHistory();
+  }
+
+  /**
+   * Load recovery history from localStorage
+   */
+  private loadRecoveryHistory(): void {
+    try {
+      const stored = localStorage.getItem('cache-recovery-history');
+      if (stored) {
+        this.recoveryHistory = JSON.parse(stored);
+        // Keep only recent attempts (last 24 hours)
+        const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        this.recoveryHistory = this.recoveryHistory.filter(attempt => attempt.timestamp > dayAgo);
+      }
+    } catch (error) {
+      console.warn('Failed to load recovery history:', error);
+      this.recoveryHistory = [];
+    }
+  }
+
+  /**
+   * Save recovery attempt to history
+   */
+  private saveRecoveryAttempt(reason: string, success: boolean): void {
+    const attempt: RecoveryAttempt = {
+      timestamp: Date.now(),
+      reason,
+      success
+    };
+    
+    this.recoveryHistory.push(attempt);
+    
+    try {
+      localStorage.setItem('cache-recovery-history', JSON.stringify(this.recoveryHistory));
+    } catch (error) {
+      console.warn('Failed to save recovery history:', error);
+    }
+  }
+
+  /**
+   * Check if we're in cooldown period
+   */
+  private isInCooldown(): boolean {
+    const now = Date.now();
+    const timeSinceLastAttempt = now - this.lastRecoveryAttempt;
+    return timeSinceLastAttempt < this.config.cooldownPeriod;
+  }
+
+  /**
+   * Get recent failed attempts count
+   */
+  private getRecentFailedAttempts(): number {
+    const recentWindow = Date.now() - (60 * 60 * 1000); // Last hour
+    return this.recoveryHistory.filter(attempt => 
+      attempt.timestamp > recentWindow && !attempt.success
+    ).length;
   }
 
   /**
@@ -115,38 +183,177 @@ class CacheManager {
    * Handle React errors that might be caused by cached code
    */
   async handleReactError(error: Error): Promise<boolean> {
-    const reactErrorIndicators = [
-      'Cannot read properties of null',
-      'QueryClientProvider',
-      'useEffect',
-      'Invalid hook call',
-      'React is not defined'
+    // Check cooldown period
+    if (this.isInCooldown()) {
+      console.log('🕒 Cache recovery in cooldown period, skipping automatic recovery');
+      return false;
+    }
+
+    // Check if we've had too many recent failures
+    if (this.getRecentFailedAttempts() >= 3) {
+      console.log('🚫 Too many recent recovery failures, disabling automatic recovery');
+      return false;
+    }
+
+    // Only handle specific cache-related errors
+    const cacheErrorPatterns = [
+      'Loading chunk failed',
+      'Loading CSS chunk failed', 
+      'Failed to fetch dynamically imported module',
+      'Cannot access before initialization',
+      'Script error for chunk',
+      'NetworkError when attempting to fetch resource'
     ];
 
-    const isReactCacheError = reactErrorIndicators.some(indicator => 
-      error.message.includes(indicator) || error.stack?.includes(indicator)
+    const isCacheError = cacheErrorPatterns.some(pattern => 
+      error.message.includes(pattern) || error.stack?.includes(pattern)
     );
 
-    if (isReactCacheError && this.retryCount < this.config.maxRetries) {
-      console.log(`🔄 Detected React cache error, attempting recovery (${this.retryCount + 1}/${this.config.maxRetries})`);
+    if (!isCacheError) {
+      console.log('🔍 Error not recognized as cache-related, skipping recovery');
+      return false;
+    }
+
+    if (this.retryCount < this.config.maxRetries) {
+      console.log(`🔄 Detected cache error, attempting recovery (${this.retryCount + 1}/${this.config.maxRetries})`);
       
       this.retryCount++;
-      
+      this.lastRecoveryAttempt = Date.now();
+
       try {
-        await this.clearAllCaches();
-        
-        // Wait before reload to ensure caches are cleared
-        await new Promise(resolve => setTimeout(resolve, this.config.retryDelay));
-        
-        // Force reload
-        window.location.reload();
+        // Show user notification if required
+        if (this.config.userConsentRequired && !this.userNotificationShown) {
+          const consent = await this.requestUserConsent(error.message);
+          if (!consent) {
+            this.saveRecoveryAttempt('user_declined', false);
+            return false;
+          }
+        }
+
+        await this.performGradualRecovery();
+        this.saveRecoveryAttempt(error.message, true);
         return true;
       } catch (clearError) {
         console.error('❌ Failed to clear caches during error recovery:', clearError);
+        this.saveRecoveryAttempt(error.message, false);
       }
     }
 
     return false;
+  }
+
+  /**
+   * Request user consent for cache recovery
+   */
+  private async requestUserConsent(errorMessage: string): Promise<boolean> {
+    this.userNotificationShown = true;
+    
+    return new Promise((resolve) => {
+      // Create a simple modal for user consent
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        max-width: 400px;
+        text-align: center;
+      `;
+
+      content.innerHTML = `
+        <h3 style="margin: 0 0 16px 0; color: #333;">Application Recovery</h3>
+        <p style="margin: 0 0 24px 0; color: #666;">
+          A loading error occurred. Would you like to clear the cache and reload to fix this?
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="consent-yes" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Yes, Fix It
+          </button>
+          <button id="consent-no" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            No, I'll Handle It
+          </button>
+        </div>
+      `;
+
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+
+      content.querySelector('#consent-yes')?.addEventListener('click', () => {
+        document.body.removeChild(modal);
+        resolve(true);
+      });
+
+      content.querySelector('#consent-no')?.addEventListener('click', () => {
+        document.body.removeChild(modal);
+        resolve(false);
+      });
+
+      // Auto-decline after 10 seconds
+      setTimeout(() => {
+        if (document.body.contains(modal)) {
+          document.body.removeChild(modal);
+          resolve(false);
+        }
+      }, 10000);
+    });
+  }
+
+  /**
+   * Perform gradual recovery - try soft methods first
+   */
+  private async performGradualRecovery(): Promise<void> {
+    const recoverySteps = [
+      // Step 1: Just reload without cache
+      () => {
+        console.log('🔄 Step 1: Soft reload');
+        window.location.reload();
+      },
+      
+      // Step 2: Clear service worker cache
+      () => {
+        console.log('🔄 Step 2: Clear service worker cache');
+        return this.clearServiceWorkerCache();
+      },
+      
+      // Step 3: Full cache clear
+      () => {
+        console.log('🔄 Step 3: Full cache clear');
+        return this.clearAllCaches();
+      }
+    ];
+
+    // For now, use step 2 (moderate approach)
+    await recoverySteps[1]();
+    
+    // Wait before reload
+    await new Promise(resolve => setTimeout(resolve, this.config.retryDelay));
+    window.location.reload();
+  }
+
+  /**
+   * Clear only service worker caches
+   */
+  private async clearServiceWorkerCache(): Promise<void> {
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames.map(cacheName => caches.delete(cacheName))
+      );
+      console.log('✅ Service worker caches cleared');
+    }
   }
 
   /**
@@ -186,16 +393,19 @@ class CacheManager {
    * Initialize cache management
    */
   async initialize(): Promise<void> {
-    console.log('🚀 Initializing Cache Manager');
+    console.log('🚀 Initializing Smart Cache Manager');
     
-    // Temporarily disable automatic version checking to prevent infinite reloads
-    // await this.checkVersionMismatch();
+    // Only check version on actual navigation, not every mount
+    if (performance.navigation?.type === performance.navigation.TYPE_NAVIGATE) {
+      const versionMismatch = await this.checkVersionMismatch();
+      if (versionMismatch) return; // Don't continue if we triggered a reload
+    }
     
-    // Temporarily disable periodic validation
-    // this.setupPeriodicValidation();
+    // Set up smart error handlers
+    this.setupSmartErrorHandlers();
     
-    // Set up error event listeners (but make them less aggressive)
-    this.setupErrorHandlers();
+    // Show recovery status if available
+    this.showRecoveryStatus();
   }
 
   /**
@@ -214,23 +424,48 @@ class CacheManager {
   /**
    * Set up global error handlers
    */
-  private setupErrorHandlers(): void {
-    // Handle unhandled errors (but be less aggressive with reloads)
+  /**
+   * Set up smart error handlers that are less aggressive
+   */
+  private setupSmartErrorHandlers(): void {
+    // Handle specific loading errors
     window.addEventListener('error', (event) => {
-      // Only handle critical React errors, not all errors
-      if (event.error?.message?.includes('QueryClientProvider') || 
-          event.error?.message?.includes('Invalid hook call')) {
-        this.handleReactError(event.error).catch(console.error);
+      // Only handle script/resource loading errors
+      if (event.target && event.target !== window) {
+        const target = event.target as HTMLElement;
+        if (target.tagName === 'SCRIPT' || target.tagName === 'LINK') {
+          console.log('🔗 Resource loading error detected:', event);
+          // Don't auto-recover from individual resource failures
+        }
       }
     });
 
-    // Handle unhandled promise rejections (but be selective)
+    // Handle chunk loading failures specifically
     window.addEventListener('unhandledrejection', (event) => {
-      if (event.reason instanceof Error && 
-          event.reason.message?.includes('QueryClientProvider')) {
-        this.handleReactError(event.reason).catch(console.error);
+      if (event.reason instanceof Error) {
+        const error = event.reason;
+        if (error.message.includes('Loading chunk') || 
+            error.message.includes('Failed to fetch dynamically imported module')) {
+          console.log('📦 Chunk loading error detected, will handle on retry');
+          // Let the component handle this naturally, don't auto-recover
+        }
       }
     });
+  }
+
+  /**
+   * Show recovery status to user
+   */
+  private showRecoveryStatus(): void {
+    const recentFailures = this.getRecentFailedAttempts();
+    if (recentFailures > 0) {
+      console.log(`ℹ️ ${recentFailures} recent cache recovery attempts failed`);
+    }
+    
+    if (this.isInCooldown()) {
+      const remainingCooldown = Math.ceil((this.config.cooldownPeriod - (Date.now() - this.lastRecoveryAttempt)) / 1000);
+      console.log(`⏱️ Cache recovery in cooldown for ${remainingCooldown} seconds`);
+    }
   }
 
   /**
@@ -243,15 +478,18 @@ class CacheManager {
   }
 }
 
-// Export singleton instance
+// Export singleton instance with smart configuration
 export const cacheManager = new CacheManager({
   version: import.meta.env.VITE_APP_VERSION || Date.now().toString(),
-  maxRetries: 3,
-  retryDelay: 1000
+  maxRetries: 2, // Reduced from 3
+  retryDelay: 1500, // Slightly longer delay
+  cooldownPeriod: 5 * 60 * 1000, // 5 minutes between attempts
+  userConsentRequired: true // Ask user before recovering
 });
 
-// Development helper
+// Development helpers
 if (typeof window !== 'undefined') {
   (window as any).clearCache = () => cacheManager.debugClearCache();
   (window as any).cacheManager = cacheManager;
+  (window as any).showRecoveryHistory = () => console.table(cacheManager['recoveryHistory']);
 }

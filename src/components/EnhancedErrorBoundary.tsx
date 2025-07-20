@@ -44,11 +44,49 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
     
     this.setState({ errorInfo });
     
-    // Temporarily disable automatic recovery to prevent infinite reloads
-    // this.attemptAutomaticRecovery(error);
+    // Re-enable smarter automatic recovery for specific errors
+    this.attemptSmartRecovery(error);
     
     // Log error details for debugging
     this.logErrorDetails(error, errorInfo);
+  }
+
+  private async attemptSmartRecovery(error: Error): Promise<void> {
+    if (this.state.retryCount >= this.maxRetries) {
+      console.log('🛑 Max retry attempts reached, stopping automatic recovery');
+      return;
+    }
+
+    // Only attempt recovery for specific, cache-related errors
+    const criticalCacheErrors = [
+      'Loading chunk failed',
+      'Loading CSS chunk failed',
+      'Failed to fetch dynamically imported module',
+      'ChunkLoadError'
+    ];
+
+    const isCriticalCacheError = criticalCacheErrors.some(pattern => 
+      error.message.includes(pattern) || error.stack?.includes(pattern)
+    );
+
+    if (isCriticalCacheError) {
+      console.log('🔄 Critical cache error detected, attempting smart recovery...');
+      
+      this.setState({ isRecovering: true });
+      
+      try {
+        // Use the cache manager's smart recovery
+        const recovered = await cacheManager.handleReactError(error);
+        
+        if (!recovered) {
+          // If cache manager didn't handle it, try manual recovery
+          await this.manualCacheRecovery();
+        }
+      } catch (recoveryError) {
+        console.error('❌ Smart recovery failed:', recoveryError);
+        this.setState({ isRecovering: false });
+      }
+    }
   }
 
   private async attemptAutomaticRecovery(error: Error): Promise<void> {
