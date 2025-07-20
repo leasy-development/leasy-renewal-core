@@ -1,5 +1,6 @@
 import * as React from "react";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,32 +9,38 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
-import { ErrorBoundary } from "@/lib/errorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { errorMonitoringService } from "@/services/errorMonitoringService";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import AddProperty from "./pages/AddProperty";
-import Properties from "./pages/Properties";
-import Sync from "./pages/Sync";
-import AITools from "./pages/AITools";
-import Media from "./pages/Media";
-import NotFound from "./pages/NotFound";
-import AccountSettings from "./pages/AccountSettings";
-import Analytics from "./pages/Analytics";
-import UpdatePassword from "./pages/UpdatePassword";
-import AdminDuplicates from "./pages/AdminDuplicates";
-import AdminAISettings from "./pages/AdminAISettings";
-import TranslationDashboard from "./pages/TranslationDashboard";
-import AIOptimizationDashboard from "./pages/AIOptimizationDashboard";
-import MediaExtractor from "./pages/MediaExtractor";
-import AdminPromptManager from "@/components/AdminPromptManager";
-import ImportCSV from "./pages/ImportCSV";
-import Duplicates from "./pages/Duplicates";
-import ErrorMonitoring from "./pages/ErrorMonitoring";
+import { LoadingFallback } from "@/components/LoadingFallback";
+import { ErrorFallback } from "@/components/ErrorFallback";
 
+// Import non-lazy loaded components
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 import { CacheStatusDebugger } from "./components/CacheStatusDebugger";
+import { AdminPromptManager } from "@/components/AdminPromptManager";
+
+// Import lazy loaded components
+import {
+  Dashboard,
+  Properties,
+  AddProperty,
+  AITools,
+  Analytics,
+  Media,
+  MediaExtractor,
+  ImportCSV,
+  Duplicates,
+  ErrorMonitoring,
+  AccountSettings,
+  Sync,
+  TranslationDashboard,
+  AIOptimizationDashboard,
+  AdminDuplicates,
+  AdminAISettings,
+  UpdatePassword,
+} from "@/components/LazyRoutes";
 
 const AppContent = () => {
   const { isUpdateAvailable, refreshCountdown } = useAutoRefresh();
@@ -65,58 +72,118 @@ const AppContent = () => {
       />
       <Routes>
         <Route path="/" element={<Index />} />
+        
+        {/* Protected routes with lazy loading */}
         <Route 
           path="/dashboard" 
           element={
             <ProtectedRoute>
               <DashboardLayout>
-                <Dashboard />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Dashboard />
+                </Suspense>
               </DashboardLayout>
             </ProtectedRoute>
           } 
         />
+        
         <Route 
           path="/properties" 
           element={
             <ProtectedRoute>
               <DashboardLayout>
-                <Properties />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Properties />
+                </Suspense>
               </DashboardLayout>
             </ProtectedRoute>
           } 
         />
+        
         <Route 
           path="/add-property" 
           element={
             <ProtectedRoute>
-              <AddProperty />
+              <Suspense fallback={<LoadingFallback />}>
+                <AddProperty />
+              </Suspense>
             </ProtectedRoute>
           } 
         />
+        
         <Route 
           path="/edit-property/:id" 
           element={
             <ProtectedRoute>
-              <AddProperty />
+              <Suspense fallback={<LoadingFallback />}>
+                <AddProperty />
+              </Suspense>
             </ProtectedRoute>
           } 
         />
-        <Route 
-          path="/sync" 
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Sync />
-              </DashboardLayout>
-            </ProtectedRoute>
-          } 
-        />
+
+        {/* Continue with other lazy-loaded routes */}
         <Route 
           path="/ai-tools" 
           element={
             <ProtectedRoute>
               <DashboardLayout>
-                <AITools />
+                <Suspense fallback={<LoadingFallback />}>
+                  <AITools />
+                </Suspense>
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/analytics" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Analytics />
+                </Suspense>
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/media" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Media />
+                </Suspense>
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/account" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <AccountSettings />
+                </Suspense>
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Add all other routes with Suspense wrappers */}
+        <Route 
+          path="/sync" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Sync />
+                </Suspense>
               </DashboardLayout>
             </ProtectedRoute>
           } 
@@ -126,7 +193,9 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <DashboardLayout>
-                <ImportCSV />
+                <Suspense fallback={<LoadingFallback />}>
+                  <ImportCSV />
+                </Suspense>
               </DashboardLayout>
             </ProtectedRoute>
           } 
@@ -136,7 +205,9 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <DashboardLayout>
-                <Duplicates />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Duplicates />
+                </Suspense>
               </DashboardLayout>
             </ProtectedRoute>
           } 
@@ -146,47 +217,21 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <DashboardLayout>
-                <ErrorMonitoring />
+                <Suspense fallback={<LoadingFallback />}>
+                  <ErrorMonitoring />
+                </Suspense>
               </DashboardLayout>
             </ProtectedRoute>
           } 
         />
         <Route 
-          path="/media" 
+          path="/media-extractor" 
           element={
             <ProtectedRoute>
               <DashboardLayout>
-                <Media />
-              </DashboardLayout>
-             </ProtectedRoute>
-           } 
-         />
-         <Route 
-           path="/media-extractor" 
-           element={
-             <ProtectedRoute>
-               <DashboardLayout>
-                 <MediaExtractor />
-               </DashboardLayout>
-             </ProtectedRoute>
-           } 
-         />
-        <Route 
-          path="/account" 
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <AccountSettings />
-              </DashboardLayout>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/analytics" 
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Analytics />
+                <Suspense fallback={<LoadingFallback />}>
+                  <MediaExtractor />
+                </Suspense>
               </DashboardLayout>
             </ProtectedRoute>
           } 
@@ -195,7 +240,9 @@ const AppContent = () => {
           path="/translations" 
           element={
             <ProtectedRoute>
-              <TranslationDashboard />
+              <Suspense fallback={<LoadingFallback />}>
+                <TranslationDashboard />
+              </Suspense>
             </ProtectedRoute>
           } 
         />
@@ -203,7 +250,9 @@ const AppContent = () => {
           path="/ai-optimization" 
           element={
             <ProtectedRoute>
-              <AIOptimizationDashboard />
+              <Suspense fallback={<LoadingFallback />}>
+                <AIOptimizationDashboard />
+              </Suspense>
             </ProtectedRoute>
           } 
         />
@@ -211,7 +260,9 @@ const AppContent = () => {
           path="/admin/ai-settings"
           element={
             <ProtectedRoute>
-              <AdminAISettings />
+              <Suspense fallback={<LoadingFallback />}>
+                <AdminAISettings />
+              </Suspense>
             </ProtectedRoute>
           } 
         />
@@ -219,7 +270,9 @@ const AppContent = () => {
            path="/admin/duplicates" 
            element={
              <ProtectedRoute>
-               <AdminDuplicates />
+               <Suspense fallback={<LoadingFallback />}>
+                 <AdminDuplicates />
+               </Suspense>
              </ProtectedRoute>
            } 
          />
@@ -228,12 +281,14 @@ const AppContent = () => {
            element={
              <ProtectedRoute>
                <DashboardLayout>
-                 <AdminPromptManager />
+                 <Suspense fallback={<LoadingFallback />}>
+                   <AdminPromptManager />
+                 </Suspense>
                </DashboardLayout>
              </ProtectedRoute>
            } 
          />
-         <Route path="/update-password" element={<UpdatePassword />} />
+         <Route path="/update-password" element={<Suspense fallback={<LoadingFallback />}><UpdatePassword /></Suspense>} />
          
          {/* Debug routes (development only) */}
          {import.meta.env.DEV && (
@@ -248,9 +303,9 @@ const AppContent = () => {
              } 
            />
          )}
-         
-         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-         <Route path="*" element={<NotFound />} />
+
+        {/* Catch-all route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
@@ -258,8 +313,8 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <EnhancedErrorBoundary>
-      <ErrorBoundary>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <EnhancedErrorBoundary>
         <AuthProvider>
           <TooltipProvider>
             <Toaster />
@@ -269,8 +324,8 @@ const App = () => {
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
-      </ErrorBoundary>
-    </EnhancedErrorBoundary>
+      </EnhancedErrorBoundary>
+    </ErrorBoundary>
   );
 };
 

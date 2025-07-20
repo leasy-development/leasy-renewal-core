@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -8,7 +9,6 @@ function reactVerificationPlugin() {
   return {
     name: 'react-verification',
     async buildStart() {
-      // Verify React hooks are available during build using dynamic import
       try {
         const React = await import('react');
         const ReactModule = React.default || React;
@@ -23,7 +23,6 @@ function reactVerificationPlugin() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         console.error('❌ Build-time React verification failed:', errorMessage);
-        // Don't throw in buildStart as it may cause issues - just warn
         console.warn('⚠️ Continuing build despite React verification failure');
       }
     }
@@ -38,13 +37,38 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // reactVerificationPlugin(), // Temporarily disabled to avoid build issues
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    // Production optimizations
+    target: 'esnext',
+    minify: 'terser',
+    sourcemap: mode === 'development',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          utils: ['date-fns', 'lodash'],
+          charts: ['recharts'],
+        },
+      },
+    },
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: true,
+      },
+    },
+  },
+  // PWA optimizations
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
 }));
