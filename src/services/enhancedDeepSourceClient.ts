@@ -42,6 +42,25 @@ export interface AnalyticsData {
     issues_processed: number;
     fixes_applied: number;
   }>;
+  debug_info?: {
+    generated_at: string;
+    request_params: any;
+    api_key_configured: boolean;
+  };
+}
+
+export interface ConnectivityTestResult {
+  status: string;
+  timestamp: string;
+  environment: {
+    deepsource_api_configured: boolean;
+    github_token_configured: boolean;
+    webhook_secret_configured: boolean;
+  };
+  service_info: {
+    batch_operations_count: number;
+    rate_limit_states: number;
+  };
 }
 
 class EnhancedDeepSourceClient {
@@ -55,9 +74,32 @@ class EnhancedDeepSourceClient {
   }
 
   /**
+   * Test connectivity and service status
+   */
+  async testConnectivity(): Promise<ConnectivityTestResult> {
+    console.log('Testing enhanced DeepSource connectivity...');
+    
+    const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
+      body: {
+        action: 'test-connectivity'
+      },
+    });
+
+    if (error) {
+      console.error('Connectivity test failed:', error);
+      throw error;
+    }
+    
+    console.log('Connectivity test successful:', data);
+    return data;
+  }
+
+  /**
    * Start a batch fix operation for multiple issues
    */
   async startBatchFix(repositoryId: string, issues: any[]): Promise<BatchFixResponse> {
+    console.log('Starting batch fix operation:', { repositoryId, issueCount: issues.length });
+    
     const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
       body: {
         action: 'batch-fix',
@@ -66,7 +108,12 @@ class EnhancedDeepSourceClient {
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Batch fix failed:', error);
+      throw error;
+    }
+    
+    console.log('Batch fix started:', data);
     return data;
   }
 
@@ -74,6 +121,8 @@ class EnhancedDeepSourceClient {
    * Get the status of a batch operation
    */
   async getBatchStatus(batchId: string): Promise<BatchStatusResponse> {
+    console.log('Getting batch status:', batchId);
+    
     const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
       body: { 
         action: 'batch-status',
@@ -81,7 +130,12 @@ class EnhancedDeepSourceClient {
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Failed to get batch status:', error);
+      throw error;
+    }
+    
+    console.log('Batch status retrieved:', data);
     return data;
   }
 
@@ -89,6 +143,8 @@ class EnhancedDeepSourceClient {
    * Poll batch status until completion
    */
   async waitForBatchCompletion(batchId: string, onProgress?: (status: BatchStatusResponse) => void): Promise<BatchStatusResponse> {
+    console.log('Waiting for batch completion:', batchId);
+    
     return new Promise((resolve, reject) => {
       const pollInterval = setInterval(async () => {
         try {
@@ -100,10 +156,12 @@ class EnhancedDeepSourceClient {
           
           if (status.status === 'completed' || status.status === 'failed') {
             clearInterval(pollInterval);
+            console.log('Batch operation completed:', status);
             resolve(status);
           }
         } catch (error) {
           clearInterval(pollInterval);
+          console.error('Batch polling failed:', error);
           reject(error);
         }
       }, 2000); // Poll every 2 seconds
@@ -122,6 +180,8 @@ class EnhancedDeepSourceClient {
   get github(): GitHubIntegration {
     return {
       createBranch: async (owner: string, repo: string, branchName: string, baseBranch = 'main') => {
+        console.log('Creating GitHub branch:', { owner, repo, branchName, baseBranch });
+        
         const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
           body: { 
             action: 'create-branch',
@@ -132,11 +192,18 @@ class EnhancedDeepSourceClient {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Failed to create branch:', error);
+          throw error;
+        }
+        
+        console.log('Branch created successfully:', data);
         return data;
       },
 
       commitFix: async (owner: string, repo: string, branch: string, filePath: string, content: string, message: string) => {
+        console.log('Committing fix:', { owner, repo, branch, filePath, message });
+        
         const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
           body: { 
             action: 'commit-fix',
@@ -149,11 +216,18 @@ class EnhancedDeepSourceClient {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Failed to commit fix:', error);
+          throw error;
+        }
+        
+        console.log('Fix committed successfully:', data);
         return data;
       },
 
       createPullRequest: async (owner: string, repo: string, head: string, base: string, title: string, body: string) => {
+        console.log('Creating pull request:', { owner, repo, head, base, title });
+        
         const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
           body: { 
             action: 'create-pr',
@@ -166,7 +240,12 @@ class EnhancedDeepSourceClient {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Failed to create pull request:', error);
+          throw error;
+        }
+        
+        console.log('Pull request created:', data);
         return data.pull_request_url;
       },
     };
@@ -176,6 +255,8 @@ class EnhancedDeepSourceClient {
    * Get analytics data for a repository
    */
   async getAnalytics(repositoryId: string, days = 30): Promise<AnalyticsData> {
+    console.log('Getting analytics data:', { repositoryId, days });
+    
     const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
       body: { 
         action: 'analytics',
@@ -184,7 +265,12 @@ class EnhancedDeepSourceClient {
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Failed to get analytics:', error);
+      throw error;
+    }
+    
+    console.log('Analytics data retrieved:', data);
     return data;
   }
 

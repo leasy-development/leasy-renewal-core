@@ -7,6 +7,12 @@ const WEBHOOK_SECRET = Deno.env.get('DEEPSOURCE_WEBHOOK_SECRET');
 const DEEPSOURCE_BASE_URL = 'https://deepsource.io/api/v1';
 const GITHUB_BASE_URL = 'https://api.github.com';
 
+// Debug logging helper
+const debugLog = (message: string, data?: any) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] DEBUG: ${message}`, data ? JSON.stringify(data, null, 2) : '');
+};
+
 interface WebhookPayload {
   repository: {
     id: string;
@@ -47,6 +53,14 @@ class EnhancedDeepSourceService {
   private rateLimitState: Map<string, RateLimitState> = new Map();
   private batchOperations: Map<string, BatchOperation> = new Map();
   private webhookQueue: WebhookPayload[] = [];
+
+  constructor() {
+    debugLog('Service initialized', {
+      hasDeepSourceKey: !!DEEPSOURCE_API_KEY,
+      hasGitHubToken: !!GITHUB_TOKEN,
+      hasWebhookSecret: !!WEBHOOK_SECRET
+    });
+  }
 
   private async verifyWebhookSignature(body: string, signature: string): Promise<boolean> {
     if (!WEBHOOK_SECRET || !signature) return false;
@@ -357,19 +371,22 @@ class EnhancedDeepSourceService {
   }
 
   async getAnalytics(repositoryId: string, days = 30): Promise<any> {
-    console.log(`Getting analytics for repository: ${repositoryId}, days: ${days}`);
+    debugLog('Analytics request received', { repositoryId, days });
     
     if (!repositoryId) {
+      debugLog('ERROR: Repository ID is missing');
       throw new Error('Repository ID is required for analytics');
     }
 
     // Check if DeepSource API token is available
     if (!DEEPSOURCE_API_KEY) {
-      console.warn('DEEPSOURCE_API_TOKEN not configured, using mock data');
+      debugLog('WARNING: DEEPSOURCE_API_TOKEN not configured, using mock data');
     }
 
+    debugLog('Generating mock analytics data');
+
     // Return comprehensive mock analytics data
-    return {
+    const analyticsData = {
       repository_id: repositoryId,
       period_days: days,
       total_issues_processed: 1247,
@@ -386,6 +403,33 @@ class EnhancedDeepSourceService {
         issues_processed: Math.floor(Math.random() * 50) + 10,
         fixes_applied: Math.floor(Math.random() * 35) + 5,
       })),
+      debug_info: {
+        generated_at: new Date().toISOString(),
+        request_params: { repositoryId, days },
+        api_key_configured: !!DEEPSOURCE_API_KEY
+      }
+    };
+
+    debugLog('Analytics data generated successfully', { dataKeys: Object.keys(analyticsData) });
+    return analyticsData;
+  }
+
+  // New debug/test methods
+  async testConnectivity(): Promise<any> {
+    debugLog('Testing service connectivity');
+    
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: {
+        deepsource_api_configured: !!DEEPSOURCE_API_KEY,
+        github_token_configured: !!GITHUB_TOKEN,
+        webhook_secret_configured: !!WEBHOOK_SECRET
+      },
+      service_info: {
+        batch_operations_count: this.batchOperations.size,
+        rate_limit_states: this.rateLimitState.size
+      }
     };
   }
 }
@@ -393,27 +437,75 @@ class EnhancedDeepSourceService {
 const service = new EnhancedDeepSourceService();
 
 const handler = async (req: Request): Promise<Response> => {
+  debugLog('Request received', {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries())
+  });
+
   if (req.method === "OPTIONS") {
+    debugLog('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const requestBody = await req.json();
-    console.log('Enhanced DeepSource request:', requestBody);
+    debugLog('Request body parsed', requestBody);
     
     const { action } = requestBody;
 
     if (!action) {
+      debugLog('ERROR: No action specified in request');
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Action parameter is required' 
+        error: 'Action parameter is required',
+        debug: 'Request must include an action field'
       }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    debugLog(`Processing action: ${action}`);
+
     switch (action) {
+      case 'test-connectivity': {
+        debugLog('Testing connectivity');
+        const result = await service.testConnectivity();
+        debugLog('Connectivity test completed', result);
+        
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case 'analytics': {
+        debugLog('Processing analytics request');
+        const { repository_id, days } = requestBody;
+        
+        if (!repository_id) {
+          debugLog('ERROR: Missing repository_id for analytics');
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Missing repository_id parameter',
+            debug: 'Analytics requires a repository_id'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        debugLog('Calling service.getAnalytics', { repository_id, days });
+        const analytics = await service.getAnalytics(repository_id, days || 30);
+        debugLog('Analytics retrieved successfully');
+
+        return new Response(JSON.stringify(analytics), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       case 'webhook': {
         if (req.method !== 'POST') {
           return new Response('Method not allowed', { status: 405 });
@@ -568,31 +660,12 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      case 'analytics': {
-        const { repository_id, days } = requestBody;
-        
-        if (!repository_id) {
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: 'Missing repository_id parameter' 
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        const analytics = await service.getAnalytics(repository_id, days || 30);
-
-        return new Response(JSON.stringify(analytics), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       default: {
+        debugLog(`ERROR: Unknown action: ${action}`);
         return new Response(JSON.stringify({ 
           success: false, 
-          error: `Unknown action: ${action}` 
+          error: `Unknown action: ${action}`,
+          available_actions: ['analytics', 'test-connectivity', 'batch-fix', 'batch-status', 'create-branch', 'commit-fix', 'create-pr', 'webhook']
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -600,11 +673,15 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
   } catch (error) {
-    console.error('Enhanced DeepSource service error:', error);
+    debugLog('ERROR: Request processing failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     return new Response(JSON.stringify({ 
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      debug: 'Check function logs for detailed error information'
     }), { 
       status: 500, 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
