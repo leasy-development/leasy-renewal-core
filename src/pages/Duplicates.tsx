@@ -1,24 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, Search, AlertTriangle, Loader2, Eye, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Copy, Search, AlertTriangle, Loader2, Eye, CheckCircle, Clock, AlertCircle, Brain, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import { 
   detectGlobalDuplicates,
   saveDuplicateGroups,
   getPendingDuplicateGroups,
   type GlobalDuplicateGroup 
 } from '@/services/globalDuplicateDetection';
+import {
+  detectDuplicatesWithAI,
+  saveAIDuplicateGroups,
+  getAIDetectionStats,
+  type AIDetectionResult
+} from '@/services/aiDuplicateDetection';
 
 const Duplicates = () => {
   const [isScanning, setIsScanning] = useState(false);
+  const [isAIScanning, setIsAIScanning] = useState(false);
   const [scanResults, setScanResults] = useState<any[]>([]);
+  const [aiScanResults, setAIScanResults] = useState<AIDetectionResult[]>([]);
   const [pendingGroups, setPendingGroups] = useState<GlobalDuplicateGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [scanHistory, setScanHistory] = useState<any[]>([]);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [aiStats, setAIStats] = useState<any>(null);
   const { toast } = useToast();
 
   const loadPendingGroups = async () => {
@@ -96,8 +107,89 @@ const Duplicates = () => {
     }
   };
 
+  const runAIDuplicateDetection = async () => {
+    setIsAIScanning(true);
+    setAIScanResults([]);
+    setScanProgress(0);
+    
+    try {
+      toast({
+        title: "🧠 AI-Scan gestartet",
+        description: "KI-gestützte Duplikatserkennung läuft..."
+      });
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setScanProgress(prev => Math.min(prev + 10, 90));
+      }, 1000);
+
+      const result = await detectDuplicatesWithAI();
+      clearInterval(progressInterval);
+      setScanProgress(100);
+      
+      setAIScanResults(result.matches);
+      
+      if (result.matches.length === 0) {
+        toast({
+          title: "🎯 Keine KI-Duplikate gefunden",
+          description: "Die KI hat keine hochwahrscheinlichen Duplikate erkannt."
+        });
+      } else {
+        await saveAIDuplicateGroups(result.matches);
+        toast({
+          title: "✨ KI-Duplikate erkannt",
+          description: `${result.matches.length} KI-verifizierte Duplikat-Gruppen gefunden.`
+        });
+        await loadPendingGroups();
+      }
+
+      // Add to scan history with AI flag
+      setScanHistory(prev => [
+        {
+          timestamp: new Date(),
+          found: result.matches.length,
+          status: 'completed',
+          type: 'ai',
+          analyzed: result.total_analyzed
+        },
+        ...prev.slice(0, 4)
+      ]);
+      
+    } catch (error) {
+      console.error('Error during AI duplicate detection:', error);
+      toast({
+        title: "🚫 KI-Scan fehlgeschlagen",
+        description: "Die KI-Duplikatserkennung konnte nicht abgeschlossen werden.",
+        variant: "destructive"
+      });
+      
+      setScanHistory(prev => [
+        {
+          timestamp: new Date(),
+          found: 0,
+          status: 'failed',
+          type: 'ai'
+        },
+        ...prev.slice(0, 4)
+      ]);
+    } finally {
+      setIsAIScanning(false);
+      setScanProgress(0);
+    }
+  };
+
+  const loadAIStats = async () => {
+    try {
+      const stats = await getAIDetectionStats();
+      setAIStats(stats);
+    } catch (error) {
+      console.error('Error loading AI stats:', error);
+    }
+  };
+
   useEffect(() => {
     loadPendingGroups();
+    loadAIStats();
   }, []);
 
   const getStatusIcon = (status: string) => {
@@ -135,51 +227,144 @@ const Duplicates = () => {
         </TabsList>
 
         <TabsContent value="scanner">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Copy className="h-5 w-5" />
-                <span>Duplikat-Scanner</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Duplikat-Erkennung</h3>
-                <p className="text-muted-foreground mb-6">
-                  Intelligente Erkennung von doppelten Immobilien-Einträgen basierend auf Adresse, Bildern und Eigenschaften.
-                </p>
-                
-                <Button 
-                  onClick={runDuplicateDetection} 
-                  disabled={isScanning}
-                  size="lg"
-                >
-                  {isScanning ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Scan läuft...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4 mr-2" />
-                      Scan starten
-                    </>
-                  )}
-                </Button>
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Basic Scanner */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Search className="h-5 w-5" />
+                  <span>Standard-Scanner</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Regel-basierte Erkennung</h3>
+                  <p className="text-muted-foreground mb-6 text-sm">
+                    Klassische Duplikaterkennung basierend auf Adresse und Eigenschaften.
+                  </p>
+                  
+                  <Button 
+                    onClick={runDuplicateDetection} 
+                    disabled={isScanning || isAIScanning}
+                    variant="outline"
+                  >
+                    {isScanning ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Scannt...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4 mr-2" />
+                        Standard-Scan
+                      </>
+                    )}
+                  </Button>
 
-                {scanResults.length > 0 && (
-                  <Alert className="mt-6 text-left">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Scan abgeschlossen:</strong> {scanResults.length} potentielle Duplikat-Gruppen gefunden.
-                      Wechsel zur "Pending Review" Tab um sie zu überprüfen.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  {scanResults.length > 0 && (
+                    <Alert className="mt-4 text-left">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        <strong>Standard-Scan:</strong> {scanResults.length} Gruppen gefunden.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Scanner */}
+            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Brain className="h-5 w-5 text-primary" />
+                  <span>KI-Scanner</span>
+                  <Badge variant="secondary" className="ml-2">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">KI-gestützte Analyse</h3>
+                  <p className="text-muted-foreground mb-6 text-sm">
+                    Intelligente semantische Analyse von Texten und erweiterte Duplikaterkennung.
+                  </p>
+                  
+                  {isAIScanning && scanProgress > 0 && (
+                    <div className="mb-4">
+                      <Progress value={scanProgress} className="mb-2" />
+                      <p className="text-xs text-muted-foreground">
+                        KI analysiert Immobilien... {scanProgress}%
+                      </p>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    onClick={runAIDuplicateDetection} 
+                    disabled={isScanning || isAIScanning}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {isAIScanning ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        KI analysiert...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-4 w-4 mr-2" />
+                        KI-Scan starten
+                      </>
+                    )}
+                  </Button>
+
+                  {aiScanResults.length > 0 && (
+                    <Alert className="mt-4 text-left">
+                      <Sparkles className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        <strong>KI-Scan:</strong> {aiScanResults.length} KI-verifizierte Gruppen gefunden.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI Stats */}
+          {aiStats && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Brain className="h-5 w-5" />
+                  <span>KI-Statistiken (Letzte 30 Tage)</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{aiStats.total_ai_detections}</div>
+                    <div className="text-xs text-muted-foreground">KI-Analysen</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{aiStats.high_confidence_matches}</div>
+                    <div className="text-xs text-muted-foreground">Hohe Konfidenz</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{aiStats.avg_confidence}%</div>
+                    <div className="text-xs text-muted-foreground">Ø Konfidenz</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">{aiStats.recommendations.merge}</div>
+                    <div className="text-xs text-muted-foreground">Merge-Empfehlungen</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="pending">
@@ -266,17 +451,28 @@ const Duplicates = () => {
                       <div className="flex items-center gap-3">
                         {getStatusIcon(scan.status)}
                         <div>
-                          <p className="text-sm font-medium">
-                            {scan.timestamp.toLocaleDateString()} um {scan.timestamp.toLocaleTimeString()}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">
+                              {scan.timestamp.toLocaleDateString()} um {scan.timestamp.toLocaleTimeString()}
+                            </p>
+                            {scan.type === 'ai' && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Brain className="h-3 w-3 mr-1" />
+                                KI
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {scan.found} Duplikate gefunden
+                            {scan.analyzed && ` • ${scan.analyzed} Immobilien analysiert`}
                           </p>
                         </div>
                       </div>
-                      <Badge variant={scan.status === 'completed' ? 'default' : 'destructive'}>
-                        {scan.status === 'completed' ? 'Erfolgreich' : 'Fehlgeschlagen'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={scan.status === 'completed' ? 'default' : 'destructive'}>
+                          {scan.status === 'completed' ? 'Erfolgreich' : 'Fehlgeschlagen'}
+                        </Badge>
+                      </div>
                     </div>
                   ))}
                 </div>
