@@ -169,7 +169,7 @@ Return localized fields cleanly for database input.
         return await generateDescription(openAIApiKey, request, supabase);
       
       case 'title':
-        systemPrompt = `You are an expert real estate copywriter. Create compelling, SEO-optimized property titles that are concise yet descriptive. Focus on location, property type, and key selling points.`;
+        systemPrompt = "You are an expert real estate copywriter. Create compelling, SEO-optimized property titles that are concise yet descriptive. Focus on location, property type, and key selling points.";
         userPrompt = customPrompt || `Generate a compelling property title for:
 Property Type: ${property?.apartment_type || 'Property'}
 Location: ${property?.city || property?.street_name || 'Premium location'}
@@ -182,7 +182,7 @@ Create 1 optimized title that's under 60 characters and includes key selling poi
         break;
 
       case 'alt_text':
-        systemPrompt = `You are an accessibility expert specializing in image alt text for real estate. Create concise, descriptive alt text that helps visually impaired users understand property images while being SEO-friendly.`;
+        systemPrompt = "You are an accessibility expert specializing in image alt text for real estate. Create concise, descriptive alt text that helps visually impaired users understand property images while being SEO-friendly.";
         userPrompt = `Generate alt text for a property image at: ${imageUrl}
 Property context: ${property?.title || 'Property listing'}
 Location: ${property?.city || 'Premium location'}
@@ -258,7 +258,7 @@ Maintain marketing appeal and professional tone.`;
           medium: '2-3 sentences, 200 characters max', 
           long: '3-4 sentences, 300 characters max'
         };
-        systemPrompt = `You are a real estate marketing expert. Create compelling property summaries that capture the essence and appeal of listings for use in previews, social media, and quick overviews.`;
+        systemPrompt = "You are a real estate marketing expert. Create compelling property summaries that capture the essence and appeal of listings for use in previews, social media, and quick overviews.";
         userPrompt = `Create a ${request.length || 'short'} summary (${lengthGuide[request.length || 'short']}) for:
 Title: ${property?.title}
 Description: ${property?.description || 'Modern property'}
@@ -273,7 +273,7 @@ Focus on the most appealing aspects and unique selling points.`;
         break;
 
       case 'tags':
-        systemPrompt = `You are a real estate categorization expert. Generate relevant, searchable tags that help users find properties based on their needs and preferences.`;
+        systemPrompt = "You are a real estate categorization expert. Generate relevant, searchable tags that help users find properties based on their needs and preferences.";
         userPrompt = `Generate 5-8 relevant tags for this property (return as JSON array):
 Title: ${property?.title}
 Type: ${property?.apartment_type}
@@ -289,7 +289,7 @@ Return format: {"tags": ["tag1", "tag2", "tag3"]}`;
         break;
 
       case 'validation':
-        systemPrompt = `You are a real estate listing quality auditor. Analyze property listings for completeness, appeal, and potential improvements. Provide actionable feedback and a quality score.`;
+        systemPrompt = "You are a real estate listing quality auditor. Analyze property listings for completeness, appeal, and potential improvements. Provide actionable feedback and a quality score.";
         userPrompt = `Analyze this property listing quality and return structured JSON:
 
 Title: ${property?.title || 'MISSING'}
@@ -346,7 +346,7 @@ Score 0-100 based on completeness, appeal, and marketing effectiveness.`;
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ OpenAI API HTTP error:`, {
+        console.error("❌ OpenAI API HTTP error:", {
           status: response.status,
           statusText: response.statusText,
           body: errorText
@@ -367,7 +367,7 @@ Score 0-100 based on completeness, appeal, and marketing effectiveness.`;
       data = await response.json();
       
     } catch (fetchError) {
-      console.error(`❌ Network error calling OpenAI API:`, fetchError);
+      console.error("❌ Network error calling OpenAI API:", fetchError);
       throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Connection failed'}`);
     }
 

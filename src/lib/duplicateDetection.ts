@@ -202,7 +202,7 @@ export class DuplicateDetectionService {
         parameter: 'Location',
         score: locationScore,
         weight: this.config.locationWeight,
-        details: `GPS coordinates proximity`
+        details: "GPS coordinates proximity"
       });
       totalScore += locationScore * (this.config.locationWeight / 100);
     }

@@ -268,7 +268,7 @@ class ErrorMonitoringService {
             });
           }
         } catch (fixError) {
-          console.error(`Failed to auto-fix error:`, fixError);
+          console.error("Failed to auto-fix error:", fixError);
         }
         break;
       }
