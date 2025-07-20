@@ -24,6 +24,8 @@ import TranslationDashboard from "./pages/TranslationDashboard";
 import AIOptimizationDashboard from "./pages/AIOptimizationDashboard";
 import MediaExtractor from "./pages/MediaExtractor";
 import AdminPromptManager from "./components/AdminPromptManager";
+import ImportCSV from "./pages/ImportCSV";
+import Duplicates from "./pages/Duplicates";
 const App = () => {
   return (
     <ErrorBoundary>
@@ -86,6 +88,26 @@ const App = () => {
                 <ProtectedRoute>
                   <DashboardLayout>
                     <AITools />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/import-csv" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <ImportCSV />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/duplicates" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Duplicates />
                   </DashboardLayout>
                 </ProtectedRoute>
               } 
