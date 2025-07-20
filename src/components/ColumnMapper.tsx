@@ -10,6 +10,7 @@ import * as fuzzball from 'fuzzball';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { MappingTrainingLog, ColumnMapping, MappingSuggestion } from '@/types/mapping';
+import { logMappingTraining, getMappingSuggestions } from '@/services/mappingTrainingService';
 
 // Standard field mappings for property data
 const STANDARD_FIELDS = [
@@ -130,38 +131,16 @@ export function ColumnMapper({ csvHeaders, onMappingComplete, onCancel }: Column
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
       
-      // Check if mapping already exists
-      const { data: existing, error: checkError } = await supabase
-        .from('mapping_training_log')
-        .select('id, match_confidence')
-        .eq('source_field', documentField)
-        .eq('target_field', mappedField)
-        .eq('user_id', user.id)
-        .single();
+      const result = await logMappingTraining({
+        userId: user.id,
+        sourceField: documentField,
+        targetField: mappedField,
+        confidence: 100,
+        mappingType: 'manual'
+      });
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
-      if (existing) {
-        // Update existing mapping confidence
-        await supabase
-          .from('mapping_training_log')
-          .update({ 
-            match_confidence: Math.min(existing.match_confidence + 10, 100) // Increment by 10%
-          })
-          .eq('id', existing.id);
-      } else {
-        // Create new mapping
-        await supabase
-          .from('mapping_training_log')
-          .insert({
-            user_id: user.id,
-            source_field: documentField,
-            target_field: mappedField,
-            match_confidence: 100,
-            mapping_type: 'manual'
-          });
+      if (!result.success) {
+        throw result.error;
       }
     } catch (error) {
       console.warn('Failed to save mapping to database:', error);
