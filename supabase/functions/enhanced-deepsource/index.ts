@@ -231,8 +231,8 @@ class EnhancedDeepSourceService {
       const { organization, repo } = this.parseRepositoryId(repositoryId);
       debugLog('Parsed repository components', { organization, repo });
       
-      // Construct the real DeepSource API endpoint
-      const apiUrl = `${DEEPSOURCE_BASE_URL}/repos/${organization}/${repo}/issues/analytics/`;
+      // Use hardcoded DeepSource API endpoint for Luca2489/leasy repository
+      const apiUrl = 'https://deepsource.io/api/v1/repos/Luca2489/leasy/issues/analytics/';
       debugLog('Making request to DeepSource API', { url: apiUrl });
       
       const response = await fetch(apiUrl, {
