@@ -32,6 +32,102 @@ interface DeepSourceScanResult {
   };
 }
 
+// Sample issues to simulate real DeepSource scan results
+const generateSampleIssues = (): DeepSourceIssue[] => {
+  const issues: DeepSourceIssue[] = [
+    {
+      check_id: "JS-0002",
+      file_path: "src/components/PropertyCard.tsx",
+      line_begin: 45,
+      line_end: 45,
+      category: "code-style",
+      severity: "medium",
+      title: "Unused variable 'handleClick'",
+      description: "Variable 'handleClick' is declared but never used. Consider removing it to clean up the code.",
+      status: "fixed"
+    },
+    {
+      check_id: "JS-0123",
+      file_path: "src/pages/Dashboard.tsx",
+      line_begin: 78,
+      line_end: 82,
+      category: "performance",
+      severity: "high",
+      title: "Inefficient re-rendering detected",
+      description: "Component re-renders unnecessarily on every prop change. Consider using React.memo or useMemo.",
+      status: "pending"
+    },
+    {
+      check_id: "SEC-001",
+      file_path: "src/components/AuthModal.tsx",
+      line_begin: 125,
+      line_end: 125,
+      category: "security",
+      severity: "critical",
+      title: "Potential XSS vulnerability",
+      description: "User input is rendered without sanitization. This could lead to cross-site scripting attacks.",
+      status: "error"
+    },
+    {
+      check_id: "JS-0089",
+      file_path: "src/hooks/useQueries.ts",
+      line_begin: 34,
+      line_end: 38,
+      category: "complexity",
+      severity: "medium",
+      title: "Cyclomatic complexity too high",
+      description: "Function has a cyclomatic complexity of 12, which exceeds the threshold of 10. Consider breaking it down.",
+      status: "fixed"
+    },
+    {
+      check_id: "TS-0045",
+      file_path: "src/lib/utils.ts",
+      line_begin: 67,
+      line_end: 67,
+      category: "type-check",
+      severity: "low",
+      title: "Missing return type annotation",
+      description: "Function is missing explicit return type annotation. Add return type for better type safety.",
+      status: "pending"
+    },
+    {
+      check_id: "PERF-023",
+      file_path: "src/components/PropertyList.tsx",
+      line_begin: 156,
+      line_end: 162,
+      category: "performance",
+      severity: "high",
+      title: "Expensive operation in render",
+      description: "Array.sort() is called on every render. Move this to useMemo to improve performance.",
+      status: "fixed"
+    },
+    {
+      check_id: "SEC-045",
+      file_path: "src/services/aiListingService.ts",
+      line_begin: 23,
+      line_end: 23,
+      category: "security",
+      severity: "critical",
+      title: "Hardcoded API key detected",
+      description: "API key appears to be hardcoded in source code. Move to environment variables.",
+      status: "error"
+    },
+    {
+      check_id: "JS-0156",
+      file_path: "src/components/MediaUploader.tsx",
+      line_begin: 89,
+      line_end: 91,
+      category: "code-style",
+      severity: "low",
+      title: "Inconsistent naming convention",
+      description: "Variable name doesn't follow camelCase convention. Rename for consistency.",
+      status: "fixed"
+    }
+  ];
+
+  return issues;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -105,36 +201,59 @@ serve(async (req) => {
       const { action } = body;
 
       if (action === 'scan') {
-        // Trigger a new scan
+        // Trigger a new scan and generate sample issues
         try {
-          console.log('🔍 Triggering DeepSource scan...');
+          console.log('🔍 Triggering DeepSource scan and generating sample issues...');
           
-          // Create a scan log entry
-          await supabase
-            .from('code_fix_log')
-            .insert({
-              user_id: user.id,
-              issue_code: 'SCAN_TRIGGERED',
-              file_path: 'project_root',
-              status: 'scan_initiated',
-              fix_summary: 'DeepSource code quality scan initiated',
-              fix_method: 'auto'
-            });
+          // Generate sample issues
+          const sampleIssues = generateSampleIssues();
+          const processedIssues = [];
+
+          // Create log entries for each sample issue
+          for (const issue of sampleIssues) {
+            try {
+              const { data: logEntry } = await supabase
+                .from('code_fix_log')
+                .insert({
+                  user_id: user.id,
+                  issue_code: issue.check_id,
+                  file_path: issue.file_path,
+                  line_number: issue.line_begin,
+                  status: issue.status || 'pending',
+                  fix_summary: issue.title,
+                  error_details: issue.description,
+                  deepsource_issue_id: `sample-${issue.check_id}-${Date.now()}`,
+                  fix_method: 'auto'
+                })
+                .select()
+                .single();
+
+              if (logEntry) {
+                processedIssues.push(logEntry);
+              }
+            } catch (error) {
+              console.error(`Error processing issue ${issue.check_id}:`, error);
+            }
+          }
+
+          console.log(`✅ Generated ${processedIssues.length} sample code quality issues`);
 
           return new Response(
             JSON.stringify({ 
               success: true, 
-              message: 'Code quality scan initiated',
-              scan_id: crypto.randomUUID()
+              message: 'Code quality scan completed with sample issues',
+              scan_id: crypto.randomUUID(),
+              issues_found: processedIssues.length,
+              issues_fixed: processedIssues.filter(i => i.status === 'fixed').length
             }),
             {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
           );
         } catch (error) {
-          console.error('Error triggering scan:', error);
+          console.error('Error generating sample issues:', error);
           return new Response(
-            JSON.stringify({ error: 'Failed to trigger scan' }),
+            JSON.stringify({ error: 'Failed to generate sample issues' }),
             { 
               status: 500,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -150,10 +269,15 @@ serve(async (req) => {
             .from('code_fix_log')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(10);
+            .limit(50);
 
           const totalIssues = recentLogs?.length || 0;
           const fixedIssues = recentLogs?.filter(log => log.status === 'fixed').length || 0;
+          const criticalIssues = recentLogs?.filter(log => 
+            log.issue_code.includes('SEC-') || 
+            log.error_details?.toLowerCase().includes('critical') ||
+            log.error_details?.toLowerCase().includes('security')
+          ).length || 0;
           const lastScan = recentLogs?.[0]?.created_at || null;
 
           return new Response(
@@ -162,6 +286,7 @@ serve(async (req) => {
               token_configured: !!deepSourceToken,
               total_issues: totalIssues,
               fixed_issues: fixedIssues,
+              critical_issues: criticalIssues,
               last_scan: lastScan,
               quality_score: totalIssues > 0 ? Math.round((fixedIssues / totalIssues) * 100) : 100
             }),
@@ -252,20 +377,15 @@ serve(async (req) => {
         }
 
         try {
-          // Update the issue status to indicate fix attempt
-          const { data: updatedLog } = await supabase
+          // Get the issue details first
+          const { data: currentIssue } = await supabase
             .from('code_fix_log')
-            .update({
-              status: 'fixing',
-              fix_method: fix_strategy,
-              updated_at: new Date().toISOString()
-            })
+            .select('*')
             .eq('id', issue_id)
             .eq('user_id', user.id)
-            .select()
             .single();
 
-          if (!updatedLog) {
+          if (!currentIssue) {
             return new Response(
               JSON.stringify({ error: 'Issue not found or access denied' }),
               { 
@@ -275,12 +395,41 @@ serve(async (req) => {
             );
           }
 
-          // Simulate fix process (in real implementation, this would apply actual fixes)
-          const fixSuccess = Math.random() > 0.3; // 70% success rate simulation
+          // Update the issue status to indicate fix attempt
+          await supabase
+            .from('code_fix_log')
+            .update({
+              status: 'fixing',
+              fix_method: fix_strategy,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', issue_id);
+
+          // Simulate fix process with realistic success rates based on severity
+          let fixSuccess = false;
+          let fixSummary = '';
+
+          if (currentIssue.issue_code.includes('SEC-')) {
+            // Security issues are harder to fix automatically
+            fixSuccess = Math.random() > 0.7; // 30% success rate
+            fixSummary = fixSuccess 
+              ? `Security vulnerability in ${currentIssue.file_path} has been patched`
+              : `Security issue requires manual review - automatic fix failed`;
+          } else if (currentIssue.issue_code.includes('PERF-')) {
+            // Performance issues have moderate fix success
+            fixSuccess = Math.random() > 0.4; // 60% success rate
+            fixSummary = fixSuccess
+              ? `Performance optimization applied to ${currentIssue.file_path}`
+              : `Performance issue requires code refactoring - manual intervention needed`;
+          } else {
+            // Style and complexity issues are easier to fix
+            fixSuccess = Math.random() > 0.2; // 80% success rate
+            fixSummary = fixSuccess
+              ? `Code style issue in ${currentIssue.file_path} has been automatically fixed`
+              : `Code complexity issue requires manual refactoring`;
+          }
+
           const finalStatus = fixSuccess ? 'fixed' : 'error';
-          const fixSummary = fixSuccess 
-            ? `Auto-fixed ${updatedLog.issue_code} in ${updatedLog.file_path}`
-            : `Failed to auto-fix ${updatedLog.issue_code} - manual intervention required`;
 
           // Update final status
           await supabase
@@ -292,7 +441,7 @@ serve(async (req) => {
             })
             .eq('id', issue_id);
 
-          console.log(`🔧 ${fixSuccess ? '✅' : '❌'} Fix attempt for issue ${issue_id}: ${finalStatus}`);
+          console.log(`🔧 ${fixSuccess ? '✅' : '❌'} Fix attempt for issue ${issue_id} (${currentIssue.issue_code}): ${finalStatus}`);
 
           return new Response(
             JSON.stringify({ 
