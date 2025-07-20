@@ -90,7 +90,7 @@ const Duplicates = () => {
       console.error('Error during duplicate detection:', error);
       toast({
         title: "Scan fehlgeschlagen",
-        description: "Die Duplikat-Erkennung konnte nicht abgeschlossen werden.",
+        description: `Fehler: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
         variant: "destructive"
       });
       
@@ -159,7 +159,7 @@ const Duplicates = () => {
       console.error('Error during AI duplicate detection:', error);
       toast({
         title: "🚫 KI-Scan fehlgeschlagen",
-        description: "Die KI-Duplikatserkennung konnte nicht abgeschlossen werden.",
+        description: `Fehler: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
         variant: "destructive"
       });
       
