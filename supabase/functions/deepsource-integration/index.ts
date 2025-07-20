@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -83,15 +84,29 @@ serve(async (req) => {
 
     console.log(`🔧 DeepSource Integration: ${req.method} request from user ${user.id}`);
 
-    if (req.method === 'GET') {
-      const url = new URL(req.url);
-      const action = url.searchParams.get('action');
+    // Handle all requests via POST with action in body
+    if (req.method === 'POST') {
+      let body;
+      try {
+        const bodyText = await req.text();
+        console.log(`📥 Request body: ${bodyText}`);
+        body = bodyText ? JSON.parse(bodyText) : {};
+      } catch (error) {
+        console.error('Error parsing request body:', error);
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON in request body' }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      const { action } = body;
 
       if (action === 'scan') {
         // Trigger a new scan
         try {
-          // In a real implementation, this would trigger a DeepSource scan
-          // For now, we'll simulate the process and return success
           console.log('🔍 Triggering DeepSource scan...');
           
           // Create a scan log entry
@@ -165,19 +180,6 @@ serve(async (req) => {
           );
         }
       }
-
-      return new Response(
-        JSON.stringify({ error: 'Invalid action parameter' }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    if (req.method === 'POST') {
-      const body = await req.json();
-      const { action } = body;
 
       if (action === 'process_issues') {
         // Process issues received from DeepSource webhook
