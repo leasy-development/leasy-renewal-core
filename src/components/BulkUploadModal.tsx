@@ -143,7 +143,7 @@ interface UploadResult {
   };
 }
 
-const REQUIRED_HEADERS = ['title', 'apartment_type', 'category', 'street_name', 'city'];
+const REQUIRED_HEADERS = ['title', 'street_name', 'city']; // apartment_type and category are now optional
 
 // Enhanced field mappings with fuzzy matching and aliases
 const headerAliases: { [key: string]: string } = {
