@@ -540,6 +540,36 @@ export type Database = {
         }
         Relationships: []
       }
+      field_mapping_suggestions: {
+        Row: {
+          created_at: string | null
+          id: string
+          score: number
+          source_field: string
+          target_field: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          score?: number
+          source_field: string
+          target_field: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          score?: number
+          source_field?: string
+          target_field?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       floorplan_analysis: {
         Row: {
           analysis_version: string | null
