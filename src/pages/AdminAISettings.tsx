@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UpdateBroadcastPanel } from '@/components/admin/UpdateBroadcastPanel';
 import { 
   Save, 
   History, 
@@ -233,148 +234,161 @@ const AdminAISettings = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <Settings className="h-8 w-8 text-primary" />
-              AI Prompt Management
+              Admin Einstellungen
             </h1>
             <p className="text-muted-foreground">
-              Manage and optimize AI system prompts for better content generation
+              Verwalte KI-Prompts und System-Updates
             </p>
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Prompt List */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-base">AI Prompts</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {prompts.map((prompt) => (
-                <Button
-                  key={prompt.id}
-                  variant={selectedPrompt?.id === prompt.id ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setSelectedPrompt(prompt)}
-                >
-                  <Brain className="h-4 w-4 mr-2" />
-                  <div className="text-left">
-                    <div className="font-medium">{prompt.name}</div>
-                    <div className="text-xs text-muted-foreground">{prompt.type}</div>
-                  </div>
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="prompts" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="prompts">KI-Prompts</TabsTrigger>
+            <TabsTrigger value="updates">System-Updates</TabsTrigger>
+          </TabsList>
 
-          {/* Prompt Editor */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
-                  {selectedPrompt?.name || 'Select a prompt'}
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowTestModal(true)}
-                    disabled={!selectedPrompt}
-                  >
-                    <TestTube className="h-4 w-4 mr-2" />
-                    Test
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={savePrompt}
-                    disabled={!selectedPrompt || isSaving || editedPrompt === selectedPrompt?.prompt}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
-                    Save
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedPrompt ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{selectedPrompt.type}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      Last updated: {new Date(selectedPrompt.updated_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>System Prompt</Label>
-                    <Textarea
-                      value={editedPrompt}
-                      onChange={(e) => setEditedPrompt(e.target.value)}
-                      rows={12}
-                      className="font-mono text-sm"
-                      placeholder="Enter the system prompt for AI generation..."
-                    />
-                  </div>
+          <TabsContent value="prompts" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Prompt List */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-base">AI Prompts</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {prompts.map((prompt) => (
+                    <Button
+                      key={prompt.id}
+                      variant={selectedPrompt?.id === prompt.id ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => setSelectedPrompt(prompt)}
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      <div className="text-left">
+                        <div className="font-medium">{prompt.name}</div>
+                        <div className="text-xs text-muted-foreground">{prompt.type}</div>
+                      </div>
+                    </Button>
+                  ))}
+                </CardContent>
+              </Card>
 
-                  {editedPrompt !== selectedPrompt.prompt && (
-                    <Alert>
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        You have unsaved changes. Click "Save" to apply them.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Select a prompt to edit
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Version History */}
-        {selectedPrompt && versions[selectedPrompt.id] && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Version History
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {versions[selectedPrompt.id].map((version) => (
-                  <div key={version.id} className="flex items-start justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="secondary">v{version.version_number}</Badge>
-                        <span className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(version.created_at).toLocaleString()}
+              {/* Prompt Editor */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">
+                      {selectedPrompt?.name || 'Select a prompt'}
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowTestModal(true)}
+                        disabled={!selectedPrompt}
+                      >
+                        <TestTube className="h-4 w-4 mr-2" />
+                        Test
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={savePrompt}
+                        disabled={!selectedPrompt || isSaving || editedPrompt === selectedPrompt?.prompt}
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {selectedPrompt ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{selectedPrompt.type}</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          Last updated: {new Date(selectedPrompt.updated_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {version.prompt.substring(0, 200)}...
-                      </p>
+                      
+                      <div className="space-y-2">
+                        <Label>System Prompt</Label>
+                        <Textarea
+                          value={editedPrompt}
+                          onChange={(e) => setEditedPrompt(e.target.value)}
+                          rows={12}
+                          className="font-mono text-sm"
+                          placeholder="Enter the system prompt for AI generation..."
+                        />
+                      </div>
+
+                      {editedPrompt !== selectedPrompt.prompt && (
+                        <Alert>
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription>
+                            You have unsaved changes. Click "Save" to apply them.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Select a prompt to edit
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => rollbackToVersion(version)}
-                    >
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Rollback
-                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Version History */}
+            {selectedPrompt && versions[selectedPrompt.id] && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Version History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {versions[selectedPrompt.id].map((version) => (
+                      <div key={version.id} className="flex items-start justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="secondary">v{version.version_number}</Badge>
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(version.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {version.prompt.substring(0, 200)}...
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => rollbackToVersion(version)}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Rollback
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="updates" className="space-y-6">
+            <UpdateBroadcastPanel />
+          </TabsContent>
+        </Tabs>
 
         {/* Test Modal */}
         <Dialog open={showTestModal} onOpenChange={setShowTestModal}>

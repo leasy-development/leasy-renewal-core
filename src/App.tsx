@@ -7,6 +7,8 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ErrorBoundary } from "@/lib/errorBoundary";
+import { UpdateNotification } from "@/components/UpdateNotification";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import AddProperty from "./pages/AddProperty";
@@ -26,6 +28,193 @@ import MediaExtractor from "./pages/MediaExtractor";
 import AdminPromptManager from "./components/AdminPromptManager";
 import ImportCSV from "./pages/ImportCSV";
 import Duplicates from "./pages/Duplicates";
+
+const AppContent = () => {
+  const { isUpdateAvailable, refreshCountdown } = useAutoRefresh();
+
+  const handleRefreshNow = () => {
+    window.location.reload();
+  };
+
+  const handleCancelRefresh = () => {
+    // Refresh cancellation is handled inside the hook
+  };
+
+  return (
+    <>
+      <UpdateNotification
+        isVisible={isUpdateAvailable}
+        countdown={refreshCountdown}
+        onRefreshNow={handleRefreshNow}
+        onCancel={handleCancelRefresh}
+      />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Dashboard />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/properties" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Properties />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/add-property" 
+          element={
+            <ProtectedRoute>
+              <AddProperty />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/edit-property/:id" 
+          element={
+            <ProtectedRoute>
+              <AddProperty />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/sync" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Sync />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/ai-tools" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <AITools />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/import-csv" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ImportCSV />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/duplicates" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Duplicates />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/media" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Media />
+              </DashboardLayout>
+             </ProtectedRoute>
+           } 
+         />
+         <Route 
+           path="/media-extractor" 
+           element={
+             <ProtectedRoute>
+               <DashboardLayout>
+                 <MediaExtractor />
+               </DashboardLayout>
+             </ProtectedRoute>
+           } 
+         />
+        <Route 
+          path="/account" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <AccountSettings />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/analytics" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Analytics />
+              </DashboardLayout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/translations" 
+          element={
+            <ProtectedRoute>
+              <TranslationDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/ai-optimization" 
+          element={
+            <ProtectedRoute>
+              <AIOptimizationDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/ai-settings"
+          element={
+            <ProtectedRoute>
+              <AdminAISettings />
+            </ProtectedRoute>
+          } 
+        />
+         <Route 
+           path="/admin/duplicates" 
+           element={
+             <ProtectedRoute>
+               <AdminDuplicates />
+             </ProtectedRoute>
+           } 
+         />
+         <Route 
+           path="/admin/prompts" 
+           element={
+             <ProtectedRoute>
+               <DashboardLayout>
+                 <AdminPromptManager />
+               </DashboardLayout>
+             </ProtectedRoute>
+           } 
+         />
+         <Route path="/update-password" element={<UpdatePassword />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+};
 const App = () => {
   return (
     <ErrorBoundary>
@@ -34,175 +223,12 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Dashboard />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/properties" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Properties />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/add-property" 
-              element={
-                <ProtectedRoute>
-                  <AddProperty />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/edit-property/:id" 
-              element={
-                <ProtectedRoute>
-                  <AddProperty />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/sync" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Sync />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/ai-tools" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <AITools />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/import-csv" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <ImportCSV />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/duplicates" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Duplicates />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/media" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Media />
-                  </DashboardLayout>
-                 </ProtectedRoute>
-               } 
-             />
-             <Route 
-               path="/media-extractor" 
-               element={
-                 <ProtectedRoute>
-                   <DashboardLayout>
-                     <MediaExtractor />
-                   </DashboardLayout>
-                 </ProtectedRoute>
-               } 
-             />
-            <Route 
-              path="/account" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <AccountSettings />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/analytics" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Analytics />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/translations" 
-              element={
-                <ProtectedRoute>
-                  <TranslationDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/ai-optimization" 
-              element={
-                <ProtectedRoute>
-                  <AIOptimizationDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/ai-settings"
-              element={
-                <ProtectedRoute>
-                  <AdminAISettings />
-                </ProtectedRoute>
-              } 
-            />
-             <Route 
-               path="/admin/duplicates" 
-               element={
-                 <ProtectedRoute>
-                   <AdminDuplicates />
-                 </ProtectedRoute>
-               } 
-             />
-             <Route 
-               path="/admin/prompts" 
-               element={
-                 <ProtectedRoute>
-                   <DashboardLayout>
-                     <AdminPromptManager />
-                   </DashboardLayout>
-                 </ProtectedRoute>
-               } 
-             />
-             <Route path="/update-password" element={<UpdatePassword />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </ErrorBoundary>
-);
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ErrorBoundary>
+  );
 };
 
 export default App;

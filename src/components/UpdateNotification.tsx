@@ -1,57 +1,59 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
+import { AlertCircle, RefreshCw, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { X, RefreshCw, Download } from 'lucide-react';
-import { useVersionCheck } from '@/services/versionService';
-import { useAuth } from '@/components/AuthProvider';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
-export const UpdateNotification: React.FC = () => {
-  const { user } = useAuth();
-  const { hasUpdate, newVersion, refreshApp, dismissUpdate } = useVersionCheck();
+interface UpdateNotificationProps {
+  isVisible: boolean;
+  countdown: number;
+  onCancel: () => void;
+  onRefreshNow: () => void;
+}
 
-  // Only show for authenticated users
-  if (!user || !hasUpdate) {
-    return null;
-  }
+export const UpdateNotification: React.FC<UpdateNotificationProps> = ({
+  isVisible,
+  countdown,
+  onCancel,
+  onRefreshNow
+}) => {
+  if (!isVisible) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-sm">
-      <Alert className="border-primary bg-primary/5 shadow-lg">
-        <Download className="h-4 w-4" />
-        <AlertDescription className="pr-8">
-          <div className="space-y-2">
-            <div className="font-medium">New version available!</div>
-            <div className="text-sm text-muted-foreground">
-              Version {newVersion} is ready with the latest features and improvements.
+    <div className="fixed top-4 right-4 z-50 max-w-md animate-fade-in">
+      <Alert className="border-primary bg-primary/5">
+        <AlertCircle className="h-4 w-4 text-primary" />
+        <AlertDescription className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="font-medium text-foreground mb-1">
+              🔄 App-Update verfügbar
             </div>
-            <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                onClick={refreshApp}
-                className="h-8"
-              >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Update Now
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={dismissUpdate}
-                className="h-8"
-              >
-                Later
-              </Button>
+            <div className="text-sm text-muted-foreground">
+              Automatische Aktualisierung in{' '}
+              <Badge variant="secondary" className="font-mono">
+                {countdown}s
+              </Badge>
             </div>
           </div>
+          <div className="flex items-center gap-2 ml-4">
+            <Button
+              size="sm"
+              onClick={onRefreshNow}
+              className="h-8"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Jetzt
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onCancel}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
         </AlertDescription>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={dismissUpdate}
-          className="absolute top-2 right-2 h-6 w-6 p-0"
-        >
-          <X className="h-3 w-3" />
-        </Button>
       </Alert>
     </div>
   );
