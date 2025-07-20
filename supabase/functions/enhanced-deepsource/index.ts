@@ -1,11 +1,10 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const DEEPSOURCE_API_KEY = Deno.env.get('DEEPSOURCE_API_TOKEN');
-const GITHUB_TOKEN = Deno.env.get('GITHUB_TOKEN');
 const WEBHOOK_SECRET = Deno.env.get('DEEPSOURCE_WEBHOOK_SECRET');
 const DEEPSOURCE_BASE_URL = 'https://deepsource.io/api/v1';
-const GITHUB_BASE_URL = 'https://api.github.com';
 
 // Default repository - can be overridden by request
 const DEFAULT_REPOSITORY = 'demo-repo-1';
@@ -60,8 +59,8 @@ class EnhancedDeepSourceService {
   constructor() {
     debugLog('Service initialized', {
       hasDeepSourceKey: !!DEEPSOURCE_API_KEY,
-      hasGitHubToken: !!GITHUB_TOKEN,
-      hasWebhookSecret: !!WEBHOOK_SECRET
+      hasWebhookSecret: !!WEBHOOK_SECRET,
+      githubIntegration: 'disabled'
     });
   }
 
@@ -173,7 +172,8 @@ class EnhancedDeepSourceService {
         generated_at: new Date().toISOString(),
         request_params: { repositoryId, days },
         api_key_configured: !!DEEPSOURCE_API_KEY,
-        data_source: 'mock_fallback'
+        data_source: 'mock_fallback',
+        github_integration: 'disabled'
       }
     };
   }
@@ -344,7 +344,8 @@ class EnhancedDeepSourceService {
           request_params: { repositoryId, days, organization, repo },
           api_key_configured: true,
           data_source: 'deepsource_api',
-          response_validated: true
+          response_validated: true,
+          github_integration: 'disabled'
         }
       };
 
@@ -482,103 +483,6 @@ class EnhancedDeepSourceService {
     return typeRates[type] || 0.65;
   }
 
-  async createGitHubBranch(owner: string, repo: string, branchName: string, baseBranch = 'main'): Promise<void> {
-    if (!GITHUB_TOKEN) throw new Error('GitHub token not configured');
-    
-    // Get base branch SHA
-    const baseResponse = await fetch(`${GITHUB_BASE_URL}/repos/${owner}/${repo}/git/ref/heads/${baseBranch}`, {
-      headers: { 'Authorization': `token ${GITHUB_TOKEN}` },
-    });
-    
-    if (!baseResponse.ok) throw new Error('Failed to get base branch');
-    
-    const baseData = await baseResponse.json();
-    const baseSha = baseData.object.sha;
-    
-    // Create new branch
-    await fetch(`${GITHUB_BASE_URL}/repos/${owner}/${repo}/git/refs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ref: `refs/heads/${branchName}`,
-        sha: baseSha,
-      }),
-    });
-  }
-
-  async commitFix(owner: string, repo: string, branch: string, filePath: string, content: string, message: string): Promise<void> {
-    if (!GITHUB_TOKEN) throw new Error('GitHub token not configured');
-    
-    // Get current file SHA (if exists)
-    let currentSha: string | undefined;
-    try {
-      const fileResponse = await fetch(`${GITHUB_BASE_URL}/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}` },
-      });
-      
-      if (fileResponse.ok) {
-        const fileData = await fileResponse.json();
-        currentSha = fileData.sha;
-      }
-    } catch (error) {
-      // File doesn't exist, that's OK
-    }
-    
-    // Commit the fix
-    const commitData: any = {
-      message,
-      content: btoa(content), // Base64 encode
-      branch,
-    };
-    
-    if (currentSha) {
-      commitData.sha = currentSha;
-    }
-    
-    const response = await fetch(`${GITHUB_BASE_URL}/repos/${owner}/${repo}/contents/${filePath}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(commitData),
-    });
-    
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to commit fix: ${error}`);
-    }
-  }
-
-  async createPullRequest(owner: string, repo: string, head: string, base: string, title: string, body: string): Promise<string> {
-    if (!GITHUB_TOKEN) throw new Error('GitHub token not configured');
-    
-    const response = await fetch(`${GITHUB_BASE_URL}/repos/${owner}/${repo}/pulls`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title,
-        head,
-        base,
-        body,
-      }),
-    });
-    
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to create pull request: ${error}`);
-    }
-    
-    const data = await response.json();
-    return data.html_url;
-  }
-
   getBatchStatus(batchId: string): BatchOperation | undefined {
     return this.batchOperations.get(batchId);
   }
@@ -605,13 +509,14 @@ class EnhancedDeepSourceService {
       timestamp: new Date().toISOString(),
       environment: {
         deepsource_api_configured: !!DEEPSOURCE_API_KEY,
-        github_token_configured: !!GITHUB_TOKEN,
+        github_token_configured: false,
         webhook_secret_configured: !!WEBHOOK_SECRET
       },
       service_info: {
         batch_operations_count: this.batchOperations.size,
         rate_limit_states: this.rateLimitState.size
-      }
+      },
+      github_integration: 'disabled'
     };
   }
 }
@@ -761,74 +666,16 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      case 'create-branch': {
-        const { owner, repo, branch_name, base_branch } = requestBody;
-        
-        if (!owner || !repo || !branch_name) {
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: 'Missing required parameters: owner, repo, branch_name' 
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        
-        await service.createGitHubBranch(owner, repo, branch_name, base_branch);
-
-        return new Response(JSON.stringify({
-          success: true,
-          message: `Branch ${branch_name} created successfully`,
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      case 'commit-fix': {
-        const { owner, repo, branch, file_path, content, message } = requestBody;
-        
-        if (!owner || !repo || !branch || !file_path || !content || !message) {
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: 'Missing required parameters for commit-fix' 
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        
-        await service.commitFix(owner, repo, branch, file_path, content, message);
-
-        return new Response(JSON.stringify({
-          success: true,
-          message: 'Fix committed successfully',
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
+      // GitHub integration endpoints now return disabled message
+      case 'create-branch':
+      case 'commit-fix':
       case 'create-pr': {
-        const { owner, repo, head, base, title, body } = requestBody;
-        
-        if (!owner || !repo || !head || !base || !title) {
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: 'Missing required parameters for create-pr' 
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        
-        const prUrl = await service.createPullRequest(owner, repo, head, base, title, body || '');
-
-        return new Response(JSON.stringify({
-          success: true,
-          pull_request_url: prUrl,
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'GitHub integration is disabled',
+          message: 'GitHub token has been removed. GitHub integration features are not available.'
         }), {
-          status: 200,
+          status: 503,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -838,7 +685,7 @@ const handler = async (req: Request): Promise<Response> => {
         return new Response(JSON.stringify({ 
           success: false, 
           error: `Unknown action: ${action}`,
-          available_actions: ['analytics', 'test-connectivity', 'batch-fix', 'batch-status', 'create-branch', 'commit-fix', 'create-pr', 'webhook']
+          available_actions: ['analytics', 'test-connectivity', 'batch-fix', 'batch-status', 'webhook']
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

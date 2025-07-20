@@ -21,12 +21,6 @@ export interface BatchStatusResponse {
   };
 }
 
-export interface GitHubIntegration {
-  createBranch: (owner: string, repo: string, branchName: string, baseBranch?: string) => Promise<void>;
-  commitFix: (owner: string, repo: string, branch: string, filePath: string, content: string, message: string) => Promise<void>;
-  createPullRequest: (owner: string, repo: string, head: string, base: string, title: string, body: string) => Promise<string>;
-}
-
 export interface AnalyticsData {
   repository_id: string;
   period_days: number;
@@ -47,6 +41,7 @@ export interface AnalyticsData {
     request_params: any;
     api_key_configured: boolean;
     data_source: string;
+    github_integration?: string;
   };
 }
 
@@ -62,6 +57,7 @@ export interface ConnectivityTestResult {
     batch_operations_count: number;
     rate_limit_states: number;
   };
+  github_integration?: string;
 }
 
 class EnhancedDeepSourceClient {
@@ -176,83 +172,6 @@ class EnhancedDeepSourceClient {
   }
 
   /**
-   * GitHub integration methods
-   */
-  get github(): GitHubIntegration {
-    return {
-      createBranch: async (owner: string, repo: string, branchName: string, baseBranch = 'main') => {
-        console.log('Creating GitHub branch:', { owner, repo, branchName, baseBranch });
-        
-        const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
-          body: { 
-            action: 'create-branch',
-            owner, 
-            repo, 
-            branch_name: branchName, 
-            base_branch: baseBranch 
-          },
-        });
-
-        if (error) {
-          console.error('Failed to create branch:', error);
-          throw error;
-        }
-        
-        console.log('Branch created successfully:', data);
-        return data;
-      },
-
-      commitFix: async (owner: string, repo: string, branch: string, filePath: string, content: string, message: string) => {
-        console.log('Committing fix:', { owner, repo, branch, filePath, message });
-        
-        const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
-          body: { 
-            action: 'commit-fix',
-            owner, 
-            repo, 
-            branch, 
-            file_path: filePath, 
-            content, 
-            message 
-          },
-        });
-
-        if (error) {
-          console.error('Failed to commit fix:', error);
-          throw error;
-        }
-        
-        console.log('Fix committed successfully:', data);
-        return data;
-      },
-
-      createPullRequest: async (owner: string, repo: string, head: string, base: string, title: string, body: string) => {
-        console.log('Creating pull request:', { owner, repo, head, base, title });
-        
-        const { data, error } = await supabase.functions.invoke('enhanced-deepsource', {
-          body: { 
-            action: 'create-pr',
-            owner, 
-            repo, 
-            head, 
-            base, 
-            title, 
-            body 
-          },
-        });
-
-        if (error) {
-          console.error('Failed to create pull request:', error);
-          throw error;
-        }
-        
-        console.log('Pull request created:', data);
-        return data.pull_request_url;
-      },
-    };
-  }
-
-  /**
    * Get analytics data for a repository
    * @param repositoryId - Repository identifier (e.g., "owner/repo" or "demo-repo-1")
    * @param days - Number of days to include in analytics (default: 30)
@@ -282,6 +201,20 @@ class EnhancedDeepSourceClient {
    */
   getWebhookUrl(): string {
     return `https://xmaafgjtzupdndcavjiq.supabase.co/functions/v1/enhanced-deepsource/webhook`;
+  }
+
+  /**
+   * Check if GitHub integration is available
+   */
+  isGitHubIntegrationAvailable(): boolean {
+    return false; // GitHub integration has been disabled
+  }
+
+  /**
+   * Get GitHub integration status message
+   */
+  getGitHubIntegrationStatus(): string {
+    return 'GitHub integration is disabled. The GitHub token has been removed from the configuration.';
   }
 }
 
