@@ -171,48 +171,19 @@ export const EnhancedDeepSourceDashboard: React.FC = () => {
   };
 
   const handleCreateFixBranch = async () => {
-    try {
-      await enhancedDeepSourceClient.github.createBranch('owner', 'repo', 'deepsource-fixes', 'main');
-      
-      toast({
-        title: "Branch Created",
-        description: "deepsource-fixes branch created successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to Create Branch",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "GitHub Integration Disabled",
+      description: enhancedDeepSourceClient.getGitHubIntegrationStatus(),
+      variant: "destructive",
+    });
   };
 
   const handleCreatePullRequest = async () => {
-    try {
-      const prUrl = await enhancedDeepSourceClient.github.createPullRequest(
-        'owner',
-        'repo',
-        'deepsource-fixes',
-        'main',
-        'DeepSource Auto-fixes',
-        'This PR contains automated fixes for DeepSource issues.\n\n' +
-        `Fixed ${batchStatus?.results?.fixed || 0} issues automatically.`
-      );
-      
-      toast({
-        title: "Pull Request Created",
-        description: "PR created successfully",
-      });
-      
-      // Open PR in new tab
-      window.open(prUrl, '_blank');
-    } catch (error) {
-      toast({
-        title: "Failed to Create PR",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "GitHub Integration Disabled",
+      description: enhancedDeepSourceClient.getGitHubIntegrationStatus(),
+      variant: "destructive",
+    });
   };
 
   const getSeverityColor = (severity: string) => {
