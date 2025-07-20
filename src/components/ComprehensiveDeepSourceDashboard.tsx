@@ -390,7 +390,7 @@ export function ComprehensiveDeepSourceDashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {enhancedStats && (
+          {enhancedStats ? (
             <>
               {/* Enhanced Statistics */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -470,6 +470,17 @@ export function ComprehensiveDeepSourceDashboard() {
                 </CardContent>
               </Card>
             </>
+          ) : (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Loading enhanced statistics...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 
