@@ -9,12 +9,6 @@ import "./index.css";
 import "@/lib/pwa"; // Initialize PWA features
 import './lib/i18n'; // Initialize i18n
 
-// Simple React validation
-if (!React) {
-  throw new Error("React is not available");
-}
-
-console.log("✅ React loaded:", React.version);
 
 const rootElement = document.getElementById("root");
 
