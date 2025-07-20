@@ -15,9 +15,11 @@ import {
   BarChart3,
   Settings,
   Clock,
-  Download
+  Download,
+  Loader2
 } from 'lucide-react';
-import { deepSourceService, DeepSourceIssue, DeepSourceRepository, RefreshStatus } from '@/services/deepSourceService';
+import { Progress } from "@/components/ui/progress";
+import { deepSourceService, DeepSourceIssue, DeepSourceRepository, RefreshStatus, AutoFixResult } from '@/services/deepSourceService';
 import { DeepSourceRefreshStatus } from './DeepSourceRefreshStatus';
 import { toast } from 'sonner';
 
@@ -28,6 +30,8 @@ export function DeepSourceDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoFixing, setIsAutoFixing] = useState(false);
   const [autoFixEnabled, setAutoFixEnabled] = useState(true);
+  const [autoFixProgress, setAutoFixProgress] = useState(0);
+  const [autoFixingMessage, setAutoFixingMessage] = useState('');
   const [refreshStatus, setRefreshStatus] = useState<RefreshStatus>({
     isRefreshing: false,
     progress: 0,
@@ -120,27 +124,74 @@ export function DeepSourceDashboard() {
     }
 
     setIsAutoFixing(true);
+    setAutoFixProgress(0);
+    setAutoFixingMessage('Starting auto-fix process...');
     let fixedCount = 0;
+    let totalFilesModified = 0;
 
     try {
-      for (const issue of autoFixableIssues) {
-        const success = await deepSourceService.applyAutoFix(issue);
-        if (success) {
-          fixedCount++;
+      toast.info(`Starting auto-fix for ${autoFixableIssues.length} issues...`);
+      
+      for (let i = 0; i < autoFixableIssues.length; i++) {
+        const issue = autoFixableIssues[i];
+        setAutoFixingMessage(`Fixing issue ${i + 1} of ${autoFixableIssues.length}: ${issue.title}`);
+        setAutoFixProgress(Math.round(((i + 1) / autoFixableIssues.length) * 100));
+        
+        try {
+          const result = await deepSourceService.applyAutoFix(issue);
+          if (result.success) {
+            fixedCount++;
+            totalFilesModified += result.files_modified || 1;
+          }
+        } catch (error) {
+          console.warn(`Failed to fix issue ${issue.id}:`, error);
         }
       }
 
       const message = isDemoMode
-        ? `Demo: Successfully simulated fixing ${fixedCount} out of ${autoFixableIssues.length} issues`
-        : `Successfully fixed ${fixedCount} out of ${autoFixableIssues.length} issues`;
-      toast.success(message);
+        ? `Demo: Successfully simulated fixing ${fixedCount} issues across ${totalFilesModified} files`
+        : `Successfully fixed ${fixedCount} issues across ${totalFilesModified} files`;
+      
+      if (fixedCount === 0) {
+        toast.error("No issues were successfully fixed");
+      } else {
+        toast.success(message);
+      }
       
       // Reload issues to reflect fixes
       await loadIssues();
     } catch (error) {
-      toast.error("Failed to apply auto-fixes");
+      toast.error("Failed to complete auto-fix process");
+      console.error('Auto-fix error:', error);
     } finally {
       setIsAutoFixing(false);
+      setAutoFixProgress(0);
+      setAutoFixingMessage('');
+    }
+  };
+
+  const handleSingleAutoFix = async (issue: DeepSourceIssue) => {
+    setAutoFixingMessage(`Fixing: ${issue.title}...`);
+    
+    try {
+      const result = await deepSourceService.applyAutoFix(issue);
+      
+      if (result.success) {
+        const message = isDemoMode
+          ? `Demo: Successfully simulated fixing "${issue.title}"`
+          : `Fixed: ${issue.title}`;
+        toast.success(message);
+        
+        // Reload issues to reflect the fix
+        await loadIssues();
+      } else {
+        toast.error(`Failed to fix: ${issue.title}`);
+      }
+    } catch (error) {
+      toast.error(`Error fixing: ${issue.title}`);
+      console.error('Single auto-fix error:', error);
+    } finally {
+      setAutoFixingMessage('');
     }
   };
 
@@ -221,6 +272,27 @@ export function DeepSourceDashboard() {
         lastUpdated={refreshStatus.lastUpdated}
         demoMode={isDemoMode}
       />
+
+      {/* Auto-Fix Progress */}
+      {isAutoFixing && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="font-medium text-blue-800">Auto-fixing in progress...</span>
+                </div>
+                <span className="text-sm text-blue-600">{autoFixProgress}%</span>
+              </div>
+              <Progress value={autoFixProgress} className="h-2" />
+              {autoFixingMessage && (
+                <p className="text-sm text-blue-700">{autoFixingMessage}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Repository Selection */}
       {repositories.length > 0 && (
@@ -401,9 +473,14 @@ export function DeepSourceDashboard() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => deepSourceService.applyAutoFix(issue)}
+                      onClick={() => handleSingleAutoFix(issue)}
+                      disabled={isAutoFixing || autoFixingMessage !== ''}
                     >
-                      <Zap className="h-3 w-3 mr-1" />
+                      {autoFixingMessage && autoFixingMessage.includes(issue.title) ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Zap className="h-3 w-3 mr-1" />
+                      )}
                       Fix
                     </Button>
                   )}

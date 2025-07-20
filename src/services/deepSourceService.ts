@@ -30,6 +30,14 @@ export interface RefreshStatus {
   lastUpdated?: Date;
 }
 
+export interface AutoFixResult {
+  success: boolean;
+  message: string;
+  changes_applied: string[];
+  files_modified: number;
+  demo_mode: boolean;
+}
+
 class DeepSourceService {
   private baseUrl = 'https://deepsource.io/api/v1';
   private refreshCallbacks: ((status: RefreshStatus) => void)[] = [];
@@ -255,7 +263,7 @@ class DeepSourceService {
   /**
    * Apply automatic fix for supported issue types
    */
-  async applyAutoFix(issue: DeepSourceIssue): Promise<boolean> {
+  async applyAutoFix(issue: DeepSourceIssue): Promise<AutoFixResult> {
     try {
       const { data } = await supabase.functions.invoke('deepsource-autofix', {
         body: { 
@@ -265,10 +273,22 @@ class DeepSourceService {
         }
       });
       
-      return data?.success || false;
+      return data || { 
+        success: false, 
+        message: 'No response received', 
+        changes_applied: [], 
+        files_modified: 0,
+        demo_mode: true
+      };
     } catch (error) {
       console.error('Failed to apply auto-fix:', error);
-      return false;
+      return { 
+        success: false, 
+        message: 'Auto-fix failed', 
+        changes_applied: [], 
+        files_modified: 0,
+        demo_mode: true
+      };
     }
   }
 
