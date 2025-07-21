@@ -30,6 +30,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SecurityTestPanel from "@/components/SecurityTestPanel";
+import DeepSourceZeroIssueAlert from "@/components/DeepSourceZeroIssueAlert";
+import DeepSourceConfigValidator from "@/components/DeepSourceConfigValidator";
 
 interface DeepSourceIssue {
   id: string;
@@ -77,6 +79,10 @@ const DeepSourceDashboard = () => {
   const [isFixing, setIsFixing] = useState<string | null>(null);
   const [isBatchFixing, setIsBatchFixing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showZeroIssueAlert, setShowZeroIssueAlert] = useState(false);
+  const [validationResults, setValidationResults] = useState<any>(null);
+  const [lastScanResults, setLastScanResults] = useState<any>(null);
+  const [showConfigValidator, setShowConfigValidator] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -115,6 +121,22 @@ const DeepSourceDashboard = () => {
       }));
 
       setIssues(typedIssues);
+
+      // Check for zero issues from last scan
+      const { data: lastScan } = await supabase
+        .from('deepsource_scans')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastScan && lastScan.issues_found === 0) {
+        setShowZeroIssueAlert(true);
+        setLastScanResults(lastScan);
+        if (lastScan.scan_metadata?.validation_results) {
+          setValidationResults(lastScan.scan_metadata.validation_results);
+        }
+      }
 
       // Calculate category stats
       const statsMap = new Map<string, { count: number; totalOccurrences: number }>();
@@ -163,6 +185,7 @@ const DeepSourceDashboard = () => {
 
   const triggerScan = async () => {
     setIsScanning(true);
+    setShowZeroIssueAlert(false);
     try {
       const { data, error } = await supabase.functions.invoke('deepsource-integration', {
         body: {
@@ -174,7 +197,19 @@ const DeepSourceDashboard = () => {
 
       if (error) throw error;
 
-      toast.success(`Scan completed! Found ${data.issuesFound} issues`);
+      setLastScanResults(data);
+      
+      // Check for zero issues and show alert
+      if (data.issuesFound === 0) {
+        setShowZeroIssueAlert(true);
+        if (data.validationResults) {
+          setValidationResults(data.validationResults);
+        }
+        toast.warning('⚠️ Scan completed with 0 issues - Check integration!');
+      } else {
+        toast.success(`Scan completed! Found ${data.issuesFound} issues`);
+      }
+      
       await loadData();
     } catch (error) {
       console.error('Scan failed:', error);
@@ -259,6 +294,39 @@ const DeepSourceDashboard = () => {
     return count.toString();
   };
 
+  const handleRevalidateIntegration = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('deepsource-integration', {
+        body: {
+          action: 'validate_integration',
+          organizationSlug: 'leasy-development',
+          repositoryName: 'leasy-renewal-core'
+        }
+      });
+
+      if (error) throw error;
+
+      setValidationResults(data);
+      if (data.isValid) {
+        toast.success('Integration validation passed!');
+      } else {
+        toast.error('Integration validation failed');
+      }
+    } catch (error) {
+      console.error('Validation failed:', error);
+      toast.error('Failed to validate integration');
+    }
+  };
+
+  const handleReconfigureIntegration = () => {
+    setShowConfigValidator(true);
+  };
+
+  const handleValidationComplete = (results: any) => {
+    setValidationResults(results);
+    setShowConfigValidator(false);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -341,6 +409,10 @@ const DeepSourceDashboard = () => {
                 <Download className="h-4 w-4 mr-2" />
                 View Reports
               </Button>
+              <Button onClick={() => setShowConfigValidator(true)} variant="outline">
+                <Settings className="h-4 w-4 mr-2" />
+                Configure
+              </Button>
             </div>
           </div>
 
@@ -357,6 +429,28 @@ const DeepSourceDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Zero Issue Alert */}
+        {showZeroIssueAlert && (
+          <div className="p-6 pb-0">
+            <DeepSourceZeroIssueAlert
+              isVisible={showZeroIssueAlert}
+              validationResults={validationResults}
+              onReconfigure={handleReconfigureIntegration}
+              onRevalidate={handleRevalidateIntegration}
+              onDismiss={() => setShowZeroIssueAlert(false)}
+            />
+          </div>
+        )}
+
+        {/* Config Validator Modal */}
+        {showConfigValidator && (
+          <div className="p-6 pb-0">
+            <DeepSourceConfigValidator
+              onValidationComplete={handleValidationComplete}
+            />
+          </div>
+        )}
 
         {/* Status Alert */}
         {!repository && (

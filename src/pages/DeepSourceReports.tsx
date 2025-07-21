@@ -90,68 +90,6 @@ const DeepSourceReports = () => {
     }
   };
 
-  const downloadJSONReport = async (report: ScanReport) => {
-    try {
-      // Get the latest scan data to generate fresh report
-      const { data: scanData } = await supabase
-        .from('deepsource_scans')
-        .select('*')
-        .eq('id', report.scan_id)
-        .single();
-
-      const { data: issuesData } = await supabase
-        .from('deepsource_issues')
-        .select('*')
-        .eq('repository_id', scanData?.repository_id);
-
-      const reportData = {
-        scan_id: report.scan_id,
-        repository: report.metadata.repository,
-        summary: {
-          total_issues: report.metadata.issues_count,
-          by_severity: {
-            critical: issuesData?.filter(i => i.severity === 'critical').length || 0,
-            high: issuesData?.filter(i => i.severity === 'high').length || 0,
-            medium: issuesData?.filter(i => i.severity === 'medium').length || 0,
-            low: issuesData?.filter(i => i.severity === 'low').length || 0
-          },
-          by_category: issuesData?.reduce((acc, issue) => {
-            acc[issue.category] = (acc[issue.category] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>) || {}
-        },
-        issues: issuesData?.map(issue => ({
-          id: issue.id,
-          rule: issue.check_id,
-          title: issue.title,
-          description: issue.description,
-          file_path: issue.file_path,
-          line_begin: issue.line_begin,
-          line_end: issue.line_end,
-          severity: issue.severity,
-          category: issue.category,
-          is_autofixable: issue.is_autofixable,
-          suggested_fix: issue.fix_summary || issue.description
-        })) || []
-      };
-
-      const blob = new Blob([JSON.stringify(reportData, null, 2)], { 
-        type: 'application/json' 
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = report.file_path;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      toast.success('JSON report downloaded successfully!');
-    } catch (error) {
-      console.error('Failed to download JSON report:', error);
-      toast.error('Failed to download JSON report');
-    }
-  };
-
   const generatePDFReport = async (report: ScanReport) => {
     setIsGeneratingPDF(true);
     try {
@@ -168,6 +106,8 @@ const DeepSourceReports = () => {
         .eq('repository_id', scanData?.repository_id);
 
       const issues = issuesData || [];
+      const isZeroIssues = issues.length === 0;
+      const hasZeroIssueAlert = report.metadata.zero_issue_alert;
 
       // Create PDF
       const pdf = new jsPDF();
@@ -181,9 +121,87 @@ const DeepSourceReports = () => {
       pdf.text('DeepSource Security Report', 20, yPosition);
       yPosition += 15;
 
+      // Zero Issue Warning (if applicable)
+      if (hasZeroIssueAlert || isZeroIssues) {
+        pdf.setFontSize(14);
+        pdf.setFont(undefined, 'bold');
+        pdf.setTextColor(255, 0, 0);
+        pdf.text('⚠️ WARNING: INTEGRATION ISSUE DETECTED', 20, yPosition);
+        yPosition += 10;
+
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'normal');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('DeepSource returned 0 issues. This likely indicates a configuration problem.', 20, yPosition);
+        yPosition += 10;
+
+        // Add troubleshooting section
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Troubleshooting Steps:', 20, yPosition);
+        yPosition += 8;
+
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'normal');
+        const troubleshootingSteps = [
+          '1. Check if analyzers are enabled in .deepsource.toml file',
+          '2. Ensure correct organization and repository slugs are configured',
+          '3. Verify API key has correct permissions and is not expired',
+          '4. Confirm webhook events are being triggered from GitHub',
+          '5. Check if the repository is properly connected to DeepSource',
+          '6. Verify that the codebase contains files that should be analyzed'
+        ];
+
+        troubleshootingSteps.forEach(step => {
+          pdf.text(step, 25, yPosition);
+          yPosition += lineHeight;
+        });
+        yPosition += 10;
+
+        // Add validation results if available
+        if (report.metadata.validation_results) {
+          const validation = report.metadata.validation_results;
+          
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Validation Results:', 20, yPosition);
+          yPosition += 8;
+
+          pdf.setFontSize(10);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(`Status: ${validation.isValid ? 'Valid' : 'Issues Found'}`, 25, yPosition);
+          yPosition += lineHeight;
+
+          if (validation.issues && validation.issues.length > 0) {
+            pdf.text('Issues:', 25, yPosition);
+            yPosition += lineHeight;
+            validation.issues.forEach((issue: string) => {
+              pdf.text(`• ${issue}`, 30, yPosition);
+              yPosition += lineHeight;
+            });
+          }
+
+          if (validation.suggestions && validation.suggestions.length > 0) {
+            pdf.text('Suggestions:', 25, yPosition);
+            yPosition += lineHeight;
+            validation.suggestions.forEach((suggestion: string) => {
+              pdf.text(`→ ${suggestion}`, 30, yPosition);
+              yPosition += lineHeight;
+            });
+          }
+          yPosition += 10;
+        }
+
+        // Add separator
+        pdf.setLineWidth(0.5);
+        pdf.line(20, yPosition, 190, yPosition);
+        yPosition += 10;
+      }
+
       // Timestamp
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
+      pdf.setTextColor(0, 0, 0);
       pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, yPosition);
       yPosition += 10;
 
@@ -201,6 +219,7 @@ const DeepSourceReports = () => {
         `Commit: ${report.metadata.repository.commit_hash}`,
         `Author: ${report.metadata.repository.commit_author}`,
         `Scan Date: ${new Date(report.metadata.repository.scan_date).toLocaleString()}`,
+        `Scan Duration: ${report.metadata.repository.scan_duration_ms}ms`,
         `Issues Found: ${report.metadata.issues_count}`
       ];
 
@@ -218,8 +237,13 @@ const DeepSourceReports = () => {
 
       if (issues.length === 0) {
         pdf.setFontSize(12);
-        pdf.setTextColor(0, 128, 0);
-        pdf.text('✅ No issues found', 25, yPosition);
+        if (hasZeroIssueAlert) {
+          pdf.setTextColor(255, 0, 0);
+          pdf.text('⚠️ No issues detected - Possible integration problem', 25, yPosition);
+        } else {
+          pdf.setTextColor(0, 128, 0);
+          pdf.text('✅ No issues found', 25, yPosition);
+        }
         yPosition += 10;
       } else {
         const severityCounts = {
@@ -252,7 +276,6 @@ const DeepSourceReports = () => {
         yPosition += 10;
 
         issues.forEach((issue, index) => {
-          // Check if we need a new page
           if (yPosition > pageHeight - 40) {
             pdf.addPage();
             yPosition = 20;
@@ -273,7 +296,6 @@ const DeepSourceReports = () => {
           pdf.text(`Severity: ${issue.severity.toUpperCase()}`, 30, yPosition);
           yPosition += lineHeight;
 
-          // Description (word wrap)
           const descriptionLines = pdf.splitTextToSize(issue.description, 150);
           pdf.text(descriptionLines, 30, yPosition);
           yPosition += descriptionLines.length * lineHeight;
@@ -286,7 +308,32 @@ const DeepSourceReports = () => {
             yPosition += fixLines.length * lineHeight;
           }
 
-          yPosition += 5; // Space between issues
+          yPosition += 5;
+        });
+      }
+
+      // Footer with additional resources
+      if (hasZeroIssueAlert || isZeroIssues) {
+        pdf.addPage();
+        yPosition = 20;
+        
+        pdf.setFontSize(14);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Additional Resources', 20, yPosition);
+        yPosition += 10;
+
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'normal');
+        const resources = [
+          'DeepSource Documentation: https://docs.deepsource.com/',
+          'Configuration Guide: https://docs.deepsource.com/docs/configuration',
+          'GitHub Integration: https://docs.deepsource.com/docs/github-integration',
+          'Troubleshooting: https://docs.deepsource.com/docs/troubleshooting'
+        ];
+
+        resources.forEach(resource => {
+          pdf.text(resource, 25, yPosition);
+          yPosition += lineHeight;
         });
       }
 
@@ -370,6 +417,11 @@ const DeepSourceReports = () => {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
+                    {report.metadata.zero_issue_alert && (
+                      <Badge variant="destructive" className="animate-pulse">
+                        ⚠️ Alert
+                      </Badge>
+                    )}
                     <Badge variant={report.metadata.issues_count === 0 ? "secondary" : "destructive"}>
                       {report.metadata.issues_count} issues
                     </Badge>
@@ -381,6 +433,15 @@ const DeepSourceReports = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {report.metadata.zero_issue_alert && (
+                    <Alert className="border-destructive/50 bg-destructive/10">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <AlertDescription>
+                        <strong>Integration Warning:</strong> This scan returned 0 issues, which may indicate a configuration problem.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Commit:</span>

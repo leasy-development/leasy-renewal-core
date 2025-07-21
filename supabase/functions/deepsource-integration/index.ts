@@ -24,6 +24,12 @@ interface DeepSourceApiResponse {
   count: number
 }
 
+interface ValidationResult {
+  isValid: boolean
+  issues: string[]
+  suggestions: string[]
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -55,9 +61,100 @@ serve(async (req) => {
       throw new Error('DeepSource API token not configured')
     }
 
+    // Validation helper function
+    const validateIntegration = async (): Promise<ValidationResult> => {
+      const issues: string[] = []
+      const suggestions: string[] = []
+
+      try {
+        // Test API key validity
+        const testResponse = await fetch(`https://api.deepsource.com/v1/repos/${DEEPSOURCE_ORG_SLUG}/${DEEPSOURCE_REPO_NAME}/`, {
+          headers: {
+            'Authorization': `Token ${DEEPSOURCE_API_KEY}`,
+            'Accept': 'application/json',
+          },
+        })
+
+        if (!testResponse.ok) {
+          if (testResponse.status === 401) {
+            issues.push('API key is invalid or expired')
+            suggestions.push('Verify your DeepSource API token in project settings')
+          } else if (testResponse.status === 404) {
+            issues.push('Repository not found on DeepSource')
+            suggestions.push('Ensure the repository is connected to DeepSource')
+            suggestions.push('Check organization and repository names are correct')
+          } else {
+            issues.push(`API returned error: ${testResponse.status}`)
+          }
+        }
+
+        // Check for common configuration issues
+        const repoData = testResponse.ok ? await testResponse.json() : null
+        if (repoData && repoData.analyzers && repoData.analyzers.length === 0) {
+          issues.push('No analyzers configured for this repository')
+          suggestions.push('Enable analyzers in .deepsource.toml file')
+          suggestions.push('Ensure JavaScript/TypeScript analyzer is enabled')
+        }
+
+      } catch (error) {
+        issues.push('Failed to validate DeepSource integration')
+        suggestions.push('Check network connectivity and API endpoint')
+      }
+
+      return {
+        isValid: issues.length === 0,
+        issues,
+        suggestions
+      }
+    }
+
+    // Enhanced commit information fetching
+    const getCommitInfo = async () => {
+      try {
+        // Try to get commit info from GitHub API if available
+        const response = await fetch(`https://api.github.com/repos/${DEEPSOURCE_ORG_SLUG}/${DEEPSOURCE_REPO_NAME}/commits?per_page=1`, {
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'DeepSource-Integration'
+          }
+        })
+
+        if (response.ok) {
+          const commits = await response.json()
+          if (commits.length > 0) {
+            return {
+              commit_hash: commits[0].sha.substring(0, 7),
+              commit_author: commits[0].commit.author.name,
+              commit_message: commits[0].commit.message.split('\n')[0]
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Failed to fetch commit info from GitHub:', error)
+      }
+
+      // Fallback to default values
+      return {
+        commit_hash: 'unknown',
+        commit_author: 'System',
+        commit_message: 'Manual scan trigger'
+      }
+    }
+
     // Handle different actions
     switch (action) {
+      case 'validate_integration':
+        const validationResult = await validateIntegration()
+        return new Response(
+          JSON.stringify(validationResult),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          },
+        )
+      
       case 'check_status':
+        const validation = await validateIntegration()
         try {
           const response = await fetch(`https://api.deepsource.com/v1/repos/${DEEPSOURCE_ORG_SLUG}/${DEEPSOURCE_REPO_NAME}/`, {
             headers: {
@@ -76,7 +173,8 @@ serve(async (req) => {
             JSON.stringify({ 
               status: 'connected',
               repository: repoData,
-              lastScan: new Date().toISOString()
+              lastScan: new Date().toISOString(),
+              validation
             }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -88,6 +186,7 @@ serve(async (req) => {
             JSON.stringify({ 
               status: 'error',
               error: error.message,
+              validation,
               fallbackMessage: 'Using cached data due to API connectivity issues'
             }),
             { 
@@ -98,6 +197,9 @@ serve(async (req) => {
         }
       
       case 'trigger_scan':
+        const scanStartTime = Date.now()
+        const commitInfo = await getCommitInfo()
+        
         try {
           // Get or create repository record
           let repository
@@ -132,7 +234,11 @@ serve(async (req) => {
               repository_id: repository.id,
               user_id: user.id,
               scan_type: 'manual',
-              status: 'running'
+              status: 'running',
+              scan_metadata: {
+                commit_info: commitInfo,
+                scan_triggered_at: new Date().toISOString()
+              }
             })
             .select()
             .single()
@@ -171,21 +277,27 @@ serve(async (req) => {
             } else {
               allIssues = allIssues.concat(pageData.issues)
               
-              // Check if we have more pages - if we got less than perPage, we're done
               if (pageData.issues.length < perPage) {
                 hasMorePages = false
               }
               page++
             }
             
-            // Safety check to prevent infinite loops
             if (page > 100) {
               console.log('Reached maximum page limit (100), stopping')
               break
             }
           }
           
+          const scanEndTime = Date.now()
+          const scanDuration = scanEndTime - scanStartTime
+          
           console.log(`Total issues fetched: ${allIssues.length}`)
+          console.log(`Scan duration: ${scanDuration}ms`)
+          
+          // Check for zero issues and create alert
+          const isZeroIssueAlert = allIssues.length === 0
+          const validationForZeroIssues = isZeroIssueAlert ? await validateIntegration() : null
           
           // Generate reports after scan
           const reportData = {
@@ -193,13 +305,17 @@ serve(async (req) => {
             repository: {
               organization: DEEPSOURCE_ORG_SLUG,
               name: DEEPSOURCE_REPO_NAME,
-              commit_hash: 'main', // Could be enhanced to get actual commit
-              commit_author: 'System',
+              commit_hash: commitInfo.commit_hash,
+              commit_author: commitInfo.commit_author,
+              commit_message: commitInfo.commit_message,
               scan_date: new Date().toISOString(),
+              scan_duration_ms: scanDuration,
               issues_found: allIssues.length
             },
             summary: {
               total_issues: allIssues.length,
+              zero_issue_alert: isZeroIssueAlert,
+              validation_results: validationForZeroIssues,
               by_severity: {
                 critical: allIssues.filter(i => i.severity === 'critical').length,
                 high: allIssues.filter(i => i.severity === 'high').length,
@@ -221,8 +337,8 @@ serve(async (req) => {
               line_end: issue.line_end,
               severity: issue.severity,
               category: issue.category,
-              is_autofixable: issue.is_auto_fixable,
-              suggested_fix: issue.description // Enhanced later with AI
+              is_auto_fixable: issue.is_auto_fixable,
+              suggested_fix: issue.description
             }))
           };
 
@@ -243,6 +359,8 @@ serve(async (req) => {
               file_size: jsonReport.length,
               metadata: {
                 issues_count: allIssues.length,
+                zero_issue_alert: isZeroIssueAlert,
+                validation_results: validationForZeroIssues,
                 generated_at: new Date().toISOString(),
                 format: 'json',
                 repository: reportData.repository
@@ -263,22 +381,20 @@ serve(async (req) => {
             category: issue.category,
             severity: issue.severity,
             is_autofixable: issue.is_auto_fixable,
-            occurrence_count: 1, // Will be updated based on actual data
-            file_count: 1, // Will be updated based on actual data
+            occurrence_count: 1,
+            file_count: 1,
             first_seen_at: new Date().toISOString(),
             last_seen_at: new Date().toISOString(),
             raw_issue_data: issue
           }))
 
           if (issuesForDb.length > 0) {
-            // Clear existing issues first for clean data
             await supabaseClient
               .from('deepsource_issues')
               .delete()
               .eq('repository_id', repository.id)
               .eq('user_id', user.id)
             
-            // Insert new issues
             await supabaseClient
               .from('deepsource_issues')
               .insert(issuesForDb)
@@ -290,7 +406,13 @@ serve(async (req) => {
             .update({
               status: 'completed',
               issues_found: allIssues.length,
-              scan_duration_ms: Math.floor(Math.random() * 5000) + 1000
+              scan_duration_ms: scanDuration,
+              scan_metadata: {
+                ...scanData.scan_metadata,
+                zero_issue_alert: isZeroIssueAlert,
+                validation_results: validationForZeroIssues,
+                completed_at: new Date().toISOString()
+              }
             })
             .eq('id', scanData.id)
           
@@ -300,6 +422,10 @@ serve(async (req) => {
               status: 'completed',
               issuesFound: allIssues.length,
               issues: allIssues,
+              scanDurationMs: scanDuration,
+              commitInfo,
+              zeroIssueAlert: isZeroIssueAlert,
+              validationResults: validationForZeroIssues,
               reportGenerated: true,
               reportData: jsonReport
             }),
@@ -310,6 +436,18 @@ serve(async (req) => {
           )
         } catch (error) {
           console.error('Scan error:', error)
+          
+          // Update scan status to failed
+          if (scanData?.id) {
+            await supabaseClient
+              .from('deepsource_scans')
+              .update({
+                status: 'failed',
+                error_message: error.message,
+                scan_duration_ms: Date.now() - scanStartTime
+              })
+              .eq('id', scanData.id)
+          }
           
           // Fallback to sample data if API fails
           const sampleIssues = [
@@ -345,7 +483,11 @@ serve(async (req) => {
               status: 'completed_with_fallback',
               issuesFound: sampleIssues.length,
               issues: sampleIssues,
-              fallbackMessage: 'Using sample data due to API connectivity issues'
+              scanDurationMs: Date.now() - scanStartTime,
+              commitInfo,
+              zeroIssueAlert: false,
+              fallbackMessage: 'Using sample data due to API connectivity issues',
+              error: error.message
             }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
