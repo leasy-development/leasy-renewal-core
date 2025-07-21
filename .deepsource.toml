@@ -1,6 +1,15 @@
 version = 1
 
 [[analyzers]]
+name = "typescript"
+
+  [analyzers.meta]
+  environment = ["browser", "nodejs", "vitest"]
+  plugins = ["react"]
+  run_linter = true
+  run_tsc = true
+
+[[analyzers]]
 name = "secrets"
 
 [[analyzers]]
@@ -10,21 +19,11 @@ name = "test-coverage"
 name = "shell"
 
 [[analyzers]]
+name = "sql"
+
+# Optional: Falls ihr Python verwendet
+[[analyzers]]
 name = "python"
 
   [analyzers.meta]
   runtime_version = "3.x.x"
-
-[[analyzers]]
-name = "javascript"
-
-  [analyzers.meta]
-  plugins = ["react"]
-  environment = [
-    "browser",
-    "nodejs",
-    "vitest"
-  ]
-
-[[analyzers]]
-name = "sql"
