@@ -55,11 +55,11 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   const getCategoryStyle = (category: string) => {
     switch (category) {
       case 'ai':
-        return 'ai-card hover-lift border-blue-200 hover:border-blue-400 hover:shadow-ai transition-all duration-300';
+        return 'ai-card hover-lift border-ai-purple/20 hover:border-ai-purple/40 hover:shadow-ai transition-all duration-300';
       case 'media':
-        return 'media-card hover-lift border-purple-200 hover:border-purple-400 hover:shadow-media transition-all duration-300';
+        return 'media-card hover-lift border-ai-purple/20 hover:border-ai-purple/40 hover:shadow-media transition-all duration-300';
       case 'admin':
-        return 'admin-card hover-lift border-orange-200 hover:border-orange-400 transition-all duration-300';
+        return 'admin-card hover-lift border-ai-orange/20 hover:border-ai-orange/40 transition-all duration-300';
       default:
         return 'hover-lift border-border hover:border-primary/40 bg-gradient-card transition-all duration-300';
     }
@@ -71,16 +71,16 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
             <div className={`p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${
-              category === 'ai' ? 'bg-blue-100 group-hover:bg-blue-200' :
-              category === 'media' ? 'bg-purple-100 group-hover:bg-purple-200' :
-              category === 'admin' ? 'bg-orange-100 group-hover:bg-orange-200' :
+              category === 'ai' ? 'bg-ai-purple-bg hover:bg-ai-purple-bg/80' :
+              category === 'media' ? 'bg-ai-purple-bg hover:bg-ai-purple-bg/80' :
+              category === 'admin' ? 'bg-ai-orange-bg hover:bg-ai-orange-bg/80' :
               'bg-primary/10 group-hover:bg-primary/20'
             }`}>
               {React.cloneElement(icon as React.ReactElement, {
                 className: `h-5 w-5 transition-colors duration-300 ${
-                  category === 'ai' ? 'text-blue-600 group-hover:text-blue-700' :
-                  category === 'media' ? 'text-purple-600 group-hover:text-purple-700' :
-                  category === 'admin' ? 'text-orange-600 group-hover:text-orange-700' :
+                  category === 'ai' ? 'text-ai-purple group-hover:text-ai-purple/80' :
+                  category === 'media' ? 'text-ai-purple group-hover:text-ai-purple/80' :
+                  category === 'admin' ? 'text-ai-orange group-hover:text-ai-orange/80' :
                   'text-primary group-hover:text-primary/80'
                 }`
               } as any)}
@@ -88,13 +88,13 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
             <div className="flex-1">
               <CardTitle className="text-base flex items-center gap-2 group-hover:text-foreground/90 transition-colors duration-300">
                 {title}
-                {category === 'ai' && <span className="text-blue-500">⚡</span>}
+                {category === 'ai' && <span className="text-ai-purple">⚡</span>}
                 {status && (
                   <Badge 
                     variant={status === 'new' ? 'default' : 'secondary'} 
                     className={`text-xs transition-all duration-300 ${
-                      status === 'new' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                      'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                      status === 'new' ? 'bg-success/10 text-success hover:bg-success/20' :
+                      'bg-warning/10 text-warning hover:bg-warning/20'
                     }`}
                   >
                     {status}
@@ -118,7 +118,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         )}
         
         {/* Decorative gradient overlay for hover effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       </CardHeader>
     </Card>
   );
@@ -140,12 +140,12 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         <div className="p-2">
           <p className="font-medium text-sm mb-1">{title}</p>
           <p className="text-xs text-muted-foreground">{tooltip}</p>
-          {category === 'ai' && (
-            <div className="flex items-center gap-1 mt-2 text-xs text-blue-600">
-              <span>⚡</span>
-              <span>KI-gestützt</span>
-            </div>
-          )}
+           {category === 'ai' && (
+             <div className="flex items-center gap-1 mt-2 text-xs text-ai-purple">
+               <span>⚡</span>
+               <span>KI-gestützt</span>
+             </div>
+           )}
         </div>
       </TooltipContent>
     </Tooltip>
@@ -203,7 +203,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'AI Beschreibung',
       description: 'Generiere perfekte Exposé-Texte automatisch',
-      icon: <FileText className="h-5 w-5 text-blue-600" />,
+      icon: <FileText className="h-5 w-5 text-ai-purple" />,
       href: '/ai-tools?tool=description',
       status: 'new',
       tooltip: 'KI erstellt automatisch ansprechende und SEO-optimierte Immobilienbeschreibungen basierend auf deinen Daten',
@@ -212,7 +212,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Smart Titel Generator',
       description: 'Erstelle ansprechende Immobilien-Titel',
-      icon: <Wand2 className="h-5 w-5 text-blue-600" />,
+      icon: <Wand2 className="h-5 w-5 text-ai-purple" />,
       href: '/ai-tools?tool=title',
       tooltip: 'Generiere automatisch optimierte Titel die Aufmerksamkeit erzeugen und wichtige Keywords enthalten',
       category: 'ai'
@@ -220,7 +220,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Bulk Optimizer',
       description: 'Optimiere mehrere Immobilien gleichzeitig',
-      icon: <Zap className="h-5 w-5 text-blue-600" />,
+      icon: <Zap className="h-5 w-5 text-ai-purple" />,
       href: '/ai-optimization',
       status: 'beta',
       tooltip: 'Wähle mehrere Immobilien aus und lasse sie automatisch von der KI optimieren - Titel, Beschreibung, Meta-Tags',
@@ -229,7 +229,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Übersetzungs-Manager',
       description: 'Übersetze Immobilien in mehrere Sprachen',
-      icon: <Languages className="h-5 w-5 text-blue-600" />,
+      icon: <Languages className="h-5 w-5 text-ai-purple" />,
       href: '/translations',
       tooltip: 'Automatische Übersetzung deiner Immobilien-Daten in verschiedene Sprachen für internationale Märkte',
       category: 'ai'
@@ -237,7 +237,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'AI Validator',
       description: 'Prüfe Datenqualität automatisch',
-      icon: <Eye className="h-5 w-5 text-blue-600" />,
+      icon: <Eye className="h-5 w-5 text-ai-purple" />,
       href: '/ai-tools?tool=validator',
       tooltip: 'KI überprüft deine Immobilien-Daten auf Vollständigkeit, Plausibilität und Optimierungspotential',
       category: 'ai'
@@ -248,7 +248,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Medien-Bibliothek',
       description: 'Verwalte Bilder und Medien-Dateien',
-      icon: <Images className="h-5 w-5 text-purple-600" />,
+      icon: <Images className="h-5 w-5 text-ai-purple" />,
       href: '/media',
       tooltip: 'Zentrale Verwaltung aller Bilder, Videos und Dokumente mit automatischer Kategorisierung',
       category: 'media'
@@ -256,7 +256,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Alt-Text Generator',
       description: 'Generiere automatisch Alt-Texte für Bilder',
-      icon: <Camera className="h-5 w-5 text-purple-600" />,
+      icon: <Camera className="h-5 w-5 text-ai-purple" />,
       href: '/ai-tools?tool=alt-text',
       status: 'new',
       tooltip: 'KI analysiert deine Bilder und erstellt automatisch beschreibende Alt-Texte für bessere SEO',
@@ -265,7 +265,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Bild-Kategorisierer',
       description: 'Sortiere Bilder automatisch nach Räumen',
-      icon: <Bot className="h-5 w-5 text-purple-600" />,
+      icon: <Bot className="h-5 w-5 text-ai-purple" />,
       href: '/ai-tools?tool=categorizer',
       tooltip: 'Automatische Erkennung und Kategorisierung von Bildern (Schlafzimmer, Küche, Bad, etc.)',
       category: 'media'
@@ -276,7 +276,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Duplikat-Erkennung',
       description: 'Erkenne und verwalte doppelte Einträge',
-      icon: <Copy className="h-5 w-5 text-orange-600" />,
+      icon: <Copy className="h-5 w-5 text-foreground" />,
       href: '/duplicates',
       tooltip: 'Intelligente Erkennung von Duplikaten basierend auf Adresse, Bildern und Immobilien-Eigenschaften',
       category: 'primary'
@@ -284,7 +284,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Analytics',
       description: 'Überwache Performance und Kennzahlen',
-      icon: <TrendingUp className="h-5 w-5 text-green-600" />,
+      icon: <TrendingUp className="h-5 w-5 text-success" />,
       href: '/analytics',
       tooltip: 'Detaillierte Analysen zu deinen Immobilien, Sync-Status und Optimierungsfortschritt',
       category: 'primary'
@@ -295,7 +295,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'User Management',
       description: 'Verwalte Benutzer und Berechtigungen',
-      icon: <Users className="h-5 w-5 text-orange-600" />,
+      icon: <Users className="h-5 w-5 text-ai-orange" />,
       href: '/admin/users',
       tooltip: 'Verwalte Benutzerkonten, weise Rollen zu und überwache Aktivitäten',
       category: 'admin'
@@ -303,7 +303,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Duplikat-Verwaltung',
       description: 'Globale Duplikat-Erkennung und -Verwaltung',
-      icon: <Shield className="h-5 w-5 text-orange-600" />,
+      icon: <Shield className="h-5 w-5 text-ai-orange" />,
       href: '/admin/duplicates',
       tooltip: 'Systemweite Duplikat-Erkennung mit Admin-Tools zur Lösung von Konflikten',
       category: 'admin'
@@ -311,7 +311,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'AI Einstellungen',
       description: 'Konfiguriere KI-Modelle und Prompts',
-      icon: <Cpu className="h-5 w-5 text-orange-600" />,
+      icon: <Cpu className="h-5 w-5 text-ai-orange" />,
       href: '/admin/ai-settings',
       tooltip: 'Verwalte KI-Prompts, Modell-Einstellungen und überwache KI-Performance',
       category: 'admin'
@@ -319,7 +319,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'System Monitoring',
       description: 'Überwache Systemgesundheit und Logs',
-      icon: <Activity className="h-5 w-5 text-orange-600" />,
+      icon: <Activity className="h-5 w-5 text-ai-orange" />,
       href: '/admin/monitoring',
       tooltip: 'Echtzeit-Monitoring von API-Calls, Errors und Performance-Metriken',
       category: 'admin'
@@ -327,7 +327,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
     {
       title: 'Prompt-Verwaltung',
       description: 'Bearbeite und teste AI Prompts',
-      icon: <Database className="h-5 w-5 text-orange-600" />,
+      icon: <Database className="h-5 w-5 text-ai-orange" />,
       href: '/admin/prompts',
       tooltip: 'Erstelle, bearbeite und teste KI-Prompts für verschiedene Anwendungsfälle',
       category: 'admin'
@@ -359,7 +359,7 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
           {modules.map((module, index) => (
             <div key={index} className="relative group">
               {isRecentlyUsed(module.href) && (
-                <Badge className="absolute -top-2 -right-2 z-10 bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow-lg animate-pulse">
+                <Badge className="absolute -top-2 -right-2 z-10 bg-success text-success-foreground text-xs px-2 py-1 rounded-full shadow-lg animate-pulse">
                   <span className="mr-1">🕒</span>
                   Zuletzt genutzt
                 </Badge>
@@ -389,25 +389,25 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
       <ModuleSection
         title="🧠 AI-Assistent"
         modules={aiModules}
-        icon={<Brain className="h-6 w-6 text-blue-600" />}
+        icon={<Brain className="h-6 w-6 text-ai-purple" />}
       />
 
       <ModuleSection
         title="🖼️ Medien & Floorplans"
         modules={mediaModules}
-        icon={<Images className="h-6 w-6 text-purple-600" />}
+        icon={<Images className="h-6 w-6 text-ai-purple" />}
       />
 
       <ModuleSection
         title="Optimierungen"
         modules={optimizationModules}
-        icon={<TrendingUp className="h-6 w-6 text-green-600" />}
+        icon={<TrendingUp className="h-6 w-6 text-success" />}
       />
 
       <ModuleSection
         title="🛠️ Admin-Bereich"
         modules={adminModules}
-        icon={<Settings className="h-6 w-6 text-orange-600" />}
+        icon={<Settings className="h-6 w-6 text-ai-orange" />}
         showForRole={userRole === 'admin'}
       />
     </div>

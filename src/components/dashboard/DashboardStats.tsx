@@ -37,18 +37,18 @@ const StatCard: React.FC<StatCardProps> = ({
 }) => {
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case 'success': return 'text-green-600';
-      case 'warning': return 'text-yellow-600';
-      case 'error': return 'text-red-600';
-      case 'info': return 'text-blue-600';
+      case 'success': return 'text-success';
+      case 'warning': return 'text-warning';
+      case 'error': return 'text-destructive';
+      case 'info': return 'text-ai-purple';
       default: return 'text-muted-foreground';
     }
   };
 
   const getTrendColor = (direction: string) => {
     switch (direction) {
-      case 'up': return 'text-green-600';
-      case 'down': return 'text-red-600';
+      case 'up': return 'text-success';
+      case 'down': return 'text-destructive';
       default: return 'text-muted-foreground';
     }
   };
@@ -211,10 +211,10 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                       <h4 className="font-medium text-sm">{property.title}</h4>
                       <div className="flex items-center space-x-2">
                         {property.aiOptimized && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                            <Brain className="h-3 w-3 mr-1" />
-                            AI
-                          </Badge>
+          <Badge variant="secondary" className="bg-ai-purple-bg text-ai-purple border-ai-purple/20">
+            <Brain className="h-3 w-3 mr-1" />
+            AI
+          </Badge>
                         )}
                         <span className="text-sm font-medium">{property.completeness}%</span>
                       </div>
