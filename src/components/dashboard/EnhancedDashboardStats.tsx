@@ -85,10 +85,10 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
     };
 
     return (
-      <Card className={`hover-lift transition-all duration-300 ${getColorClasses()}`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className={`p-3 rounded-xl ${
+      <Card className={`hover-lift transition-all duration-300 h-full min-h-[140px] flex flex-col ${getColorClasses()}`}>
+        <CardHeader className="p-4 flex-1 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <div className={`p-3 rounded-xl flex-shrink-0 ${
               color === 'success' ? 'bg-success/10' :
               color === 'warning' ? 'bg-warning/10' :
               color === 'ai' ? 'bg-ai-purple/10' :
@@ -97,7 +97,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               {icon}
             </div>
             {trend && (
-              <div className={`flex items-center space-x-1 text-sm ${
+              <div className={`flex items-center space-x-1 text-sm flex-shrink-0 ${
                 trend === 'up' ? 'text-success' :
                 trend === 'down' ? 'text-destructive' :
                 'text-muted-foreground'
@@ -108,10 +108,10 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               </div>
             )}
           </div>
-          <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold">{value}</CardTitle>
-            <CardDescription className="text-sm font-medium">{title}</CardDescription>
-            <p className="text-xs text-muted-foreground">{description}</p>
+          <div className="space-y-1 flex-1">
+            <CardTitle className="text-2xl font-bold line-clamp-1">{value}</CardTitle>
+            <CardDescription className="text-sm font-medium line-clamp-1">{title}</CardDescription>
+            <p className="text-xs text-muted-foreground line-clamp-2">{description}</p>
           </div>
         </CardHeader>
       </Card>
@@ -119,14 +119,14 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
   };
 
   const PropertyProgressCard: React.FC<{ property: PropertyProgress }> = ({ property }) => (
-    <Card className="hover-lift transition-all duration-300 bg-gradient-card border-border hover:border-primary/40">
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
+    <Card className="hover-lift transition-all duration-300 bg-gradient-card border-border hover:border-primary/40 h-full min-h-[200px] flex flex-col">
+      <CardHeader className="p-4 flex-1 flex flex-col">
+        <div className="flex items-start justify-between flex-1">
+          <div className="flex-1 space-y-3">
             <CardTitle className="text-sm font-semibold line-clamp-2 mb-3">
               {property.title}
             </CardTitle>
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1">
               <div>
                 <div className="flex justify-between text-xs mb-2">
                   <span>Vollständigkeit</span>
@@ -135,27 +135,27 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
                 <Progress value={property.completeness} className="h-2" />
               </div>
               
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center space-x-2 min-w-0">
                   {property.aiOptimized ? (
-                    <Badge variant="ai" className="text-xs">
+                    <Badge className="text-xs bg-ai-purple/10 text-ai-purple border-ai-purple/20 flex-shrink-0">
                       <Zap className="h-3 w-3 mr-1" />
                       AI Optimiert
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs flex-shrink-0">
                       <Bot className="h-3 w-3 mr-1" />
                       Nicht optimiert
                     </Badge>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground flex-shrink-0">
                   {property.mediaCount} Medien
                 </div>
               </div>
 
               {property.missingFields.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-auto">
                   <p className="text-xs text-muted-foreground">Fehlende Felder:</p>
                   <div className="flex flex-wrap gap-1">
                     {property.missingFields.slice(0, 2).map((field, index) => (
@@ -194,43 +194,51 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Immobilien"
-            value={propertyStats.total}
-            change={8}
-            icon={<Users className="h-5 w-5 text-primary" />}
-            description={`${propertyStats.active} aktiv, ${propertyStats.draft} Entwürfe`}
-            color="primary"
-            trend="up"
-          />
+          <div className="min-h-[140px]">
+            <StatCard
+              title="Immobilien"
+              value={propertyStats.total}
+              change={8}
+              icon={<Users className="h-5 w-5 text-primary" />}
+              description={`${propertyStats.active} aktiv, ${propertyStats.draft} Entwürfe`}
+              color="primary"
+              trend="up"
+            />
+          </div>
           
-          <StatCard
-            title="AI Optimierungen"
-            value={aiStats.optimized}
-            change={12}
-            icon={<Bot className="h-5 w-5 text-ai-purple" />}
-            description={`${aiStats.generated} generiert, ${aiStats.pending} ausstehend`}
-            color="ai"
-            trend="up"
-          />
+          <div className="min-h-[140px]">
+            <StatCard
+              title="AI Optimierungen"
+              value={aiStats.optimized}
+              change={12}
+              icon={<Bot className="h-5 w-5 text-ai-purple" />}
+              description={`${aiStats.generated} generiert, ${aiStats.pending} ausstehend`}
+              color="ai"
+              trend="up"
+            />
+          </div>
           
-          <StatCard
-            title="Sync-Erfolg"
-            value={`${syncStats.successRate}%`}
-            change={2}
-            icon={<CheckCircle className="h-5 w-5 text-success" />}
-            description={`Letzte Sync: ${syncStats.lastSync}`}
-            color="success"
-            trend="up"
-          />
+          <div className="min-h-[140px]">
+            <StatCard
+              title="Sync-Erfolg"
+              value={`${syncStats.successRate}%`}
+              change={2}
+              icon={<CheckCircle className="h-5 w-5 text-success" />}
+              description={`Letzte Sync: ${syncStats.lastSync}`}
+              color="success"
+              trend="up"
+            />
+          </div>
           
-          <StatCard
-            title="Synchronisiert"
-            value={propertyStats.synced}
-            icon={<TrendingUp className="h-5 w-5 text-success" />}
-            description={`${propertyStats.total - propertyStats.synced} noch nicht synced`}
-            color="success"
-          />
+          <div className="min-h-[140px]">
+            <StatCard
+              title="Synchronisiert"
+              value={propertyStats.synced}
+              icon={<TrendingUp className="h-5 w-5 text-success" />}
+              description={`${propertyStats.total - propertyStats.synced} noch nicht synced`}
+              color="success"
+            />
+          </div>
         </div>
       </div>
 
@@ -251,7 +259,9 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {recentProgress.map((property) => (
-            <PropertyProgressCard key={property.propertyId} property={property} />
+            <div key={property.propertyId} className="min-h-[200px]">
+              <PropertyProgressCard property={property} />
+            </div>
           ))}
         </div>
       </div>

@@ -66,11 +66,11 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   };
 
   const cardContent = (
-    <Card className={`cursor-pointer group ${getCategoryStyle(category)}`}>
-      <CardHeader className="pb-3 relative overflow-hidden">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${
+    <Card className={`cursor-pointer group h-full min-h-[180px] flex flex-col ${getCategoryStyle(category)}`}>
+      <CardHeader className="p-4 relative overflow-hidden flex-1 flex flex-col">
+        <div className="flex items-start justify-between flex-1">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className={`p-3 rounded-xl transition-all duration-300 group-hover:scale-110 flex-shrink-0 ${
               category === 'ai' ? 'bg-ai-purple-bg hover:bg-ai-purple-bg/80' :
               category === 'media' ? 'bg-ai-purple-bg hover:bg-ai-purple-bg/80' :
               category === 'admin' ? 'bg-ai-orange-bg hover:bg-ai-orange-bg/80' :
@@ -85,14 +85,14 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
                 }`
               } as any)}
             </div>
-            <div className="flex-1">
-              <CardTitle className="text-base flex items-center gap-2 group-hover:text-foreground/90 transition-colors duration-300">
+            <div className="flex-1 min-w-0 space-y-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 group-hover:text-foreground/90 transition-colors duration-300 line-clamp-1">
                 {title}
-                {category === 'ai' && <span className="text-ai-purple">⚡</span>}
+                {category === 'ai' && <span className="text-ai-purple flex-shrink-0">⚡</span>}
                 {status && (
                   <Badge 
                     variant={status === 'new' ? 'default' : 'secondary'} 
-                    className={`text-xs transition-all duration-300 ${
+                    className={`text-xs transition-all duration-300 flex-shrink-0 ${
                       status === 'new' ? 'bg-success/10 text-success hover:bg-success/20' :
                       'bg-warning/10 text-warning hover:bg-warning/20'
                     }`}
@@ -101,14 +101,14 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription className="text-sm group-hover:text-muted-foreground/80 transition-colors duration-300">
+              <CardDescription className="text-xs group-hover:text-muted-foreground/80 transition-colors duration-300 line-clamp-3">
                 {description}
               </CardDescription>
             </div>
           </div>
         </div>
         {progress !== undefined && (
-          <div className="mt-3 space-y-2">
+          <div className="mt-auto pt-3 space-y-2">
             <Progress value={progress} className="h-2" />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{progress}% vollständig</span>
@@ -118,7 +118,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         )}
         
         {/* Decorative gradient overlay for hover effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-lg" />
       </CardHeader>
     </Card>
   );
@@ -357,9 +357,9 @@ export const DashboardModules: React.FC<DashboardModulesProps> = ({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {modules.map((module, index) => (
-            <div key={index} className="relative group">
+            <div key={index} className="relative group h-full min-h-[180px]">
               {isRecentlyUsed(module.href) && (
-                <Badge className="absolute -top-2 -right-2 z-10 bg-success text-success-foreground text-xs px-2 py-1 rounded-full shadow-lg animate-pulse">
+                <Badge className="absolute -top-2 -right-2 z-20 bg-success text-success-foreground text-xs px-2 py-1 rounded-full shadow-lg animate-pulse">
                   <span className="mr-1">🕒</span>
                   Zuletzt genutzt
                 </Badge>

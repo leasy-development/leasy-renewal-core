@@ -127,41 +127,43 @@ export const QuickActions: React.FC = () => {
       <Card className={`
         hover-lift cursor-pointer transition-all duration-300 
         ${getActionStyle(action.category)}
-        text-white overflow-hidden relative min-h-[140px]
+        text-white overflow-hidden relative h-full min-h-[160px] flex flex-col
       `}>
-        <CardHeader className="pb-3 relative flex-1">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 rounded-lg bg-white/20 group-hover:bg-white/30 transition-colors duration-300">
-                {action.icon}
+        <CardHeader className="p-4 relative flex-1 flex flex-col justify-between h-full">
+          <div className="space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-2 flex-1">
+                <div className="p-2 rounded-lg bg-white/20 group-hover:bg-white/30 transition-colors duration-300 flex-shrink-0">
+                  {action.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-sm font-semibold text-white group-hover:text-white/90 transition-colors duration-300 flex items-center gap-1 mb-1 line-clamp-1">
+                    {action.title}
+                    {action.isNew && (
+                      <Badge className="bg-success text-success-foreground text-xs px-1.5 py-0.5 flex-shrink-0">
+                        Neu
+                      </Badge>
+                    )}
+                    {action.category === 'ai' && <Sparkles className="h-3 w-3 text-yellow-300 flex-shrink-0" />}
+                  </CardTitle>
+                  <CardDescription className="text-white/80 text-xs group-hover:text-white/70 transition-colors duration-300 line-clamp-2">
+                    {action.description}
+                  </CardDescription>
+                </div>
               </div>
-              <div className="flex-1">
-                <CardTitle className="text-base text-white group-hover:text-white/90 transition-colors duration-300 flex items-center gap-2 mb-1">
-                  {action.title}
-                  {action.isNew && (
-                    <Badge className="bg-success text-success-foreground text-xs px-2 py-0.5">
-                      Neu
-                    </Badge>
-                  )}
-                  {action.category === 'ai' && <Sparkles className="h-3 w-3 text-yellow-300" />}
-                </CardTitle>
-                <CardDescription className="text-white/80 text-sm group-hover:text-white/70 transition-colors duration-300">
-                  {action.description}
-                </CardDescription>
-              </div>
+              <ArrowRight className="h-4 w-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
             </div>
-            <ArrowRight className="h-4 w-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
           </div>
           
           {action.estimatedTime && (
-            <div className="flex items-center gap-1 mt-3">
+            <div className="flex items-center gap-1 mt-auto pt-2">
               <Clock className="h-3 w-3 text-white/60" />
               <span className="text-xs text-white/60">{action.estimatedTime}</span>
             </div>
           )}
 
           {/* Decorative overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-lg" />
         </CardHeader>
       </Card>
     </Link>
@@ -181,7 +183,9 @@ export const QuickActions: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {quickActions.map((action) => (
-          <ActionCard key={action.id} action={action} />
+          <div key={action.id} className="min-h-[160px]">
+            <ActionCard action={action} />
+          </div>
         ))}
       </div>
 
