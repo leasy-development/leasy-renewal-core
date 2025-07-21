@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,11 +74,11 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
     const getColorClasses = () => {
       switch (color) {
         case 'success':
-          return 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hover:border-green-400';
+          return 'bg-gradient-to-br from-success/10 to-success/5 border-success/20 hover:border-success/40';
         case 'warning':
-          return 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200 hover:border-amber-400';
+          return 'bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20 hover:border-warning/40';
         case 'ai':
-          return 'ai-card border-blue-200 hover:border-blue-400';
+          return 'bg-gradient-ai border-ai-purple/20 hover:border-ai-purple/40';
         default:
           return 'bg-gradient-card border-border hover:border-primary/40';
       }
@@ -88,17 +89,17 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className={`p-3 rounded-xl ${
-              color === 'success' ? 'bg-green-100' :
-              color === 'warning' ? 'bg-amber-100' :
-              color === 'ai' ? 'bg-blue-100' :
+              color === 'success' ? 'bg-success/10' :
+              color === 'warning' ? 'bg-warning/10' :
+              color === 'ai' ? 'bg-ai-purple/10' :
               'bg-primary/10'
             }`}>
               {icon}
             </div>
             {trend && (
               <div className={`flex items-center space-x-1 text-sm ${
-                trend === 'up' ? 'text-green-600' :
-                trend === 'down' ? 'text-red-600' :
+                trend === 'up' ? 'text-success' :
+                trend === 'down' ? 'text-destructive' :
                 'text-muted-foreground'
               }`}>
                 {trend === 'up' && <TrendingUp className="h-4 w-4" />}
@@ -109,7 +110,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
           </div>
           <div className="space-y-1">
             <CardTitle className="text-2xl font-bold">{value}</CardTitle>
-            <CardDescription className="text-sm">{title}</CardDescription>
+            <CardDescription className="text-sm font-medium">{title}</CardDescription>
             <p className="text-xs text-muted-foreground">{description}</p>
           </div>
         </CardHeader>
@@ -122,12 +123,12 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-sm font-semibold line-clamp-2 mb-2">
+            <CardTitle className="text-sm font-semibold line-clamp-2 mb-3">
               {property.title}
             </CardTitle>
             <div className="space-y-3">
               <div>
-                <div className="flex justify-between text-xs mb-1">
+                <div className="flex justify-between text-xs mb-2">
                   <span>Vollständigkeit</span>
                   <span className="font-medium">{property.completeness}%</span>
                 </div>
@@ -137,7 +138,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   {property.aiOptimized ? (
-                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                    <Badge variant="ai" className="text-xs">
                       <Zap className="h-3 w-3 mr-1" />
                       AI Optimiert
                     </Badge>
@@ -154,7 +155,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
               </div>
 
               {property.missingFields.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">Fehlende Felder:</p>
                   <div className="flex flex-wrap gap-1">
                     {property.missingFields.slice(0, 2).map((field, index) => (
@@ -186,7 +187,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
             <h2 className="text-2xl font-bold text-foreground">Dashboard Übersicht</h2>
             <p className="text-muted-foreground">Aktuelle Kennzahlen und Performance-Metriken</p>
           </div>
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Badge variant="success" className="bg-success/10 text-success border-success/20">
             <Activity className="h-3 w-3 mr-1" />
             Live-Daten
           </Badge>
@@ -207,7 +208,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
             title="AI Optimierungen"
             value={aiStats.optimized}
             change={12}
-            icon={<Bot className="h-5 w-5 text-blue-600" />}
+            icon={<Bot className="h-5 w-5 text-ai-purple" />}
             description={`${aiStats.generated} generiert, ${aiStats.pending} ausstehend`}
             color="ai"
             trend="up"
@@ -217,7 +218,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
             title="Sync-Erfolg"
             value={`${syncStats.successRate}%`}
             change={2}
-            icon={<CheckCircle className="h-5 w-5 text-green-600" />}
+            icon={<CheckCircle className="h-5 w-5 text-success" />}
             description={`Letzte Sync: ${syncStats.lastSync}`}
             color="success"
             trend="up"
@@ -226,7 +227,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
           <StatCard
             title="Synchronisiert"
             value={propertyStats.synced}
-            icon={<TrendingUp className="h-5 w-5 text-green-600" />}
+            icon={<TrendingUp className="h-5 w-5 text-success" />}
             description={`${propertyStats.total - propertyStats.synced} noch nicht synced`}
             color="success"
           />
@@ -257,25 +258,25 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
 
       {/* Quick Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="hover-lift bg-gradient-ai border-blue-200">
+        <Card className="hover-lift bg-gradient-ai border-ai-purple/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-900">
+            <CardTitle className="flex items-center gap-2 text-ai-purple">
               <Bot className="h-5 w-5" />
               AI-Empfehlungen
             </CardTitle>
             <CardContent className="p-0 space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Zap className="h-4 w-4 text-blue-600" />
+              <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                <div className="p-2 bg-ai-purple/10 rounded-lg">
+                  <Zap className="h-4 w-4 text-ai-purple" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Bulk-Optimierung verfügbar</p>
                   <p className="text-xs text-muted-foreground">{propertyStats.total - aiStats.optimized} Immobilien können optimiert werden</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+              <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <CheckCircle className="h-4 w-4 text-success" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Übersetzungen generieren</p>
@@ -286,25 +287,25 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
           </CardHeader>
         </Card>
 
-        <Card className="hover-lift bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200">
+        <Card className="hover-lift bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-900">
+            <CardTitle className="flex items-center gap-2 text-warning">
               <AlertCircle className="h-5 w-5" />
               Benötigt Aufmerksamkeit
             </CardTitle>
             <CardContent className="p-0 space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Clock className="h-4 w-4 text-orange-600" />
+              <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                <div className="p-2 bg-warning/10 rounded-lg">
+                  <Clock className="h-4 w-4 text-warning" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">{syncStats.failures} Sync-Fehler</p>
                   <p className="text-xs text-muted-foreground">Überprüfe die Verbindungseinstellungen</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
+              <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                <div className="p-2 bg-destructive/10 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Duplikate erkannt</p>

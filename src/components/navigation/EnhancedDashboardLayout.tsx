@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { EnhancedAppSidebar } from "@/components/navigation/EnhancedAppSidebar";
@@ -146,7 +147,7 @@ export function EnhancedDashboardLayout({
 
             {/* Page Content */}
             <div className={cn(
-              "space-y-6",
+              "space-y-8",
               fullWidth && "h-full"
             )}>
               {children}
@@ -166,8 +167,8 @@ export function EnhancedDashboardLayout({
               <div className="flex items-center space-x-4">
                 <span className="hidden md:inline">Status: </span>
                 <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-green-600 font-medium">Online</span>
+                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                  <span className="text-success font-medium">Online</span>
                 </div>
               </div>
             </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,16 +9,11 @@ import {
   Zap, 
   Camera, 
   Copy, 
-  TrendingUp, 
-  Users,
   Upload,
-  FileText,
-  Languages,
-  Bot,
-  Shield,
-  Activity,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { userPreferencesService } from '@/services/userPreferencesService';
@@ -112,13 +108,13 @@ export const QuickActions: React.FC = () => {
   const getActionStyle = (category: string) => {
     switch (category) {
       case 'ai':
-        return 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-ai';
+        return 'bg-gradient-to-br from-ai-purple to-ai-purple/80 hover:from-ai-purple/90 hover:to-ai-purple/70 shadow-ai border-0';
       case 'media':
-        return 'bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-media';
+        return 'bg-gradient-to-br from-ai-orange to-ai-orange/80 hover:from-ai-orange/90 hover:to-ai-orange/70 shadow-media border-0';
       case 'admin':
-        return 'bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700';
+        return 'bg-gradient-to-br from-warning to-warning/80 hover:from-warning/90 hover:to-warning/70 border-0';
       default:
-        return 'bg-gradient-primary hover:shadow-elegant';
+        return 'bg-gradient-primary hover:shadow-elegant border-0';
     }
   };
 
@@ -131,23 +127,23 @@ export const QuickActions: React.FC = () => {
       <Card className={`
         hover-lift cursor-pointer transition-all duration-300 
         ${getActionStyle(action.category)}
-        border-0 text-white overflow-hidden relative
+        text-white overflow-hidden relative min-h-[140px]
       `}>
-        <CardHeader className="pb-3 relative">
+        <CardHeader className="pb-3 relative flex-1">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 rounded-lg bg-white/20 group-hover:bg-white/30 transition-colors duration-300">
                 {action.icon}
               </div>
               <div className="flex-1">
-                <CardTitle className="text-base text-white group-hover:text-white/90 transition-colors duration-300 flex items-center gap-2">
+                <CardTitle className="text-base text-white group-hover:text-white/90 transition-colors duration-300 flex items-center gap-2 mb-1">
                   {action.title}
                   {action.isNew && (
-                    <Badge className="bg-green-400 text-green-900 text-xs px-2 py-0.5">
+                    <Badge className="bg-success text-success-foreground text-xs px-2 py-0.5">
                       Neu
                     </Badge>
                   )}
-                  {action.category === 'ai' && <span className="text-yellow-300">⚡</span>}
+                  {action.category === 'ai' && <Sparkles className="h-3 w-3 text-yellow-300" />}
                 </CardTitle>
                 <CardDescription className="text-white/80 text-sm group-hover:text-white/70 transition-colors duration-300">
                   {action.description}
@@ -158,7 +154,7 @@ export const QuickActions: React.FC = () => {
           </div>
           
           {action.estimatedTime && (
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex items-center gap-1 mt-3">
               <Clock className="h-3 w-3 text-white/60" />
               <span className="text-xs text-white/60">{action.estimatedTime}</span>
             </div>
@@ -183,36 +179,36 @@ export const QuickActions: React.FC = () => {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {quickActions.map((action) => (
           <ActionCard key={action.id} action={action} />
         ))}
       </div>
 
-      {/* Recent Activity Hint */}
-      <Card className="bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
+      {/* Productivity Tip Card */}
+      <Card className="bg-gradient-to-br from-muted/50 to-muted/30 border-border">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <Activity className="h-5 w-5 text-slate-600" />
-            <CardTitle className="text-slate-900 text-lg">Produktivitäts-Tipp</CardTitle>
+            <Activity className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-foreground text-lg">Produktivitäts-Tipp</CardTitle>
           </div>
           <CardContent className="p-0">
-            <p className="text-slate-700 text-sm">
-              Nutze <kbd className="px-2 py-1 bg-white rounded text-xs font-mono">Strg + K</kbd> um schnell zwischen Tools zu wechseln. 
+            <p className="text-foreground text-sm mb-3">
+              Nutze <kbd className="px-2 py-1 bg-background rounded text-xs font-mono border">Strg + K</kbd> um schnell zwischen Tools zu wechseln. 
               Häufig genutzte Features werden automatisch nach oben sortiert.
             </p>
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
-                <Brain className="h-4 w-4 text-blue-600" />
-                <span className="text-xs text-slate-600">AI-Tools</span>
+                <Brain className="h-4 w-4 text-ai-purple" />
+                <span className="text-xs text-muted-foreground">AI-Tools</span>
               </div>
               <div className="flex items-center gap-1">
-                <Camera className="h-4 w-4 text-purple-600" />
-                <span className="text-xs text-slate-600">Medien</span>
+                <Camera className="h-4 w-4 text-ai-orange" />
+                <span className="text-xs text-muted-foreground">Medien</span>
               </div>
               <div className="flex items-center gap-1">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-xs text-slate-600">Analytics</span>
+                <Activity className="h-4 w-4 text-success" />
+                <span className="text-xs text-muted-foreground">Analytics</span>
               </div>
             </div>
           </CardContent>

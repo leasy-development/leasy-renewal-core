@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -53,11 +54,11 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Enhanced spacing system */
-    --spacing-section: 6rem;      /* 96px - sections */
-    --spacing-component: 4rem;    /* 64px - component groups */
-    --spacing-element: 2rem;      /* 32px - related elements */
-    --spacing-tight: 1rem;        /* 16px - close elements */
+    /* Enhanced spacing system - Standardized */
+    --spacing-section: 2rem;      /* 32px - between major sections */
+    --spacing-component: 1.5rem;  /* 24px - between component groups */
+    --spacing-element: 1rem;      /* 16px - between related elements */
+    --spacing-tight: 0.5rem;      /* 8px - close elements */
 
     /* Typography scale */
     --text-hero: 3.5rem;          /* 56px */
@@ -95,6 +96,14 @@ All colors MUST be HSL.
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     --transition-glass: backdrop-filter 0.3s ease;
+
+    /* Z-index hierarchy - Standardized */
+    --z-dropdown: 50;
+    --z-modal: 60;
+    --z-toast: 70;
+    --z-tooltip: 80;
+    --z-overlay: 90;
+    --z-maximum: 100;
 
     /* Sidebar colors */
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -207,10 +216,9 @@ All colors MUST be HSL.
     font-weight: 500;
   }
 
-  /* Enhanced spacing utilities */
+  /* Standardized spacing utilities */
   .section-spacing {
-    padding-top: var(--spacing-section);
-    padding-bottom: var(--spacing-section);
+    margin-bottom: var(--spacing-section);
   }
 
   .component-spacing {
@@ -244,7 +252,7 @@ All colors MUST be HSL.
   }
 
   .hover-lift:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-elegant);
   }
 
@@ -276,6 +284,27 @@ All colors MUST be HSL.
   @keyframes skeleton-loading {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  /* Z-index utilities for consistent layering */
+  .z-dropdown { z-index: var(--z-dropdown); }
+  .z-modal { z-index: var(--z-modal); }
+  .z-toast { z-index: var(--z-toast); }
+  .z-tooltip { z-index: var(--z-tooltip); }
+  .z-overlay { z-index: var(--z-overlay); }
+  .z-maximum { z-index: var(--z-maximum); }
+
+  /* Grid system standardization */
+  .grid-quick-actions {
+    @apply grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4;
+  }
+
+  .grid-features {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+  }
+
+  .grid-stats {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
   }
 
   /* Responsive utilities */
