@@ -409,6 +409,181 @@ export type Database = {
         }
         Relationships: []
       }
+      deepsource_issues: {
+        Row: {
+          category: string
+          check_id: string
+          created_at: string
+          deepsource_issue_id: string
+          description: string | null
+          file_path: string
+          fix_applied_at: string | null
+          fix_method: string | null
+          fix_summary: string | null
+          id: string
+          is_autofixable: boolean | null
+          line_begin: number | null
+          line_end: number | null
+          raw_issue_data: Json | null
+          repository_id: string
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          check_id: string
+          created_at?: string
+          deepsource_issue_id: string
+          description?: string | null
+          file_path: string
+          fix_applied_at?: string | null
+          fix_method?: string | null
+          fix_summary?: string | null
+          id?: string
+          is_autofixable?: boolean | null
+          line_begin?: number | null
+          line_end?: number | null
+          raw_issue_data?: Json | null
+          repository_id: string
+          severity: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          check_id?: string
+          created_at?: string
+          deepsource_issue_id?: string
+          description?: string | null
+          file_path?: string
+          fix_applied_at?: string | null
+          fix_method?: string | null
+          fix_summary?: string | null
+          id?: string
+          is_autofixable?: boolean | null
+          line_begin?: number | null
+          line_end?: number | null
+          raw_issue_data?: Json | null
+          repository_id?: string
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deepsource_issues_repository_id_fkey"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "deepsource_repositories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deepsource_repositories: {
+        Row: {
+          api_token_configured: boolean | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          organization_slug: string
+          repository_name: string
+          repository_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_token_configured?: boolean | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          organization_slug: string
+          repository_name: string
+          repository_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_token_configured?: boolean | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          organization_slug?: string
+          repository_name?: string
+          repository_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      deepsource_scans: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          issues_fixed: number | null
+          issues_found: number | null
+          issues_new: number | null
+          issues_resolved: number | null
+          repository_id: string
+          scan_duration_ms: number | null
+          scan_metadata: Json | null
+          scan_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          issues_fixed?: number | null
+          issues_found?: number | null
+          issues_new?: number | null
+          issues_resolved?: number | null
+          repository_id: string
+          scan_duration_ms?: number | null
+          scan_metadata?: Json | null
+          scan_type?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          issues_fixed?: number | null
+          issues_found?: number | null
+          issues_new?: number | null
+          issues_resolved?: number | null
+          repository_id?: string
+          scan_duration_ms?: number | null
+          scan_metadata?: Json | null
+          scan_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deepsource_scans_repository_id_fkey"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "deepsource_repositories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       duplicate_detection_log: {
         Row: {
           action_type: string
