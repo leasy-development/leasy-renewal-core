@@ -416,14 +416,18 @@ export type Database = {
           created_at: string
           deepsource_issue_id: string
           description: string | null
+          file_count: number | null
           file_path: string
+          first_seen_at: string | null
           fix_applied_at: string | null
           fix_method: string | null
           fix_summary: string | null
           id: string
           is_autofixable: boolean | null
+          last_seen_at: string | null
           line_begin: number | null
           line_end: number | null
+          occurrence_count: number | null
           raw_issue_data: Json | null
           repository_id: string
           severity: string
@@ -438,14 +442,18 @@ export type Database = {
           created_at?: string
           deepsource_issue_id: string
           description?: string | null
+          file_count?: number | null
           file_path: string
+          first_seen_at?: string | null
           fix_applied_at?: string | null
           fix_method?: string | null
           fix_summary?: string | null
           id?: string
           is_autofixable?: boolean | null
+          last_seen_at?: string | null
           line_begin?: number | null
           line_end?: number | null
+          occurrence_count?: number | null
           raw_issue_data?: Json | null
           repository_id: string
           severity: string
@@ -460,14 +468,18 @@ export type Database = {
           created_at?: string
           deepsource_issue_id?: string
           description?: string | null
+          file_count?: number | null
           file_path?: string
+          first_seen_at?: string | null
           fix_applied_at?: string | null
           fix_method?: string | null
           fix_summary?: string | null
           id?: string
           is_autofixable?: boolean | null
+          last_seen_at?: string | null
           line_begin?: number | null
           line_end?: number | null
+          occurrence_count?: number | null
           raw_issue_data?: Json | null
           repository_id?: string
           severity?: string
@@ -1615,7 +1627,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      deepsource_issue_stats: {
+        Row: {
+          category: string | null
+          issue_count: number | null
+          severity: string | null
+          status: string | null
+          total_files_affected: number | null
+          total_occurrences: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       binary_quantize: {

@@ -137,22 +137,58 @@ serve(async (req) => {
             .select()
             .single()
 
-          // Fetch issues from DeepSource API
-          const response = await fetch(`https://api.deepsource.com/v1/repos/${DEEPSOURCE_ORG_SLUG}/${DEEPSOURCE_REPO_NAME}/issues/`, {
-            headers: {
-              'Authorization': `Token ${DEEPSOURCE_API_KEY}`,
-              'Accept': 'application/json',
-            },
-          })
-
-          if (!response.ok) {
-            throw new Error(`DeepSource API error: ${response.status}`)
-          }
-
-          const issuesData: DeepSourceApiResponse = await response.json()
+          // Fetch ALL issues from DeepSource API with pagination
+          let allIssues: DeepSourceIssue[] = []
+          let page = 1
+          const perPage = 100
+          let hasMorePages = true
           
-          // Store issues in database
-          const issuesForDb = issuesData.issues.map(issue => ({
+          console.log('Starting pagination fetch...')
+          
+          while (hasMorePages) {
+            console.log(`Fetching page ${page}...`)
+            
+            const response = await fetch(`https://api.deepsource.com/v1/repos/${DEEPSOURCE_ORG_SLUG}/${DEEPSOURCE_REPO_NAME}/issues/?page=${page}&per_page=${perPage}`, {
+              headers: {
+                'Authorization': `Token ${DEEPSOURCE_API_KEY}`,
+                'Accept': 'application/json',
+              },
+            })
+
+            if (!response.ok) {
+              if (response.status === 404) {
+                console.log('API returned 404, no issues found')
+                break
+              }
+              throw new Error(`DeepSource API error: ${response.status}`)
+            }
+
+            const pageData: DeepSourceApiResponse = await response.json()
+            console.log(`Page ${page}: Found ${pageData.issues?.length || 0} issues`)
+            
+            if (!pageData.issues || pageData.issues.length === 0) {
+              hasMorePages = false
+            } else {
+              allIssues = allIssues.concat(pageData.issues)
+              
+              // Check if we have more pages - if we got less than perPage, we're done
+              if (pageData.issues.length < perPage) {
+                hasMorePages = false
+              }
+              page++
+            }
+            
+            // Safety check to prevent infinite loops
+            if (page > 100) {
+              console.log('Reached maximum page limit (100), stopping')
+              break
+            }
+          }
+          
+          console.log(`Total issues fetched: ${allIssues.length}`)
+          
+          // Store issues in database with enhanced data
+          const issuesForDb = allIssues.map(issue => ({
             repository_id: repository.id,
             user_id: user.id,
             deepsource_issue_id: issue.id,
@@ -165,16 +201,25 @@ serve(async (req) => {
             category: issue.category,
             severity: issue.severity,
             is_autofixable: issue.is_auto_fixable,
+            occurrence_count: 1, // Will be updated based on actual data
+            file_count: 1, // Will be updated based on actual data
+            first_seen_at: new Date().toISOString(),
+            last_seen_at: new Date().toISOString(),
             raw_issue_data: issue
           }))
 
           if (issuesForDb.length > 0) {
+            // Clear existing issues first for clean data
             await supabaseClient
               .from('deepsource_issues')
-              .upsert(issuesForDb, { 
-                onConflict: 'repository_id,deepsource_issue_id',
-                ignoreDuplicates: false 
-              })
+              .delete()
+              .eq('repository_id', repository.id)
+              .eq('user_id', user.id)
+            
+            // Insert new issues
+            await supabaseClient
+              .from('deepsource_issues')
+              .insert(issuesForDb)
           }
 
           // Update scan status
@@ -182,7 +227,7 @@ serve(async (req) => {
             .from('deepsource_scans')
             .update({
               status: 'completed',
-              issues_found: issuesData.count,
+              issues_found: allIssues.length,
               scan_duration_ms: Math.floor(Math.random() * 5000) + 1000
             })
             .eq('id', scanData.id)
@@ -191,8 +236,8 @@ serve(async (req) => {
             JSON.stringify({
               scanId: scanData.id,
               status: 'completed',
-              issuesFound: issuesData.count,
-              issues: issuesData.issues
+              issuesFound: allIssues.length,
+              issues: allIssues
             }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
