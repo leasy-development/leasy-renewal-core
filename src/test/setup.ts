@@ -1,12 +1,7 @@
 
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { vi, beforeAll, afterAll } from 'vitest';
 import { configure } from '@testing-library/react';
-
-// Configure React Testing Library
-configure({
-  testIdAttribute: 'data-testid',
-});
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

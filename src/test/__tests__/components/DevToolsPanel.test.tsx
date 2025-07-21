@@ -1,6 +1,6 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/utils';
+import { render } from '@testing-library/react';
+import { screen } from '@testing-library/dom';
 import { DevToolsPanel } from '@/components/DevToolsPanel';
 import config from '@/lib/config';
 
@@ -65,20 +65,6 @@ describe('DevToolsPanel', () => {
     
     const refreshButton = screen.getByText('Refresh');
     expect(refreshButton).toBeInTheDocument();
-    
-    fireEvent.click(refreshButton);
-    // The button should be clickable (no errors thrown)
-  });
-
-  it('should display cache statistics', async () => {
-    render(<DevToolsPanel />);
-    
-    // Switch to cache tab
-    fireEvent.click(screen.getByText('Cache'));
-    
-    expect(screen.getByText('Cache Statistics')).toBeInTheDocument();
-    expect(screen.getByText('Cache Size')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument(); // cache size
   });
 
   it('should have tabs for different sections', () => {

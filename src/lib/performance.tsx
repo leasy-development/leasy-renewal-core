@@ -80,11 +80,11 @@ class PerformanceMonitor {
 export const performanceMonitor = new PerformanceMonitor();
 
 // Performance-aware component wrapper
-export const withPerformanceTracking = <P extends object>(
-  Component: React.ComponentType<P>,
+export const withPerformanceTracking = (
+  Component: React.ComponentType<any>,
   componentName: string
 ) => {
-  return React.memo((props: P) => {
+  return React.memo((props: any) => {
     const endMeasurement = performanceMonitor.startMeasurement(`Render: ${componentName}`);
     
     React.useEffect(() => {
@@ -96,8 +96,8 @@ export const withPerformanceTracking = <P extends object>(
 };
 
 // Lazy loading utilities
-export const createLazyComponent = <T extends React.ComponentType<any>>(
-  importFunc: () => Promise<{ default: T }>,
+export const createLazyComponent = (
+  importFunc: () => Promise<{ default: React.ComponentType<any> }>,
   componentName: string
 ) => {
   return React.lazy(async () => {

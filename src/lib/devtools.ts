@@ -1,5 +1,6 @@
 
 // Development tools and debugging utilities
+import * as React from 'react';
 import config from './config';
 import { performanceMonitor } from './performance';
 import { logger } from './logger';

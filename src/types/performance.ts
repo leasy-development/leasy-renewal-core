@@ -18,6 +18,6 @@ export interface CacheEntry<T = any> {
 export interface LoadingState {
   isLoading: boolean;
   isError: boolean;
-  error?: AppError;
+  error?: Error;
   progress?: number;
 }

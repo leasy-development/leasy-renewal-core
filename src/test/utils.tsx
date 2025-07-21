@@ -1,11 +1,15 @@
 
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
+// Export testing utilities from React Testing Library
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@/lib/theme';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { vi } from 'vitest';
+
+// These utilities are re-exported below from the main library
 
 // Create a custom render function that includes providers
 const AllTheProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {

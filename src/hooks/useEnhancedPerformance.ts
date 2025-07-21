@@ -65,13 +65,7 @@ export const useOptimizedLoader = <T>(
       setState({
         isLoading: false,
         isError: true,
-        error: {
-          code: 'LOAD_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error',
-          severity: 'medium',
-          context: { cacheKey, dependencies },
-          timestamp: new Date(),
-        },
+        error: new Error(error instanceof Error ? error.message : 'Unknown error'),
       });
     }
   }, dependencies);

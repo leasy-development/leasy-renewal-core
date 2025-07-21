@@ -1,5 +1,5 @@
-
 import { useState, useCallback, useEffect } from 'react';
+import * as React from 'react';
 import { AppError, NetworkError, ValidationError } from '@/types/errors';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
@@ -87,11 +87,11 @@ export const useErrorHandling = () => {
     return validationError;
   }, [addError]);
 
-  const retryOperation = useCallback(async <T>(
-    operation: () => Promise<T>,
+  const retryOperation = useCallback(async (
+    operation: () => Promise<any>,
     maxRetries: number = 3,
     delay: number = 1000
-  ): Promise<T> => {
+  ): Promise<any> => {
     let lastError: any;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -141,12 +141,12 @@ export const useAsyncError = () => {
   return throwError;
 };
 
-export const withErrorBoundary = <P extends object>(
-  Component: React.ComponentType<P>,
+export const withErrorBoundary = (
+  Component: React.ComponentType<any>,
   errorHandler?: (error: Error, errorInfo: React.ErrorInfo) => void
 ) => {
-  return class extends React.Component<P, { hasError: boolean }> {
-    constructor(props: P) {
+  return class extends React.Component<any, { hasError: boolean }> {
+    constructor(props: any) {
       super(props);
       this.state = { hasError: false };
     }
