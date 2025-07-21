@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import SecurityTestPanel from "@/components/SecurityTestPanel";
 
 interface DeepSourceIssue {
   id: string;
@@ -354,7 +355,7 @@ const DeepSourceDashboard = () => {
 
         {/* Status Alert */}
         {!repository && (
-          <div className="p-6">
+          <div className="p-6 space-y-4">
             <Alert>
               <Settings className="h-4 w-4" />
               <AlertDescription>
@@ -362,6 +363,9 @@ const DeepSourceDashboard = () => {
                 Make sure the DEEPSOURCE_API_TOKEN is configured in your Supabase project secrets.
               </AlertDescription>
             </Alert>
+            
+            {/* Security Test Panel */}
+            <SecurityTestPanel />
           </div>
         )}
 

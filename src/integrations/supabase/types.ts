@@ -1695,6 +1695,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_deepsource_issue_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          category: string
+          severity: string
+          status: string
+          issue_count: number
+          total_occurrences: number
+          total_files_affected: number
+        }[]
+      }
       get_duplicate_detection_stats: {
         Args: { admin_user_id: string }
         Returns: {
