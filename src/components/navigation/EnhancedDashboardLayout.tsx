@@ -41,37 +41,41 @@ export function EnhancedDashboardLayout({
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Enhanced Header */}
-          <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-            <div className="flex h-16 items-center justify-between px-6">
-              {/* Left Section */}
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger className="h-8 w-8" />
-                
-                {/* Quick Action Menu */}
-                <QuickActionMenu className="hidden md:flex" />
+          {/* Enhanced Header - Fixed overlapping issues */}
+          <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-16 items-center justify-between px-4 lg:px-6">
+              {/* Left Section - Fixed spacing */}
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="h-9 w-9 shrink-0" />
+                <div className="hidden lg:block">
+                  <QuickActionMenu />
+                </div>
               </div>
 
-              {/* Center Section - Page Title (on smaller screens) */}
+              {/* Center Section - Page Title (responsive) */}
               {pageTitle && (
-                <div className="hidden md:block">
-                  <h1 className="text-lg font-semibold text-foreground">
+                <div className="hidden md:block flex-1 max-w-md mx-4">
+                  <h1 className="text-lg font-semibold text-foreground truncate text-center">
                     {pageTitle}
                   </h1>
                 </div>
               )}
 
-              {/* Right Section */}
-              <div className="flex items-center space-x-3">
+              {/* Right Section - Fixed responsive spacing */}
+              <div className="flex items-center gap-2">
                 {/* Custom Header Actions */}
-                {headerActions}
+                {headerActions && (
+                  <div className="hidden md:flex items-center gap-2">
+                    {headerActions}
+                  </div>
+                )}
 
                 {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative">
+                <Button variant="ghost" size="icon" className="relative h-9 w-9 shrink-0">
                   <Bell className="h-4 w-4" />
                   <Badge 
                     variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
+                    className="absolute -top-1 -right-1 h-4 w-4 p-0 text-[10px] flex items-center justify-center"
                   >
                     3
                   </Badge>
@@ -79,19 +83,19 @@ export function EnhancedDashboardLayout({
                 </Button>
 
                 {/* Settings Quick Access */}
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
                   <Settings className="h-4 w-4" />
                   <span className="sr-only">Einstellungen</span>
                 </Button>
 
                 {/* Language & Theme Toggle */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-1">
                   <LanguageToggle />
                   <ThemeToggle />
                 </div>
 
-                {/* User Info */}
-                <div className="hidden md:flex items-center space-x-3 pl-3 border-l">
+                {/* User Info - Hidden on mobile to prevent overlap */}
+                <div className="hidden lg:flex items-center gap-3 pl-3 border-l border-border">
                   <div className="text-right">
                     <div className="text-sm font-medium text-foreground">
                       {user?.email?.split('@')[0]}
@@ -100,7 +104,7 @@ export function EnhancedDashboardLayout({
                       Premium Account
                     </div>
                   </div>
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center shrink-0">
                     <span className="text-sm font-medium text-primary">
                       {user?.email?.charAt(0).toUpperCase()}
                     </span>
@@ -111,7 +115,7 @@ export function EnhancedDashboardLayout({
 
             {/* Breadcrumb Section */}
             {showBreadcrumb && (
-              <div className="border-t bg-muted/20 px-6 py-3">
+              <div className="border-t bg-muted/20 px-4 lg:px-6 py-3">
                 <EnhancedBreadcrumb 
                   pageTitle={pageTitle}
                   pageDescription={pageDescription}
@@ -125,7 +129,7 @@ export function EnhancedDashboardLayout({
           <main 
             className={cn(
               "flex-1 overflow-auto",
-              fullWidth ? "p-0" : "p-6",
+              fullWidth ? "p-0" : "p-4 lg:p-6",
               className
             )}
           >
@@ -133,12 +137,12 @@ export function EnhancedDashboardLayout({
             {(pageTitle || pageDescription) && !showBreadcrumb && (
               <div className="mb-8">
                 {pageTitle && (
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight mb-2">
+                  <h1 className="text-2xl lg:text-3xl font-bold text-foreground tracking-tight mb-2">
                     {pageTitle}
                   </h1>
                 )}
                 {pageDescription && (
-                  <p className="text-muted-foreground text-lg">
+                  <p className="text-muted-foreground text-base lg:text-lg">
                     {pageDescription}
                   </p>
                 )}
@@ -147,7 +151,7 @@ export function EnhancedDashboardLayout({
 
             {/* Page Content */}
             <div className={cn(
-              "space-y-8",
+              "space-y-6 lg:space-y-8",
               fullWidth && "h-full"
             )}>
               {children}
@@ -155,20 +159,20 @@ export function EnhancedDashboardLayout({
           </main>
 
           {/* Footer */}
-          <footer className="border-t bg-muted/20 px-6 py-4">
+          <footer className="border-t bg-muted/20 px-4 lg:px-6 py-4">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-2 lg:gap-4">
                 <span>© 2024 Leasy</span>
                 <span className="hidden md:inline">•</span>
                 <span className="hidden md:inline">Version 2.0 Beta</span>
-                <span className="hidden md:inline">•</span>
-                <span className="hidden md:inline">AI-Powered Real Estate Management</span>
+                <span className="hidden lg:inline">•</span>
+                <span className="hidden lg:inline">AI-Powered Real Estate Management</span>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-2 lg:gap-4">
                 <span className="hidden md:inline">Status: </span>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                  <span className="text-success font-medium">Online</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-green-600 font-medium">Online</span>
                 </div>
               </div>
             </div>

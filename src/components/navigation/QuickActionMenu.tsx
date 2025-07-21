@@ -55,7 +55,6 @@ export function QuickActionMenu({ className }: QuickActionMenuProps) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Quick actions configuration
   const quickActions: QuickAction[] = [
     // Create Actions
     {
@@ -223,25 +222,27 @@ export function QuickActionMenu({ className }: QuickActionMenuProps) {
 
   return (
     <>
-      {/* Trigger Button */}
+      {/* Trigger Button - Fixed sizing and responsive behavior */}
       <Button
         variant="outline"
         size="sm"
         onClick={() => setOpen(true)}
         className={cn(
-          "relative h-9 w-9 p-0 xl:h-10 xl:w-60 xl:justify-start xl:px-3 xl:py-2",
+          "h-9 shrink-0 transition-all duration-200", // Fixed: Consistent height and prevent shrinking
+          "w-9 p-0 lg:w-60 lg:px-3 lg:py-2 lg:justify-start", // Fixed: Responsive sizing
+          "border-input hover:bg-accent hover:text-accent-foreground",
           className
         )}
       >
-        <Search className="h-4 w-4 xl:mr-2" />
-        <span className="hidden xl:inline-flex">Quick Actions...</span>
+        <Search className="h-4 w-4 shrink-0" />
+        <span className="hidden lg:inline-flex lg:ml-2">Quick Actions...</span>
         <span className="sr-only">Quick Actions öffnen</span>
-        <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium opacity-100 xl:flex">
+        <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 lg:flex">
           <span className="text-xs">⌘</span>K
         </kbd>
       </Button>
 
-      {/* Command Dialog */}
+      {/* Command Dialog - Fixed z-index */}
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Suche nach Aktionen..." />
         <CommandList>
@@ -273,7 +274,7 @@ export function QuickActionMenu({ className }: QuickActionMenuProps) {
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center space-x-3">
-                          <action.icon className="h-4 w-4" />
+                          <action.icon className="h-4 w-4 shrink-0" />
                           <div className="flex flex-col">
                             <div className="flex items-center space-x-2">
                               <span className="font-medium">{action.title}</span>
@@ -317,7 +318,7 @@ export function QuickActionMenu({ className }: QuickActionMenuProps) {
   );
 }
 
-// Floating Action Button for mobile
+// Floating Action Button for mobile - Fixed overlapping
 export function FloatingQuickActions() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();

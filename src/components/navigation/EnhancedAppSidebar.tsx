@@ -244,14 +244,6 @@ const getNavigationSections = (t: any): NavSection[] => [
   }
 ];
 
-// Quick Actions for floating menu
-const quickActions = [
-  { title: "Neue Immobilie", url: "/add-property", icon: Plus, color: "bg-blue-500" },
-  { title: "AI Beschreibung", url: "/ai-tools?tool=description", icon: Brain, color: "bg-purple-500" },
-  { title: "Media Upload", url: "/media?action=upload", icon: Upload, color: "bg-green-500" },
-  { title: "CSV Import", url: "/import-csv", icon: FileText, color: "bg-orange-500" },
-];
-
 export function EnhancedAppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
@@ -277,17 +269,21 @@ export function EnhancedAppSidebar() {
   };
 
   const toggleSection = (sectionLabel: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionLabel]: !prev[sectionLabel]
-    }));
+    if (!isCollapsed) {
+      setExpandedSections(prev => ({
+        ...prev,
+        [sectionLabel]: !prev[sectionLabel]
+      }));
+    }
   };
 
   const toggleItem = (itemTitle: string) => {
-    setExpandedItems(prev => ({
-      ...prev,
-      [itemTitle]: !prev[itemTitle]
-    }));
+    if (!isCollapsed) {
+      setExpandedItems(prev => ({
+        ...prev,
+        [itemTitle]: !prev[itemTitle]
+      }));
+    }
   };
 
   const handleSignOut = async () => {
@@ -318,22 +314,24 @@ export function EnhancedAppSidebar() {
                   onClick={handleClick}
                   className={cn(
                     "group transition-all duration-200 relative overflow-hidden",
+                    "flex items-center justify-center",
                     itemIsActive 
                       ? "bg-primary/10 text-primary border-r-2 border-primary font-medium" 
                       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground",
                     item.disabled && "opacity-50 cursor-not-allowed",
-                    isSubItem && "pl-8 text-sm",
+                    isSubItem && !isCollapsed && "pl-8 text-sm",
+                    isCollapsed && "w-10 h-10 p-0 justify-center",
+                    !isCollapsed && "px-3 py-2 justify-start",
                     "hover:shadow-sm"
                   )}
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center space-x-3">
-                      <item.icon className={cn(
-                        "h-4 w-4 transition-colors duration-200",
-                        itemIsActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-                      )} />
-                      {!isCollapsed && (
-                        <div className="flex items-center space-x-2">
+                  {isCollapsed ? (
+                    <item.icon className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <div className="flex items-center gap-2">
                           <span className="truncate">{item.title}</span>
                           {item.badge && (
                             <Badge 
@@ -351,21 +349,20 @@ export function EnhancedAppSidebar() {
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                           )}
                         </div>
+                      </div>
+                      
+                      {hasSubItems && (
+                        <div className="ml-auto">
+                          {isItemExpanded ? (
+                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          )}
+                        </div>
                       )}
                     </div>
-                    
-                    {hasSubItems && !isCollapsed && (
-                      <div className="ml-auto">
-                        {isItemExpanded ? (
-                          <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  )}
                   
-                  {/* Active indicator */}
                   {itemIsActive && (
                     <motion.div
                       layoutId="activeIndicator"
@@ -378,7 +375,7 @@ export function EnhancedAppSidebar() {
               </SidebarMenuButton>
             </TooltipTrigger>
             {isCollapsed && 'description' in item && (
-              <TooltipContent side="right" className="ml-2">
+              <TooltipContent side="right" className="ml-2 z-50">
                 <div className="font-medium">{item.title}</div>
                 <div className="text-xs text-muted-foreground mt-1">{item.description}</div>
                 {'shortcut' in item && item.shortcut && (
@@ -391,10 +388,9 @@ export function EnhancedAppSidebar() {
           </Tooltip>
         </SidebarMenuItem>
 
-        {/* Sub-items */}
-        {hasSubItems && 'subItems' in item && (
+        {hasSubItems && 'subItems' in item && !isCollapsed && (
           <AnimatePresence>
-            {(isItemExpanded || isCollapsed) && (
+            {isItemExpanded && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
@@ -421,11 +417,10 @@ export function EnhancedAppSidebar() {
       )}
       collapsible="icon"
     >
-      {/* Enhanced Header */}
       <SidebarHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg shrink-0">
               <span className="text-primary-foreground font-bold text-lg">L</span>
             </div>
             {!isCollapsed && (
@@ -452,7 +447,6 @@ export function EnhancedAppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="overflow-y-auto">
-        {/* Quick Add Button */}
         <div className="p-4">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -460,19 +454,20 @@ export function EnhancedAppSidebar() {
                 asChild
                 className={cn(
                   "w-full transition-all duration-200 shadow-md hover:shadow-lg",
-                  "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                  "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
+                  isCollapsed && "aspect-square p-0"
                 )}
                 size={isCollapsed ? "icon" : "default"}
               >
                 <NavLink to="/add-property">
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4 shrink-0" />
                   {!isCollapsed && <span className="ml-2">Neue Immobilie</span>}
                   {!isCollapsed && <Sparkles className="h-3 w-3 ml-auto text-primary-foreground/70" />}
                 </NavLink>
               </Button>
             </TooltipTrigger>
             {isCollapsed && (
-              <TooltipContent side="right">
+              <TooltipContent side="right" className="z-50">
                 <div className="font-medium">Neue Immobilie</div>
                 <div className="text-xs text-muted-foreground">Schnell hinzufügen</div>
               </TooltipContent>
@@ -482,24 +477,20 @@ export function EnhancedAppSidebar() {
 
         <Separator className="mx-4" />
 
-        {/* Navigation Sections */}
         <div className="space-y-2 p-2">
           {navigationSections.map((section) => {
             const isSectionExpanded = expandedSections[section.label] ?? section.defaultOpen ?? true;
             
             return (
               <SidebarGroup key={section.label}>
-                <div 
-                  className={cn(
-                    "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/50 rounded-md transition-colors",
-                    !isCollapsed && "group"
-                  )}
-                  onClick={() => !isCollapsed && toggleSection(section.label)}
-                >
-                  <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {isCollapsed ? section.label.charAt(0) : section.label}
-                  </SidebarGroupLabel>
-                  {!isCollapsed && (
+                {!isCollapsed && (
+                  <div 
+                    className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-muted/50 rounded-md transition-colors group"
+                    onClick={() => toggleSection(section.label)}
+                  >
+                    <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {section.label}
+                    </SidebarGroupLabel>
                     <div className="flex items-center space-x-1">
                       {isSectionExpanded ? (
                         <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-foreground" />
@@ -507,15 +498,15 @@ export function EnhancedAppSidebar() {
                         <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-foreground" />
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 
                 <AnimatePresence>
                   {(isSectionExpanded || isCollapsed) && (
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
+                      initial={!isCollapsed ? { height: 0, opacity: 0 } : {}}
+                      animate={!isCollapsed ? { height: "auto", opacity: 1 } : {}}
+                      exit={!isCollapsed ? { height: 0, opacity: 0 } : {}}
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
@@ -535,24 +526,30 @@ export function EnhancedAppSidebar() {
         </div>
       </SidebarContent>
 
-      {/* Enhanced Footer */}
       <SidebarFooter className="border-t bg-muted/20 p-4">
-
-        {/* Sign Out Button */}
+        {!isCollapsed && (
+          <div className="text-xs text-muted-foreground mb-2 px-3">
+            {user?.email?.split('@')[0]}
+          </div>
+        )}
+        
         <Tooltip>
           <TooltipTrigger asChild>
             <Button 
               variant="ghost" 
               size={isCollapsed ? "icon" : "sm"}
               onClick={handleSignOut}
-              className="w-full justify-start mt-2 hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className={cn(
+                "w-full transition-colors hover:bg-destructive/10 hover:text-destructive",
+                isCollapsed ? "aspect-square p-0 justify-center" : "justify-start"
+              )}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4 shrink-0" />
               {!isCollapsed && <span className="ml-2">Sign Out</span>}
             </Button>
           </TooltipTrigger>
           {isCollapsed && (
-            <TooltipContent side="right">
+            <TooltipContent side="right" className="z-50">
               <div className="font-medium">Abmelden</div>
             </TooltipContent>
           )}
