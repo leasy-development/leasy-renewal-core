@@ -1,200 +1,108 @@
-# Leasy Renewal Core 🏠
 
-> **Production-Ready Property Listing Management Platform**  
-> Streamlined property listing management with AI-powered duplicate detection, bulk upload capabilities, and multi-platform synchronization.
+# Leasy - Property Management Platform
 
-[![Deploy Status](https://img.shields.io/badge/deploy-production-green)](https://leasy-renewal-core.lovable.app)
-[![React](https://img.shields.io/badge/React-19-blue)](https://reactjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://typescriptlang.org)
-[![Supabase](https://img.shields.io/badge/Supabase-Backend-green)](https://supabase.com)
+A modern, scalable property management platform built with React 19, TypeScript, and Supabase.
 
-## 🚀 Live Demo
+## 🏗️ Architecture
 
-**Production URL**: [https://leasy-renewal-core.lovable.app](https://leasy-renewal-core.lovable.app)
+### Tech Stack
+- **Frontend**: React 19 + TypeScript + Vite
+- **UI**: Tailwind CSS + Radix UI + shadcn/ui + Lucide Icons
+- **Routing**: React Router DOM v6
+- **State Management**: TanStack React Query v5 + Zustand
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **Testing**: Vitest + React Testing Library + MSW
+- **Build**: Vite + ESLint + TypeScript
+- **PWA**: Service Worker + Manifest + Offline Support
 
-## ✨ Features
-
-### 🏠 Property Management
-- **Bulk CSV Upload** - Import hundreds of properties instantly
-- **AI-Powered Duplicate Detection** - Automatically identify and merge duplicates
-- **Multi-Language Support** - German/English with AI translation
-- **Smart Categorization** - Auto-categorize property images and content
-
-### 🤖 AI & Automation
-- **Smart Title Generation** - AI-powered property titles
-- **Content Optimization** - Auto-generate descriptions and meta content
-- **Image Recognition** - Categorize property photos automatically
-- **Translation Engine** - Intelligent multi-language content management
-
-### 📊 Analytics & Insights
-- **Real-time Dashboard** - Upload progress and property analytics
-- **Quality Scoring** - Content quality assessment and recommendations
-- **Error Monitoring** - Comprehensive error tracking and debugging
-
-### 🔒 Enterprise Security
-- **Row-Level Security (RLS)** - Database-level access control
-- **Rate Limiting** - API protection against abuse
-- **Audit Trails** - Complete action logging and compliance
-- **GDPR Compliant** - Privacy-first architecture
-
-## 🛠️ Tech Stack
-
-```
-Frontend:
-├── React 19.1.0         # Latest React with concurrent features
-├── TypeScript 5.0       # Type-safe development
-├── Vite                 # Ultra-fast build tool
-├── Tailwind CSS         # Utility-first styling
-├── shadcn/ui           # Beautiful, accessible components
-├── React Query v5       # Powerful data fetching
-├── React Router v6      # Client-side routing
-└── PWA Ready           # Offline-first application
-
-Backend:
-├── Supabase            # Postgres database + auth + storage
-├── Edge Functions      # Serverless API endpoints
-├── Real-time Updates   # WebSocket connections
-├── Vector Search       # AI-powered similarity matching
-└── Storage Buckets     # File upload and management
-
-Development:
-├── ESLint + Prettier   # Code quality and formatting
-├── Vitest + MSW        # Testing framework + API mocking
-├── GitHub Actions      # CI/CD pipeline
-└── TypeScript strict   # Maximum type safety
-```
+### Key Features
+- 🏠 Property management with AI-powered descriptions
+- 📸 Smart media categorization and optimization
+- 🔄 Bulk operations and CSV import/export
+- 🌐 Multi-language support with automatic translation
+- 📊 Advanced analytics and reporting
+- 🔍 Duplicate detection and management
+- 🛠️ Developer tools and performance monitoring
+- 📱 Progressive Web App with offline support
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js 18+** (recommended: use [nvm](https://github.com/nvm-sh/nvm))
-- **pnpm/npm** package manager
-- **Supabase CLI** (optional, for local development)
+- Node.js 18+ or Bun
+- Supabase CLI (optional, for local development)
 
-### 1. Clone & Install
+### Installation
+
 ```bash
 # Clone the repository
-git clone https://github.com/leasy-development/leasy-renewal-core.git
+git clone <repository-url>
 cd leasy-renewal-core
 
 # Install dependencies
-pnpm install  # or npm install
+pnpm install
+# or
+bun install
 
-# Setup environment
+# Copy environment variables
 cp .env.local.example .env.local
-# Edit .env.local with your API keys
+
+# Start development server
+pnpm dev
+# or
+bun dev
 ```
 
-## 🚀 Quick Start
+### Environment Setup
 
-### Automated Setup (Recommended)
-```bash
-# Clone and setup everything automatically
-git clone https://github.com/leasy-development/leasy-renewal-core.git
-cd leasy-renewal-core
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-```
+Create a `.env.local` file with the following variables:
 
-### Manual Setup
-1. Clone the repository:
-```bash
-git clone https://github.com/leasy-development/leasy-renewal-core.git
-cd leasy-renewal-core
-```
+```env
+# Supabase Configuration
+VITE_SUPABASE_URL=https://xmaafgjtzupdndcavjiq.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
-2. Install dependencies:
-```bash
-npm install
-```
+# External API Keys
+VITE_GOOGLE_MAPS_API_KEY=your-google-maps-key
+VITE_OPENAI_API_KEY=your-openai-key
 
-3. Copy and configure environment:
-```bash
-cp .env.local.example .env.local
-# Edit .env.local with your actual Supabase credentials
-```
+# Application Configuration
+VITE_APP_NAME=Leasy
+VITE_APP_VERSION=1.0.0
+VITE_DEPLOYMENT_URL=your-deployment-url
 
-4. Run health checks:
-```bash
-chmod +x scripts/ai-healthcheck.sh
-./scripts/ai-healthcheck.sh
-```
-
-5. Start development server:
-```bash
-npm run dev
-```
-
-### 🔧 Production Build
-```bash
-# Build for production
-npm run build
-
-# Preview production build locally
-npm run preview
-
-# Run deployment checks
-node scripts/ai-deployment-check.js
-```
-
-### 🛠️ System Repair
-```bash
-# Run automated system repair if issues occur
-node scripts/system-repair.js
+# Feature Flags
+VITE_ENABLE_DEBUG_TOOLS=true
+VITE_ENABLE_PERFORMANCE_MONITORING=true
+VITE_ENABLE_EXPERIMENTAL_FEATURES=false
 ```
 
 ## 📁 Project Structure
 
 ```
-leasy-renewal-core/
-├── src/
-│   ├── components/          # Reusable UI components
-│   │   ├── ui/             # shadcn/ui base components
-│   │   ├── forms/          # Form components
-│   │   ├── dashboard/      # Dashboard-specific components
-│   │   └── property-form/  # Property management components
-│   ├── pages/              # Route components
-│   ├── hooks/              # Custom React hooks
-│   ├── lib/                # Utility functions and configurations
-│   ├── services/           # API service layers
-│   ├── types/              # TypeScript type definitions
-│   └── utils/              # Helper functions
-├── supabase/
-│   ├── functions/          # Edge Functions
-│   ├── migrations/         # Database migrations
-│   └── config.toml         # Supabase configuration
-├── public/                 # Static assets
-├── scripts/                # Build and deployment scripts
-└── docs/                   # Documentation
-```
-
-## 🔧 Environment Variables
-
-### Required Variables
-```env
-# Supabase (Required)
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-
-# External APIs (Optional)
-VITE_GOOGLE_MAPS_API_KEY=your-maps-key
-
-# Production Settings
-VITE_DEPLOYMENT_URL=https://leasy-renewal-core.lovable.app
-VITE_ENABLE_SECURITY_HEADERS=true
-```
-
-### Edge Function Secrets (Supabase Dashboard)
-```env
-OPENAI_API_KEY=sk-...          # AI content generation
-RESEND_API_KEY=re_...          # Email notifications
-DEEPSOURCE_API_TOKEN=...       # Code quality analysis
+src/
+├── components/          # Reusable UI components
+│   ├── ui/             # Base UI components (shadcn)
+│   ├── property-form/  # Property form components
+│   ├── navigation/     # Navigation components
+│   └── ...
+├── pages/              # Route components
+├── hooks/              # Custom React hooks
+├── lib/                # Utility libraries
+│   ├── supabase/      # Supabase client and utilities
+│   ├── performance.ts # Performance monitoring
+│   ├── devtools.ts    # Development tools
+│   └── config.ts      # Application configuration
+├── types/              # TypeScript type definitions
+├── services/           # Business logic and API services
+├── utils/              # Helper functions
+├── test/               # Test utilities and setup
+└── assets/             # Static assets
 ```
 
 ## 🧪 Testing
 
 ```bash
-# Run all tests
+# Run tests
 pnpm test
 
 # Run tests with coverage
@@ -202,136 +110,162 @@ pnpm test:coverage
 
 # Run tests in watch mode
 pnpm test:watch
-
-# Run specific test file
-pnpm test src/components/PropertyCard.test.tsx
 ```
 
-## 📦 Build & Deploy
+## 🏗️ Building
 
-### Automated Deployment (Recommended)
 ```bash
-# Deploy to production via Lovable
-# Visit: https://lovable.dev/projects/your-project-id
-# Click: Share > Publish
+# Build for production
+pnpm build
+
+# Preview production build
+pnpm preview
+
+# Type check
+pnpm type-check
+
+# Lint code
+pnpm lint
+
+# Fix linting issues
+pnpm lint:fix
 ```
 
-### Manual Deployment
+## 🔧 Development Tools
+
+### Dev Tools Panel
+Press `Ctrl+Shift+D` to toggle the development tools panel featuring:
+- Performance metrics monitoring
+- Cache management
+- Console logs viewer
+- Configuration inspector
+
+### Performance Monitoring
+- Automatic performance tracking for components and functions
+- Memory usage monitoring
+- Cache hit/miss statistics
+- Bundle size analysis
+
+### Error Handling
+- Comprehensive error boundary system
+- Automatic error reporting
+- User-friendly error messages
+- Development error details
+
+## 📊 Code Quality
+
+### DeepSource Integration
+- Automated code quality analysis
+- TypeScript, React, and security checks
+- Performance and maintainability insights
+- Continuous monitoring
+
+### ESLint Configuration
+- Modern React 19 rules
+- TypeScript strict mode
+- Accessibility guidelines
+- Performance best practices
+
+## 🚀 Deployment
+
+### Environment Setup
+1. Set up Supabase project
+2. Configure environment variables
+3. Set up external API keys
+4. Configure deployment platform
+
+### Production Build
 ```bash
-# Build production bundle
-pnpm run build
+# Build optimized bundle
+pnpm build
 
-# Verify build quality
-pnpm run build:check
-
-# Deploy to your hosting platform
-# (Vercel, Netlify, etc.)
+# Verify build
+pnpm preview
 ```
 
-## 🔐 Security Features
-
-### Database Security
-- **Row-Level Security (RLS)** enabled on all tables
-- **Service role restrictions** for admin operations
-- **API rate limiting** (100 requests/minute per user)
-- **SQL injection protection** via parameterized queries
-
-### Application Security
-- **CSRF protection** via SameSite cookies
-- **XSS prevention** via Content Security Policy
-- **Secure headers** (HSTS, X-Frame-Options, etc.)
-- **Input validation** with Zod schemas
-
-### Data Privacy
-- **GDPR compliance** with data export/deletion
-- **Audit logging** for all sensitive operations
-- **Encrypted storage** for sensitive user data
-- **Anonymous usage analytics** (no PII collected)
-
-## 📊 Performance Optimizations
-
-### Frontend
-- **React 19 Concurrent Features** - Automatic batching and transitions
-- **Code Splitting** - Route-based lazy loading
-- **Bundle Optimization** - Tree shaking and chunk splitting
-- **Service Worker** - Offline functionality and caching
-- **Image Optimization** - WebP format with lazy loading
-
-### Backend
-- **Database Indexing** - Optimized queries for large datasets
-- **Connection Pooling** - Efficient database connections
-- **Edge Functions** - Global serverless deployment
-- **CDN Integration** - Static asset delivery
-- **Query Optimization** - React Query with background updates
-
-## 🐛 Debugging & Monitoring
-
-### Development Tools
+### Supabase Deployment
 ```bash
-# Enable debug mode
-VITE_DEBUG_MODE=true pnpm dev
+# Deploy edge functions
+supabase functions deploy
 
-# View React Query DevTools
-# Automatically enabled in development
-
-# Database inspection
-npx supabase db dump --data-only > backup.sql
-
-# Performance monitoring
-pnpm run analyze
+# Push database migrations
+supabase db push
 ```
 
-### Production Monitoring
-- **Error Tracking** - Automatic error collection and reporting
-- **Performance Metrics** - Core Web Vitals monitoring
-- **Usage Analytics** - Anonymous user behavior tracking
-- **Uptime Monitoring** - 24/7 availability tracking
+## 📖 API Documentation
 
-## 🤝 Contributing
+### Supabase Integration
+- **Authentication**: Email/password, social logins
+- **Database**: PostgreSQL with Row Level Security
+- **Storage**: File uploads with intelligent categorization
+- **Edge Functions**: AI processing, bulk operations
 
-### Development Workflow
-1. **Fork & Clone** the repository
-2. **Create feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Run tests** (`pnpm test`)
-4. **Commit changes** (`git commit -m 'Add amazing feature'`)
-5. **Push to branch** (`git push origin feature/amazing-feature`)
-6. **Open Pull Request**
+### External APIs
+- **OpenAI**: Property descriptions, image analysis
+- **Google Maps**: Location services and geocoding
+- **DeepSource**: Code quality monitoring
 
-### Code Standards
-- **TypeScript strict mode** - All code must be fully typed
-- **ESLint configuration** - Follow established patterns
-- **Test coverage** - Minimum 80% coverage for new features
-- **Component documentation** - JSDoc comments for complex logic
+## 🔐 Security
 
-## 📞 Support & Documentation
+### Authentication & Authorization
+- Supabase Auth with RLS policies
+- JWT token management
+- Role-based access control
+- Secure API key handling
 
-### Getting Help
-- **GitHub Issues** - Bug reports and feature requests
-- **Documentation** - [Full documentation site](https://docs.leasy-renewal-core.com)
-- **Discord Community** - [Join our Discord](https://discord.gg/leasy)
-- **Email Support** - support@leasy.dev
+### Data Protection
+- End-to-end encryption for sensitive data
+- Secure file upload validation
+- SQL injection prevention
+- XSS protection
 
-### Documentation
-- [API Reference](./docs/api.md) - Complete API documentation
-- [Component Guide](./docs/components.md) - Component usage examples
-- [Deployment Guide](./docs/deployment.md) - Production deployment steps
-- [Security Guide](./docs/security.md) - Security best practices
+## 🌟 Advanced Features
+
+### AI Integration
+- Automatic property description generation
+- Smart image categorization
+- Duplicate detection algorithms
+- Multi-language translation
+
+### Performance Optimization
+- Code splitting and lazy loading
+- Image optimization and caching
+- Service worker for offline support
+- Bundle size optimization
+
+### Developer Experience
+- Hot module replacement
+- TypeScript strict mode
+- Comprehensive testing setup
+- Development tools integration
+
+## 📚 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+### Development Guidelines
+- Follow TypeScript strict mode
+- Write tests for new features
+- Use semantic commit messages
+- Follow the established code style
+- Update documentation as needed
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is proprietary software. All rights reserved.
 
-## 🏆 Credits
+## 🆘 Support
 
-Built with ❤️ by the Leasy Development Team
-
-- **Architecture** - Modern React 19 + TypeScript + Supabase
-- **Design System** - Tailwind CSS + shadcn/ui components
-- **Performance** - Optimized for Core Web Vitals
-- **Security** - Enterprise-grade security practices
+For support and questions:
+- Check the [troubleshooting guide](docs/troubleshooting.md)
+- Review the [API documentation](docs/api.md)
+- Contact the development team
 
 ---
 
-**🌟 Star this repo if you find it helpful!**
-
-[![GitHub stars](https://img.shields.io/github/stars/leasy-development/leasy-renewal-core?style=social)](https://github.com/leasy-development/leasy-renewal-core/stargazers)
+Built with ❤️ by the Leasy team

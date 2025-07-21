@@ -1,45 +1,34 @@
+
 import '@testing-library/jest-dom';
-import { expect, afterEach, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { vi } from 'vitest';
+import { configure } from '@testing-library/react';
 
-// Extend Vitest's expect with jest-dom matchers
-expect.extend({});
-
-// Clean up after each test
-afterEach(() => {
-  cleanup();
+// Configure React Testing Library
+configure({
+  testIdAttribute: 'data-testid',
 });
 
-// Mock Supabase client
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({ data: [], error: null })),
-      insert: vi.fn(() => ({ data: [], error: null })),
-      update: vi.fn(() => ({ data: [], error: null })),
-      delete: vi.fn(() => ({ data: [], error: null })),
-      eq: vi.fn(() => ({ data: [], error: null })),
-    })),
-    storage: {
-      from: vi.fn(() => ({
-        upload: vi.fn(() => ({ data: { path: 'test-path' }, error: null })),
-        getPublicUrl: vi.fn(() => ({ data: { publicUrl: 'test-url' } })),
-        remove: vi.fn(() => ({ data: null, error: null })),
-      })),
-    },
-  },
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+// Mock IntersectionObserver
+global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
 }));
-
-// Mock window.URL.createObjectURL
-Object.defineProperty(window, 'URL', {
-  value: {
-    createObjectURL: vi.fn(() => 'mock-url'),
-    revokeObjectURL: vi.fn(),
-  },
-});
-
-// Mock fetch for tests
-global.fetch = vi.fn();
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -47,3 +36,53 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
+
+// Mock performance.now for testing
+Object.defineProperty(window, 'performance', {
+  writable: true,
+  value: {
+    now: vi.fn(() => Date.now()),
+    mark: vi.fn(),
+    measure: vi.fn(),
+  },
+});
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+};
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+});
+
+// Mock sessionStorage
+const sessionStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+};
+Object.defineProperty(window, 'sessionStorage', {
+  value: sessionStorageMock,
+});
+
+// Suppress console errors in tests unless explicitly needed
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: ReactDOM.render is no longer supported')
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});

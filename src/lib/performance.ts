@@ -1,243 +1,145 @@
-// Performance optimization utilities for Leasy
-import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
+// Performance monitoring and optimization utilities
+import { PerformanceMetrics, CacheEntry } from '@/types/performance';
+import config from './config';
+import * as React from 'react';
 
-// Memoization utility for expensive duplicate detection operations
-export function useMemoizedDuplicateDetection<T>(
-  dependencies: any[],
-  computeFunction: () => T
-): T {
-  return useMemo(computeFunction, dependencies);
-}
+class PerformanceMonitor {
+  private metrics: PerformanceMetrics[] = [];
+  private cache = new Map<string, CacheEntry>();
 
-// Debounced callback hook for search and filtering
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number
-): T {
-  const callbackRef = useRef(callback);
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
-  useEffect(() => {
-    callbackRef.current = callback;
-  }, [callback]);
-
-  return useCallback(
-    ((...args) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+  startMeasurement(name: string): () => void {
+    const startTime = performance.now();
+    
+    return () => {
+      const endTime = performance.now();
+      const duration = endTime - startTime;
       
-      timeoutRef.current = setTimeout(() => {
-        callbackRef.current(...args);
-      }, delay);
-    }) as T,
-    [delay]
-  );
-}
-
-// Throttled function for scroll events and rapid user interactions
-export function useThrottledCallback<T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number
-): T {
-  const lastCallRef = useRef<number>(0);
-  const callbackRef = useRef(callback);
-
-  useEffect(() => {
-    callbackRef.current = callback;
-  }, [callback]);
-
-  return useCallback(
-    ((...args) => {
-      const now = Date.now();
-      if (now - lastCallRef.current >= delay) {
-        lastCallRef.current = now;
-        callbackRef.current(...args);
+      if (config.performance.enableMetrics) {
+        console.log(`Performance: ${name} took ${duration.toFixed(2)}ms`);
+        this.recordMetric({
+          loadTime: duration,
+          renderTime: duration,
+          interactiveTime: duration,
+        });
       }
-    }) as T,
-    [delay]
-  );
-}
-
-// Concurrent media processing with rate limiting
-export class ConcurrencyLimiter {
-  private queue: Array<() => Promise<any>> = [];
-  private running = 0;
-  private maxConcurrent: number;
-
-  constructor(maxConcurrent = 3) {
-    this.maxConcurrent = maxConcurrent;
+    };
   }
 
-  async add<T>(task: () => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      this.queue.push(async () => {
-        try {
-          const result = await task();
-          resolve(result);
-        } catch (error) {
-          reject(error);
-        }
-      });
-      
-      this.process();
+  recordMetric(metric: PerformanceMetrics): void {
+    this.metrics.push(metric);
+    
+    // Keep only last 100 metrics to prevent memory leaks
+    if (this.metrics.length > 100) {
+      this.metrics.shift();
+    }
+  }
+
+  getMetrics(): PerformanceMetrics[] {
+    return [...this.metrics];
+  }
+
+  clearMetrics(): void {
+    this.metrics = [];
+  }
+
+  // Cache management
+  setCache<T>(key: string, data: T, ttl: number = config.performance.cacheTimeout): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl,
+      key,
     });
   }
 
-  private async process() {
-    if (this.running >= this.maxConcurrent || this.queue.length === 0) {
-      return;
+  getCache<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    
+    if (!entry) return null;
+    
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
     }
-
-    this.running++;
-    const task = this.queue.shift()!;
-
-    try {
-      await task();
-    } finally {
-      this.running--;
-      this.process(); // Process next task
-    }
+    
+    return entry.data as T;
   }
 
-  getStats() {
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  getCacheStats() {
     return {
-      running: this.running,
-      queued: this.queue.length,
-      maxConcurrent: this.maxConcurrent
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys()),
     };
   }
 }
 
-// Memory-efficient batch processing for large datasets
-export async function* processBatches<T, R>(
-  items: T[],
-  batchSize: number,
-  processor: (batch: T[]) => Promise<R[]>
-): AsyncGenerator<R[], void, unknown> {
-  for (let i = 0; i < items.length; i += batchSize) {
-    const batch = items.slice(i, i + batchSize);
-    yield await processor(batch);
-  }
-}
+export const performanceMonitor = new PerformanceMonitor();
 
-// Performance monitoring hook
-export function usePerformanceMonitor(name: string) {
-  const startTimeRef = useRef<number | undefined>(undefined);
-
-  const start = useCallback(() => {
-    startTimeRef.current = performance.now();
-  }, []);
-
-  const end = useCallback(() => {
-    if (startTimeRef.current) {
-      const duration = performance.now() - startTimeRef.current;
-      console.log(`[Performance] ${name}: ${duration.toFixed(2)}ms`);
-      
-      // Send to analytics in production
-      if (process.env.NODE_ENV === 'production') {
-        // Analytics integration would go here
-      }
-      
-      return duration;
-    }
-    return 0;
-  }, [name]);
-
-  return { start, end };
-}
-
-// Optimized image loading with preloading
-export function useImagePreloader(urls: string[]) {
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
-  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
-
-  const preloadImage = useCallback((url: string) => {
-    if (loadedImages.has(url) || loadingImages.has(url)) {
-      return Promise.resolve();
-    }
-
-    setLoadingImages(prev => new Set(prev).add(url));
-
-    return new Promise<void>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        setLoadedImages(prev => new Set(prev).add(url));
-        setLoadingImages(prev => {
-          const next = new Set(prev);
-          next.delete(url);
-          return next;
-        });
-        resolve();
-      };
-      img.onerror = () => {
-        setLoadingImages(prev => {
-          const next = new Set(prev);
-          next.delete(url);
-          return next;
-        });
-        reject(new Error(`Failed to load image: ${url}`));
-      };
-      img.src = url;
+// Performance-aware component wrapper
+export const withPerformanceTracking = <P extends object>(
+  Component: React.ComponentType<P>,
+  componentName: string
+) => {
+  return React.memo((props: P) => {
+    const endMeasurement = performanceMonitor.startMeasurement(`Render: ${componentName}`);
+    
+    React.useEffect(() => {
+      endMeasurement();
     });
-  }, [loadedImages, loadingImages]);
 
-  const preloadImages = useCallback(async (imagesToLoad: string[] = urls) => {
-    const promises = imagesToLoad.map(url => preloadImage(url));
-    return Promise.allSettled(promises);
-  }, [urls, preloadImage]);
-
-  useEffect(() => {
-    if (urls.length > 0) {
-      preloadImages();
-    }
-  }, [urls, preloadImages]);
-
-  return {
-    loadedImages: Array.from(loadedImages),
-    loadingImages: Array.from(loadingImages),
-    preloadImage,
-    preloadImages,
-    isLoaded: (url: string) => loadedImages.has(url),
-    isLoading: (url: string) => loadingImages.has(url)
-  };
-}
-
-// Efficient virtual scrolling for large lists
-export function useVirtualScrolling<T>(
-  items: T[],
-  itemHeight: number,
-  containerHeight: number
-) {
-  const [scrollTop, setScrollTop] = useState(0);
-  
-  const visibleStart = Math.floor(scrollTop / itemHeight);
-  const visibleEnd = Math.min(
-    visibleStart + Math.ceil(containerHeight / itemHeight) + 1,
-    items.length
-  );
-  
-  const visibleItems = items.slice(visibleStart, visibleEnd);
-  const offsetY = visibleStart * itemHeight;
-  const totalHeight = items.length * itemHeight;
-
-  return {
-    visibleItems,
-    offsetY,
-    totalHeight,
-    visibleStart,
-    visibleEnd,
-    setScrollTop
-  };
-}
-
-export default {
-  ConcurrencyLimiter,
-  processBatches,
-  useMemoizedDuplicateDetection,
-  useDebouncedCallback,
-  useThrottledCallback,
-  usePerformanceMonitor,
-  useImagePreloader,
-  useVirtualScrolling
+    return <Component {...props} />;
+  });
 };
+
+// Lazy loading utilities
+export const createLazyComponent = <T extends React.ComponentType<any>>(
+  importFunc: () => Promise<{ default: T }>,
+  componentName: string
+) => {
+  return React.lazy(async () => {
+    const endMeasurement = performanceMonitor.startMeasurement(`Lazy Load: ${componentName}`);
+    
+    try {
+      const module = await importFunc();
+      endMeasurement();
+      return module;
+    } catch (error) {
+      endMeasurement();
+      throw error;
+    }
+  });
+};
+
+// Image optimization utilities
+export const createOptimizedImageLoader = () => {
+  const loadedImages = new Set<string>();
+  
+  return {
+    preloadImage: (src: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        if (loadedImages.has(src)) {
+          resolve();
+          return;
+        }
+        
+        const img = new Image();
+        img.onload = () => {
+          loadedImages.add(src);
+          resolve();
+        };
+        img.onerror = reject;
+        img.src = src;
+      });
+    },
+    
+    isImageLoaded: (src: string): boolean => {
+      return loadedImages.has(src);
+    },
+  };
+};
+
+export const imageLoader = createOptimizedImageLoader();

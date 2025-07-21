@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -11,10 +10,14 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 import { UpdateNotification } from "@/components/UpdateNotification";
+import { DevToolsPanel } from "@/components/DevToolsPanel";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { errorMonitoringService } from "@/services/errorMonitoringService";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { ErrorFallback } from "@/components/ErrorFallback";
+import { devTools } from "@/lib/devtools";
+import { performanceMonitor } from "@/lib/performance";
+import config from "@/lib/config";
 
 // Import non-lazy loaded components
 import Index from "./pages/Index";
@@ -50,9 +53,23 @@ import {
 const AppContent = () => {
   const { isUpdateAvailable, refreshCountdown } = useAutoRefresh();
 
-  // Start error monitoring when app loads
+  // Start error monitoring and dev tools when app loads
   useEffect(() => {
     errorMonitoringService.startMonitoring();
+    
+    // Initialize dev tools in development
+    if (config.features.enableDebugTools) {
+      devTools.init();
+    }
+    
+    // Start performance monitoring
+    if (config.performance.enableMetrics) {
+      const endMeasurement = performanceMonitor.startMeasurement('App Mount');
+      return () => {
+        endMeasurement();
+        errorMonitoringService.stopMonitoring();
+      };
+    }
     
     return () => {
       errorMonitoringService.stopMonitoring();
@@ -75,6 +92,10 @@ const AppContent = () => {
         onRefreshNow={handleRefreshNow}
         onCancel={handleCancelRefresh}
       />
+      
+      {/* Dev Tools Panel - only shown in development */}
+      {config.features.enableDebugTools && <DevToolsPanel />}
+      
       <Routes>
         <Route path="/" element={<Index />} />
         
@@ -91,6 +112,8 @@ const AppContent = () => {
             </ProtectedRoute>
           } 
         />
+        
+        
         
         <Route 
           path="/properties" 
@@ -127,7 +150,6 @@ const AppContent = () => {
           } 
         />
 
-        {/* Continue with other lazy-loaded routes */}
         <Route 
           path="/ai-tools" 
           element={
@@ -180,7 +202,6 @@ const AppContent = () => {
           } 
         />
 
-        {/* Add all other routes with Suspense wrappers */}
         <Route 
           path="/sync" 
           element={
@@ -255,9 +276,11 @@ const AppContent = () => {
           path="/ai-optimization" 
           element={
             <ProtectedRoute>
-              <Suspense fallback={<LoadingFallback />}>
-                <AIOptimizationDashboard />
-              </Suspense>
+              <DashboardLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <AIOptimizationDashboard />
+                </Suspense>
+              </DashboardLayout>
             </ProtectedRoute>
           } 
         />
