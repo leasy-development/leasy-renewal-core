@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUserStore } from '@/lib/stores/userStore';
+import DOMPurify from 'dompurify';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -214,7 +215,7 @@ export function AIDescriptionModal({ isOpen, onClose, property, onSave }: AIDesc
 
   const renderPreview = () => {
     if (format === 'markdown') {
-      // Simple markdown to HTML conversion for preview
+      // Safe markdown to HTML conversion for preview
       const html = editedDescription
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -223,9 +224,20 @@ export function AIDescriptionModal({ isOpen, onClose, property, onSave }: AIDesc
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/\n/g, '<br>');
       
-      return <div dangerouslySetInnerHTML={{ __html: html }} className="prose prose-sm max-w-none" />;
+      // Sanitize HTML to prevent XSS
+      const sanitizedHtml = DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['strong', 'em', 'h1', 'h2', 'h3', 'br', 'p'],
+        ALLOWED_ATTR: []
+      });
+      
+      return <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} className="prose prose-sm max-w-none" />;
     } else {
-      return <div dangerouslySetInnerHTML={{ __html: editedDescription }} className="prose prose-sm max-w-none" />;
+      // Sanitize HTML content to prevent XSS
+      const sanitizedHtml = DOMPurify.sanitize(editedDescription, {
+        ALLOWED_TAGS: ['strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'ul', 'ol', 'li'],
+        ALLOWED_ATTR: []
+      });
+      return <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} className="prose prose-sm max-w-none" />;
     }
   };
 

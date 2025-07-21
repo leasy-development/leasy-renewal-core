@@ -3,13 +3,18 @@
 export const securityHeaders = {
   'Content-Security-Policy': `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com;
+    script-src 'self' https://js.stripe.com https://maps.googleapis.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' data: blob: https: *.supabase.co *.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' *.supabase.co wss://*.supabase.co https://api.openai.com;
     frame-src 'self' https://js.stripe.com;
     media-src 'self' *.supabase.co;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    upgrade-insecure-requests;
   `.replace(/\s+/g, ' ').trim(),
   
   'X-Frame-Options': 'DENY',
