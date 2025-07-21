@@ -20,5 +20,6 @@ export const AdminDuplicates = lazy(() => import('@/pages/AdminDuplicates'));
 export const AdminAISettings = lazy(() => import('@/pages/AdminAISettings'));
 export const UpdatePassword = lazy(() => import('@/pages/UpdatePassword'));
 export const DeepSourceDashboard = lazy(() => import('@/pages/DeepSourceDashboard'));
+export const DeepSourceReports = lazy(() => import('@/pages/DeepSourceReports'));
 export const RobustnessDemo = lazy(() => import('@/pages/RobustnessDemo'));
 export const MappingTest = lazy(() => import('@/pages/MappingTest'));

@@ -537,6 +537,60 @@ export type Database = {
         }
         Relationships: []
       }
+      deepsource_scan_reports: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          file_path: string
+          file_size: number | null
+          id: string
+          metadata: Json
+          report_type: string
+          repository_id: string
+          scan_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          file_path: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json
+          report_type: string
+          repository_id: string
+          scan_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json
+          report_type?: string
+          repository_id?: string
+          scan_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_deepsource_scan_reports_repository_id"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "deepsource_repositories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_deepsource_scan_reports_scan_id"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "deepsource_scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deepsource_scans: {
         Row: {
           created_at: string

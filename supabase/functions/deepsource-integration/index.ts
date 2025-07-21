@@ -187,6 +187,68 @@ serve(async (req) => {
           
           console.log(`Total issues fetched: ${allIssues.length}`)
           
+          // Generate reports after scan
+          const reportData = {
+            scan_id: scanData.id,
+            repository: {
+              organization: DEEPSOURCE_ORG_SLUG,
+              name: DEEPSOURCE_REPO_NAME,
+              commit_hash: 'main', // Could be enhanced to get actual commit
+              commit_author: 'System',
+              scan_date: new Date().toISOString(),
+              issues_found: allIssues.length
+            },
+            summary: {
+              total_issues: allIssues.length,
+              by_severity: {
+                critical: allIssues.filter(i => i.severity === 'critical').length,
+                high: allIssues.filter(i => i.severity === 'high').length,
+                medium: allIssues.filter(i => i.severity === 'medium').length,
+                low: allIssues.filter(i => i.severity === 'low').length
+              },
+              by_category: allIssues.reduce((acc, issue) => {
+                acc[issue.category] = (acc[issue.category] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>)
+            },
+            issues: allIssues.map(issue => ({
+              id: issue.id,
+              rule: issue.check_id,
+              title: issue.title,
+              description: issue.description,
+              file_path: issue.file_path,
+              line_begin: issue.line_begin,
+              line_end: issue.line_end,
+              severity: issue.severity,
+              category: issue.category,
+              is_autofixable: issue.is_auto_fixable,
+              suggested_fix: issue.description // Enhanced later with AI
+            }))
+          };
+
+          // Generate JSON report
+          const jsonReport = JSON.stringify(reportData, null, 2);
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const jsonFileName = `deepsource-report-${timestamp}.json`;
+
+          // Store JSON report in database
+          await supabaseClient
+            .from('deepsource_scan_reports')
+            .insert({
+              scan_id: scanData.id,
+              user_id: user.id,
+              repository_id: repository.id,
+              report_type: 'json',
+              file_path: jsonFileName,
+              file_size: jsonReport.length,
+              metadata: {
+                issues_count: allIssues.length,
+                generated_at: new Date().toISOString(),
+                format: 'json',
+                repository: reportData.repository
+              }
+            });
+
           // Store issues in database with enhanced data
           const issuesForDb = allIssues.map(issue => ({
             repository_id: repository.id,
@@ -237,7 +299,9 @@ serve(async (req) => {
               scanId: scanData.id,
               status: 'completed',
               issuesFound: allIssues.length,
-              issues: allIssues
+              issues: allIssues,
+              reportGenerated: true,
+              reportData: jsonReport
             }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },

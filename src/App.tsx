@@ -42,6 +42,7 @@ import {
   AdminAISettings,
   UpdatePassword,
   DeepSourceDashboard,
+  DeepSourceReports,
   RobustnessDemo,
   MappingTest,
 } from "@/components/LazyRoutes";
@@ -302,6 +303,20 @@ const AppContent = () => {
                <DashboardLayout>
                  <Suspense fallback={<LoadingFallback />}>
                    <DeepSourceDashboard />
+                 </Suspense>
+               </DashboardLayout>
+             </ProtectedRoute>
+           } 
+         />
+         
+         {/* DeepSource Reports Route */}
+         <Route 
+           path="/deepsource/reports" 
+           element={
+             <ProtectedRoute>
+               <DashboardLayout>
+                 <Suspense fallback={<LoadingFallback />}>
+                   <DeepSourceReports />
                  </Suspense>
                </DashboardLayout>
              </ProtectedRoute>

@@ -24,7 +24,8 @@ import {
   FileText,
   Calendar,
   HardHat,
-  Wrench
+  Wrench,
+  Download
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -335,6 +336,10 @@ const DeepSourceDashboard = () => {
               <Button onClick={triggerScan} disabled={isScanning} variant="outline">
                 <Play className={`h-4 w-4 mr-2 ${isScanning ? 'animate-spin' : ''}`} />
                 Trigger Scan
+              </Button>
+              <Button onClick={() => window.location.href = '/deepsource/reports'} variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                View Reports
               </Button>
             </div>
           </div>
