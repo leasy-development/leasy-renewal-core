@@ -133,8 +133,8 @@ const DeepSourceDashboard = () => {
       if (lastScan && lastScan.issues_found === 0) {
         setShowZeroIssueAlert(true);
         setLastScanResults(lastScan);
-        if (lastScan.scan_metadata?.validation_results) {
-          setValidationResults(lastScan.scan_metadata.validation_results);
+        if (lastScan.scan_metadata && typeof lastScan.scan_metadata === 'object' && 'validation_results' in lastScan.scan_metadata) {
+          setValidationResults((lastScan.scan_metadata as any).validation_results);
         }
       }
 

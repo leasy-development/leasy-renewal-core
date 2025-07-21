@@ -107,7 +107,7 @@ const DeepSourceReports = () => {
 
       const issues = issuesData || [];
       const isZeroIssues = issues.length === 0;
-      const hasZeroIssueAlert = report.metadata.zero_issue_alert;
+      const hasZeroIssueAlert = report.metadata && typeof report.metadata === 'object' && 'zero_issue_alert' in report.metadata ? (report.metadata as any).zero_issue_alert : false;
 
       // Create PDF
       const pdf = new jsPDF();
@@ -159,8 +159,8 @@ const DeepSourceReports = () => {
         yPosition += 10;
 
         // Add validation results if available
-        if (report.metadata.validation_results) {
-          const validation = report.metadata.validation_results;
+        if (report.metadata && typeof report.metadata === 'object' && 'validation_results' in report.metadata) {
+          const validation = (report.metadata as any).validation_results;
           
           pdf.setFontSize(12);
           pdf.setFont(undefined, 'bold');
@@ -219,7 +219,7 @@ const DeepSourceReports = () => {
         `Commit: ${report.metadata.repository.commit_hash}`,
         `Author: ${report.metadata.repository.commit_author}`,
         `Scan Date: ${new Date(report.metadata.repository.scan_date).toLocaleString()}`,
-        `Scan Duration: ${report.metadata.repository.scan_duration_ms}ms`,
+        `Scan Duration: ${(report.metadata.repository as any).scan_duration_ms || 'N/A'}ms`,
         `Issues Found: ${report.metadata.issues_count}`
       ];
 
@@ -417,7 +417,7 @@ const DeepSourceReports = () => {
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    {report.metadata.zero_issue_alert && (
+                    {(report.metadata as any)?.zero_issue_alert && (
                       <Badge variant="destructive" className="animate-pulse">
                         ⚠️ Alert
                       </Badge>
@@ -433,7 +433,7 @@ const DeepSourceReports = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {report.metadata.zero_issue_alert && (
+                  {(report.metadata as any)?.zero_issue_alert && (
                     <Alert className="border-destructive/50 bg-destructive/10">
                       <AlertTriangle className="h-4 w-4 text-destructive" />
                       <AlertDescription>
@@ -463,7 +463,16 @@ const DeepSourceReports = () => {
 
                   <div className="flex gap-2">
                     <Button 
-                      onClick={() => downloadJSONReport(report)}
+                      onClick={() => {
+                        const jsonData = JSON.stringify(report, null, 2);
+                        const blob = new Blob([jsonData], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `deepsource-report-${report.id}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
                       variant="outline"
                       size="sm"
                     >
