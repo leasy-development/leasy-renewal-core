@@ -1,3 +1,4 @@
+
 import { Moon, Sun, Laptop } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,24 +21,24 @@ export function ThemeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[140px]">
+      <DropdownMenuContent align="end" className="min-w-[140px] z-[9999] bg-popover/95 backdrop-blur-sm border">
         <DropdownMenuItem 
           onClick={() => setTheme('light')}
-          className={theme === 'light' ? 'bg-accent' : ''}
+          className={theme === 'light' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'}
         >
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setTheme('dark')}
-          className={theme === 'dark' ? 'bg-accent' : ''}
+          className={theme === 'dark' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'}
         >
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setTheme('system')}
-          className={theme === 'system' ? 'bg-accent' : ''}
+          className={theme === 'system' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'}
         >
           <Laptop className="mr-2 h-4 w-4" />
           <span>System</span>
